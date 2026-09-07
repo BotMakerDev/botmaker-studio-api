@@ -17,6 +17,43 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
+### Added
+
+- **An `Optional` sibling for every nullable member a plugin receives**, and the old member is deprecated
+  with a `@ReplacedBy` pointing at it. Nothing changes behaviour and the host still implements the original
+  in every case — the siblings are `default` views over them, so an older host and a newer one answer the
+  same thing.
+
+  | was | now | `null` meant |
+  |---|---|---|
+  | `SlotRun.allowed()` | `allowedSources()` | **anything goes** — while `List.of()` means *nothing allowed* |
+  | `ValueContext.asSlot()` | `slot()` | a Parameters row, not a slot |
+  | `SlotContext.run()` | `siblingRun()` | the slot stands alone |
+  | `SlotContext.enclosingSource()` | `enclosingCall()` | not an argument of a call |
+  | `SlotContext.enclosingClass()` | `enclosingClassName()` | the host could not resolve the call |
+  | `SlotContext.enclosingMethod()` | `enclosingMethodName()` | as above |
+  | `ActionContext.projectName()` | `openProjectName()` | no project is open |
+  | `Dialogs.owner()` | `ownerWindow()` | the editor is not yet in a scene |
+
+  **`allowed()` is the one that earned the change.** Two opposite absences shared one `List` type there and
+  the javadoc named the `null` as the ordinary case, so `for (String s : run.allowed())` — the shape an
+  author writes without thinking — throws on nearly every slot, and the one shape that does *not* throw is
+  the one that must offer nothing. An `Optional` cannot be iterated by accident.
+
+  Every other entry is the same hazard at lower stakes: each `null` is a state that never occurs while the
+  editor is being written (against a slot, in a resolved call, with a project open, attached to a scene) and
+  is ordinary afterwards.
+
+- `OptionalSiblingsTest` holds the delegation. The interesting half of each case is the **present** one — a
+  broken delegation is silent, and shows up as an editor that never sees a value the host did supply.
+
+### Changed
+
+- `ValueContext.single()`'s javadoc says why it null-checks `value()`, which the same interface documents as
+  never null: this method's whole promise is that it is total, so it must not be where a broken host
+  implementation surfaces as a `NullPointerException` inside somebody's editor. `value()`'s rule is
+  unchanged.
+
 ### Removed
 
 - **`com.botmaker.plugin.api.authoring` is gone — 880 lines, 20% of this module.** `ProjectModel`,

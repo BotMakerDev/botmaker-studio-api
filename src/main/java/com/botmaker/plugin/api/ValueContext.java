@@ -1,6 +1,9 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.meta.ReplacedBy;
+
 import java.util.List;
+import java.util.Optional;
 
 /**
  * A value being edited, with no source code anywhere in sight.
@@ -55,7 +58,15 @@ public interface ValueContext {
     /** The host services an editor may use: theming, screen capture, dialogs, and the project's location. */
     StudioServices services();
 
-    /** The first value, or {@code ""} — what an editor for a single-valued shape wants. */
+    /**
+     * The first value, or {@code ""} — what an editor for a single-valued shape wants.
+     *
+     * <p>It null-checks {@link #value()}, which this interface documents as never null, and the check stays
+     * on purpose: this method's whole promise is that it is <b>total</b>, so it cannot be the place a broken
+     * host implementation surfaces as a {@link NullPointerException} inside somebody's editor. The rule for
+     * {@code value()} is unchanged — a host returns a list, empty when there is no value — and this is a
+     * belt on top of it rather than a second reading of it.
+     */
     default String single() {
         List<String> current = value();
         return current == null || current.isEmpty() ? "" : current.getFirst();
@@ -67,14 +78,31 @@ public interface ValueContext {
     }
 
     /**
-     * This context's source-code half, or {@code null} when there is none.
+     * This context's source-code half, or empty when there is none.
      *
      * <p>The one place an editor is entitled to ask <em>where</em> it is being shown. A few editors are
      * chosen by the call they sit in rather than by their type (a Steam app id and a window title are both
      * {@code String}), and those need a call site; everything else should not know the difference. It is a
      * method rather than an {@code instanceof} so that the question reads as a question in plugin code, and
      * so the host may one day answer it with something other than "am I an instance of".
+     *
+     * <p>A row in the Parameters window has no call site, so this is empty there — which is the case an
+     * editor most often forgets, because it is the one that never happens while the editor is being written
+     * against a slot in source.
      */
+    default Optional<SlotContext> slot() {
+        return Optional.ofNullable(asSlot());
+    }
+
+    /**
+     * This context's source-code half, or {@code null} when there is none.
+     *
+     * @deprecated by {@link #slot()}. A Parameters row answers {@code null} here and that is the ordinary
+     *         state, not an error — so the dereference an editor writes without thinking is wrong exactly
+     *         where it is hardest to notice. Behaviour is unchanged; {@code slot()} is a view over this.
+     */
+    @Deprecated
+    @ReplacedBy("com.botmaker.plugin.api.ValueContext#slot")
     default SlotContext asSlot() {
         return this instanceof SlotContext slot ? slot : null;
     }

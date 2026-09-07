@@ -1,5 +1,9 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.meta.ReplacedBy;
+
+import java.util.Optional;
+
 /**
  * Everything an editor is told about the slot it is editing, and the one way it writes back.
  *
@@ -31,15 +35,43 @@ public interface SlotContext extends ValueContext {
     String currentSource();
 
     /**
+     * The simple name of the type declaring the called method — {@code "Game"} — or empty when the host
+     * could not resolve the call.
+     *
+     * <p>Present because a few editors are chosen by <em>where</em> a value is used rather than by its type:
+     * a Steam app id and a window title are both {@code String}. Unresolved is an ordinary state — a bot
+     * that does not currently compile still opens in the editor — so an editor keyed on this must answer
+     * "not mine" when it is empty rather than assume a name is always there.
+     */
+    default Optional<String> enclosingClassName() {
+        return Optional.ofNullable(enclosingClass());
+    }
+
+    /** The name of the called method — {@code "launchSteam"} — or empty when it is unresolved. */
+    default Optional<String> enclosingMethodName() {
+        return Optional.ofNullable(enclosingMethod());
+    }
+
+    /**
      * The simple name of the type declaring the called method — {@code "Game"} — or {@code null} when the
      * host could not resolve the call.
      *
-     * <p>Present because a few editors are chosen by <em>where</em> a value is used rather than by its type:
-     * a Steam app id and a window title are both {@code String}.
+     * @deprecated by {@link #enclosingClassName()}. Unresolved is ordinary, so
+     *         {@code ctx.enclosingClass().equals("Game")} — the shape a predicate is written in — throws on
+     *         a bot that does not currently compile. Behaviour is unchanged and the host still implements
+     *         this one.
      */
+    @Deprecated
+    @ReplacedBy("com.botmaker.plugin.api.SlotContext#enclosingClassName")
     String enclosingClass();
 
-    /** The name of the called method — {@code "launchSteam"} — or {@code null} when it is unresolved. */
+    /**
+     * The name of the called method — {@code "launchSteam"} — or {@code null} when it is unresolved.
+     *
+     * @deprecated by {@link #enclosingMethodName()}, for the reason {@link #enclosingClass()} is.
+     */
+    @Deprecated
+    @ReplacedBy("com.botmaker.plugin.api.SlotContext#enclosingMethodName")
     String enclosingMethod();
 
     /** The zero-based position of this slot in the call's argument list, or {@code -1} if it is not an argument. */
@@ -52,9 +84,26 @@ public interface SlotContext extends ValueContext {
      * <p>The companion to {@link #replaceEnclosingCall}: an editor that may rewrite the call has to read the
      * <em>other</em> arguments first, since it is about to replace them. Parsing it is the editor's own job
      * and failing to is normal, exactly as for {@link #currentSource()}.
+     *
+     * @deprecated by {@link #enclosingCall()}. Behaviour is unchanged and the host still implements this one.
      */
+    @Deprecated
+    @ReplacedBy("com.botmaker.plugin.api.SlotContext#enclosingCall")
     default String enclosingSource() {
         return null;
+    }
+
+    /**
+     * The Java source of the whole call this slot is an argument of —
+     * {@code "Wait.time(Duration.ofSeconds(2))"} — or empty when the slot is not an argument of one.
+     *
+     * <p>Empty is the answer for a slot that is a receiver, an assignment right-hand side, or anything else
+     * that is not an argument — which is most slots — and it is also what an older host answers, since
+     * {@link #enclosingSource()} is {@code default}. An editor cannot tell those two apart and does not
+     * need to: both mean there is no call to rewrite.
+     */
+    default Optional<String> enclosingCall() {
+        return Optional.ofNullable(enclosingSource());
     }
 
     /**
@@ -108,12 +157,35 @@ public interface SlotContext extends ValueContext {
      * <p>A method rather than a second context type, for the reason {@link ValueContext#asSlot()} is one:
      * the question reads as a question in plugin code, and an editor asks it only when it can actually use
      * the answer. {@code default} so an older host answers "no run" instead of throwing.
+     *
+     * @deprecated by {@link #siblingRun()}. Behaviour is unchanged and the host still implements this one.
      */
+    @Deprecated
+    @ReplacedBy("com.botmaker.plugin.api.SlotContext#siblingRun")
     default SlotRun run() {
         return null;
     }
 
-    /** Always {@code this}: a slot is its own call site. */
+    /**
+     * The run of sibling slots this one belongs to, or empty when it stands alone.
+     *
+     * <p>Nearly every slot stands alone, so empty is overwhelmingly the common answer and an editor that
+     * never asks is unaffected. It is also what an older host answers, since {@link #run()} is
+     * {@code default}.
+     */
+    default Optional<SlotRun> siblingRun() {
+        return Optional.ofNullable(run());
+    }
+
+    /**
+     * Always {@code this}: a slot is its own call site.
+     *
+     * @deprecated by {@link ValueContext#slot()}, with the supertype's method. This override answers
+     *         {@code this} rather than {@code null} and never had the hazard; it carries the mark so the two
+     *         halves of one method deprecate together.
+     */
+    @Deprecated
+    @ReplacedBy("com.botmaker.plugin.api.ValueContext#slot")
     @Override
     default SlotContext asSlot() {
         return this;

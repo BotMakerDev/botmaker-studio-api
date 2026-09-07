@@ -1,6 +1,9 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.meta.ReplacedBy;
+
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Several sibling slots that are edited as <b>one</b> thing.
@@ -48,13 +51,35 @@ public interface SlotRun {
     }
 
     /**
-     * The only element sources the surrounding code can still use, or {@code null} when anything goes.
+     * The only element sources the surrounding code can still use, or empty when anything goes.
      *
      * <p>Java source again, never decoded values — the host computes this by looking at the code around the
      * run (the elements of the list a branch is narrowing against, say), which it can do without knowing
-     * what any of them mean. An editor offers exactly these and nothing else; {@code null} is the ordinary
-     * case and means "the whole library".
+     * what any of them mean. An editor offers exactly these and nothing else; an empty {@code Optional} is
+     * the ordinary case and means "the whole library".
+     *
+     * <p><b>This exists because {@link #allowed()} had two opposite absences wearing one type, and the
+     * dangerous one was the common case.</b> There, {@code null} means <em>anything goes</em> and
+     * {@code List.of()} means <em>nothing is allowed</em> — so {@code for (String s : run.allowed())}, which
+     * is what an author writes without thinking, throws {@link NullPointerException} on nearly every slot,
+     * and the one shape that does not throw is the shape that must offer nothing. An {@code Optional} cannot
+     * be iterated by accident.
      */
+    default Optional<List<String>> allowedSources() {
+        List<String> only = allowed();
+        return only == null ? Optional.empty() : Optional.of(only);
+    }
+
+    /**
+     * The only element sources the surrounding code can still use, or {@code null} when anything goes.
+     *
+     * @deprecated by {@link #allowedSources()}. Two opposite absences share one {@code List} type here and
+     *         the javadoc says the {@code null} is the ordinary case, so the natural way to read this method
+     *         throws on nearly every slot. Behaviour is unchanged and the host still implements this one;
+     *         {@code allowedSources()} is a view over it.
+     */
+    @Deprecated
+    @ReplacedBy("com.botmaker.plugin.api.SlotRun#allowedSources")
     default List<String> allowed() {
         return null;
     }
