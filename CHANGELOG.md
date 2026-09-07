@@ -19,6 +19,22 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Removed
 
+- **`com.botmaker.plugin.api.authoring` is gone — 880 lines, 20% of this module.** `ProjectModel`,
+  `ActivityModel`, `VariableModel`, `FlowModel`, `FlowNodeModel`, `FlowEdgeModel` and `PresetModel` are
+  `com.botmaker.sdk.authoring` again, which is where they were until 2026-08-31. `ProjectModel`'s first line
+  is *"This is `activities.json`, as a value"* — the SDK's file. A plugin that is not the SDK has no
+  activities, no flow and no presets, and could never construct one meaningfully; they were plugin #1's
+  concepts wearing the contract's name, which is what `Assets` and `SourceChoice` were deleted for on
+  2026-08-27. The commit that brought them here also added `jackson-annotations` to this pom, the one
+  dependency the module must not have; that was pulled back out within the day and the records stayed.
+- **It also removes a trap in every bot ever built.** `ProjectData` runs inside a running bot and read four
+  constants off `FlowModel` and `FlowEdgeModel` — and **this module is not on a bot's classpath**, because
+  the SDK declares it `provided`. It did not crash only because all four are `public static final`
+  `int`/`String` with literal initialisers, which javac copies into the calling class file (JLS §13.1);
+  disassembly confirmed `ProjectData.class` held zero references to `plugin/api/authoring`. Changing any one
+  of them to a computed value would have given every bot a `NoClassDefFoundError`. Five of the seven records
+  name no contract type at all, so they link in a bot cleanly now.
+
 - **`Region` is no longer in the contract.** It moved to `com.botmaker.plugin.toolkit.Region`, unchanged. It
   arrived here for `Capture`, a host capability deleted on 2026-08-31; with that producer gone **no contract
   signature takes or returns it**, and its only remaining producer is the toolkit's own `ScreenPicks`. A

@@ -39,8 +39,8 @@ public final class ValueCatalog {
     /**
      * The id a catalog's yes/no type carries by convention.
      *
-     * <p>Here for the same reason as {@link #TEXT_ID} and for exactly one caller:
-     * {@link com.botmaker.plugin.api.authoring.ActivityModel#enabledVariable()} builds a
+     * <p>Here for the same reason as {@link #TEXT_ID} and for exactly one caller — the SDK's
+     * {@code ActivityModel.enabledVariable()}, which builds a
      * {@link ValueChoice} for a flag nobody stored, so it needs an id and has no catalog in hand. A
      * {@link ValueType}'s identity <em>is</em> its id, so naming the id is the whole of what it needs; the
      * label, the group and the Java type it emits stay the registering plugin's, and arrive when a catalog
