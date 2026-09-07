@@ -15,6 +15,21 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Removed
+
+- **`Region` is no longer in the contract.** It moved to `com.botmaker.plugin.toolkit.Region`, unchanged. It
+  arrived here for `Capture`, a host capability deleted on 2026-08-31; with that producer gone **no contract
+  signature takes or returns it**, and its only remaining producer is the toolkit's own `ScreenPicks`. A
+  record that travels only between a plugin and the widget kit does not belong in the artifact both sides
+  must agree on for ever. A plugin using it changes one import.
+- **`Category`'s eight constants** — `VISION`, `INTERACTION`, `CAPTURE`, `LAUNCH`, `EMULATOR`, `GEOMETRY`,
+  `BOT`, `UTIL`. Nothing could reference them: `@Palette(category = …)` takes a `String`, so a facade names
+  its group as text. They were the default plugin's menu sitting in the contract. The record and both `of`
+  overloads are untouched; a plugin joining an existing group writes the id, which is what the annotation
+  makes it write anyway.
+
 ## [0.0.4] — 2026-09-04
 
 ### Fixed
