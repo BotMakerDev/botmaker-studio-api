@@ -141,7 +141,8 @@ class ValueVocabularyTest {
      */
     @Test
     void typesComeBackInRegistrationOrder() {
-        ValueType third = ValueType.of("discord.Emoji").source("String").build();
+        ValueType third = ValueType.of("discord.Emoji").source("Emoji")
+                .importing("com.example.discord.Emoji").build();
         ValueCatalog c = ValueCatalog.builder().add(TEXT, ECHO).add(CHANNEL, ECHO).add(third, ECHO).build();
 
         assertEquals(List.of(ValueCatalog.TEXT_ID, "discord.Channel", "discord.Emoji"),
@@ -156,6 +157,56 @@ class ValueVocabularyTest {
                 c.merge(ValueCatalog.builder().add(theirs, ECHO).build())
                         .types().stream().map(ValueType::id).toList(),
                 "a second plugin's types are appended, so installing one does not reorder the first's");
+    }
+
+    /**
+     * A plugin author says {@code Duration.class}; the id is what gets written down, and nothing but the
+     * plugin that registered it needs to know how it is spelled.
+     */
+    @Test
+    void aTypeIsFoundByTheJavaClassItIs() {
+        ValueType duration = ValueType.of("DURATION").source("java.time.Duration").build();
+        ValueType whole = ValueType.of("WHOLE_NUMBER").source("int").boxed("Integer").primitive().build();
+        ValueCatalog c = ValueCatalog.builder().add(TEXT, ECHO).add(duration, ECHO).add(whole, ECHO).build();
+
+        assertEquals(duration, c.forJava(java.time.Duration.class).orElseThrow());
+        assertEquals(TEXT, c.forJava(String.class).orElseThrow(), "a java.lang type needs no import");
+        assertEquals(whole, c.forJava(int.class).orElseThrow());
+        assertEquals(whole, c.forJava(Integer.class).orElseThrow(),
+                "a list of them is asked for the boxed way and means the same type");
+        assertEquals(duration, c.forJava("java.time.Duration").orElseThrow());
+        assertTrue(c.forJava(java.util.Locale.class).isEmpty(), "a type nobody registered is an ordinary state");
+        assertTrue(c.forJava((Class<?>) null).isEmpty());
+    }
+
+    /**
+     * The index is a function only if one Java type has one id, and nothing made that true by construction —
+     * it merely happened to be true of the seventeen types the first plugin registered.
+     */
+    @Test
+    void twoTypesMayNotClaimOneJavaType() {
+        ValueType other = ValueType.of("PROSE").source("String").build();
+        IllegalArgumentException thrown = org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> ValueCatalog.builder().add(TEXT, ECHO).add(other, ECHO));
+        assertTrue(thrown.getMessage().contains("String"), thrown.getMessage());
+    }
+
+    /**
+     * Across two plugins it is reported, never thrown: both ids are real, both projects are valid, and only
+     * the class lookup is ambiguous. Dropping the loser would retype somebody's stored variable.
+     */
+    @Test
+    void aJavaTypeClaimedByTwoPluginsIsReportedRatherThanThrown() {
+        ValueType theirs = ValueType.of("PROSE").label("Prose").source("String").build();
+        ValueCatalog mine = catalog();
+        ValueCatalog merged = mine.merge(ValueCatalog.builder().add(theirs, ECHO).build());
+
+        assertEquals(List.of("String"), mine.javaClashesWith(ValueCatalog.builder().add(theirs, ECHO).build()));
+        assertEquals(List.of(), mine.clashesWith(ValueCatalog.builder().add(theirs, ECHO).build()),
+                "the ids do not clash — that is the other mistake, and it is reported separately");
+        assertEquals(TEXT, merged.forJava(String.class).orElseThrow(), "first registration wins");
+        assertTrue(merged.knows("PROSE"), "and the loser stays readable, so its stored values still parse");
     }
 
     @Test

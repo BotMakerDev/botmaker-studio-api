@@ -206,6 +206,15 @@ module exists: a plugin wanting a `Channel` variable would need a constant added
 - **`ValueCodec<T>` is per item.** Shape (`ONE`/`ONE_OF`/`ANY_OF`/`OPEN_LIST`) is composed above it by
   `ValueCatalog.initializer`, so a codec is written once and serves all four. `T` never crosses to the host —
   only `literal(parse(wire))` behind a wildcard capture — which is what keeps rule 2 above true for values.
+- **A type is asked for by the Java class it is, not by its id** (2026-09-09). `ValueCatalog.forJava(Class<?>)`
+  indexes the registrations on `ValueType.javaName()` — the import when there is one, the source spelling
+  otherwise — so a plugin author writes `Duration.class` and never writes `DURATION`. It does not weaken rule
+  2 above: the class is **read, never loaded**, only its names are taken off the object the caller already
+  holds, and nothing here compares `Class` objects. A wrapper resolves to its primitive, which is what makes
+  a list of them askable the same way a single one is. **The index is a function only because the builder
+  makes it one** — `add` throws when a second type claims a Java name, the same refusal one id registered
+  twice already got. Across two plugins it is a report (`javaClashesWith`) and not a throw, because both ids
+  are real, both projects are valid, and dropping the loser would retype a user's stored variable.
 - **`ValueCatalog.merge` is left-biased and never throws.** Deliberately unlike a generation collision, which
   is a hard error: refusing to merge would break every project that has a plugin installed.
 - **No Jackson here, and none is coming.** The vocabulary declares the wire *form* — an id out, a total
@@ -326,7 +335,7 @@ every release commit from the first one onward.
 ## Building
 
 ```bash
-mvn test        # PaletteCatalogTest (10) + ValueVocabularyTest (9) — the module's only behaviour
+mvn test        # PaletteCatalogTest (10) + ValueVocabularyTest (12) — the module's only behaviour
 mvn verify      # the above plus japicmp against botmaker.japicmp.baseline (see above)
 mvn install     # com.github.LiQiyeDev:botmaker-studio-api:0.0.0-SNAPSHOT
 ```

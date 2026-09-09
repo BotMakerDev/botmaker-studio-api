@@ -68,8 +68,25 @@ public final class ValueCatalog {
      */
     private final Map<String, Entry> byId;
 
+    /**
+     * The same registrations, indexed by {@link ValueType#javaName()} — how a plugin author asks for a type
+     * without ever writing an id down.
+     *
+     * <p><b>First registration wins, and nothing is dropped from {@link #byId} to make that true.</b> A
+     * second claimant of one Java name is simply not findable this way; it stays findable by its id, so a
+     * project that stored values of it still reads them. That is the same judgement as the id clash above —
+     * refusing costs every project, and dropping a registration would retype somebody's variable — and it is
+     * why this is a merge-time silence rather than a merge-time throw. {@link #javaClashesWith} is how a
+     * host reports it. Within <em>one</em> builder it does throw, because there the author is contradicting
+     * themselves and there is a compiler-adjacent moment to notice it in.
+     */
+    private final Map<String, ValueType> byJava;
+
     private ValueCatalog(Map<String, Entry> byId) {
         this.byId = Collections.unmodifiableMap(new LinkedHashMap<>(byId));
+        Map<String, ValueType> java = new LinkedHashMap<>();
+        this.byId.values().forEach(e -> java.putIfAbsent(e.type().javaName(), e.type()));
+        this.byJava = Collections.unmodifiableMap(java);
     }
 
     public static Builder builder() {
@@ -103,6 +120,64 @@ public final class ValueCatalog {
     public ValueType text() {
         return type(TEXT_ID);
     }
+
+    /**
+     * The type registered for a Java class — {@code forJava(Duration.class)} answers {@code DURATION}.
+     *
+     * <p>This is the whole of *"a plugin author says {@code Duration.class} and never writes a
+     * {@code ValueType}"*: the id stays the persisted identity, and nobody outside the plugin that registered
+     * the type has to know what it is spelled.
+     *
+     * <p><b>The class is read, never loaded.</b> Only its names are taken off the object the caller already
+     * holds — nothing here calls {@code Class.forName}, and nothing here compares {@code Class} objects,
+     * which two classloaders make meaningless (rule 2 in this module's {@code CLAUDE.md}). Four spellings are
+     * tried, in order, because a registration writes whichever one its generated source needs: the canonical
+     * name ({@code java.time.Duration}), the binary name (a nested class, where the canonical has a dot and
+     * the binary a {@code $}), the simple name for {@code java.lang} (a type nobody imports, registered as
+     * {@code String}), and the primitive a wrapper boxes — so {@code Integer.class} and {@code int.class}
+     * find the one type, which is what lets a list of them be asked for the same way a single one is.
+     *
+     * <p>Empty when nothing registered it, which is an ordinary state: the type belongs to a plugin that is
+     * not installed, or to no plugin at all ({@code java.util.Locale}).
+     */
+    public Optional<ValueType> forJava(Class<?> javaType) {
+        if (javaType == null) return Optional.empty();
+        for (String name : javaNames(javaType)) {
+            ValueType found = byJava.get(name);
+            if (found != null) return Optional.of(found);
+        }
+        return Optional.empty();
+    }
+
+    /** The type registered for a Java type <em>name</em>, exactly as {@link ValueType#javaName()} spells it. */
+    public Optional<ValueType> forJava(String javaName) {
+        return Optional.ofNullable(javaName == null ? null : byJava.get(javaName.trim()));
+    }
+
+    /** The spellings {@link #forJava(Class)} accepts, in the order it tries them. */
+    private static List<String> javaNames(Class<?> type) {
+        List<String> names = new ArrayList<>(4);
+        String canonical = type.getCanonicalName();
+        if (canonical != null) names.add(canonical);
+        if (!type.getName().equals(canonical)) names.add(type.getName());
+        if (type.getPackage() != null && "java.lang".equals(type.getPackage().getName())) {
+            names.add(type.getSimpleName());
+        }
+        String primitive = UNBOXED.get(type.getName());
+        if (primitive != null) names.add(primitive);
+        return names;
+    }
+
+    /** What each wrapper boxes. A bot asking for {@code Integer.class} means the type {@code int} names. */
+    private static final Map<String, String> UNBOXED = Map.of(
+            "java.lang.Boolean", "boolean",
+            "java.lang.Byte", "byte",
+            "java.lang.Character", "char",
+            "java.lang.Short", "short",
+            "java.lang.Integer", "int",
+            "java.lang.Long", "long",
+            "java.lang.Float", "float",
+            "java.lang.Double", "double");
 
     /** Whether {@code id} is one this catalog can describe, parse and emit. */
     public boolean knows(String id) {
@@ -214,6 +289,25 @@ public final class ValueCatalog {
         return List.copyOf(out);
     }
 
+    /**
+     * The Java type names {@code other} declares that this catalog already claims — what a merge would leave
+     * unreachable by {@link #forJava(Class)}, under a <em>different</em> id from the one that wins.
+     *
+     * <p>Separate from {@link #clashesWith} because the two are different mistakes. One id claimed twice is
+     * two plugins disagreeing about a name they both persist. One Java type claimed twice is two plugins each
+     * owning their own id and both wanting to be what {@code Duration.class} means — nothing about either
+     * project file is wrong, and only the class lookup is ambiguous.
+     */
+    public List<String> javaClashesWith(ValueCatalog other) {
+        if (other == null) return List.of();
+        List<String> out = new ArrayList<>();
+        for (Map.Entry<String, ValueType> e : other.byJava.entrySet()) {
+            ValueType mine = byJava.get(e.getKey());
+            if (mine != null && !mine.equals(e.getValue())) out.add(e.getKey());
+        }
+        return List.copyOf(out);
+    }
+
     /** The capture that lets the host call a codec it cannot name the type parameter of. */
     private static <T> String render(ValueCodec<T> codec, String wire) {
         return codec.literal(codec.parse(wire));
@@ -261,13 +355,26 @@ public final class ValueCatalog {
          * <p>Re-registering an id within one builder is a programming error and throws — unlike a merge
          * across plugins, this is one author contradicting themselves, and there is a compiler-adjacent
          * moment to notice it in.
+         *
+         * <p><b>Two ids claiming one {@linkplain ValueType#javaName() Java type} throw for the same reason.</b>
+         * {@link ValueCatalog#forJava(Class)} is a function only if that cannot happen — it was one in
+         * practice across the SDK's seventeen types and nothing made it one by construction, which is exactly
+         * the kind of accident that survives until a second registration lands and then answers whichever
+         * type happened to be registered first.
          */
         public <T> Builder add(ValueType type, ValueCodec<T> codec) {
             Objects.requireNonNull(type, "type");
             Objects.requireNonNull(codec, "codec");
-            if (byId.putIfAbsent(type.id(), new Entry(type, codec)) != null) {
+            if (byId.containsKey(type.id())) {
                 throw new IllegalArgumentException("value type " + type.id() + " is registered twice");
             }
+            for (Entry existing : byId.values()) {
+                if (existing.type().javaName().equals(type.javaName())) {
+                    throw new IllegalArgumentException("value types " + existing.type().id() + " and "
+                            + type.id() + " both claim the Java type " + type.javaName());
+                }
+            }
+            byId.put(type.id(), new Entry(type, codec));
             return this;
         }
 

@@ -134,6 +134,22 @@ public final class ValueType {
     }
 
     /**
+     * The Java type this one <em>is</em>, as a name: {@code int}, {@code java.time.Duration},
+     * {@code com.botmaker.sdk.api.interaction.Key}. The {@linkplain #importName() import} when there is one,
+     * and the {@linkplain #sourceName() source spelling} otherwise — which covers a primitive and a type
+     * written fully qualified, the two cases that need no import.
+     *
+     * <p>It is what {@link ValueCatalog#forJava(Class)} indexes on, and it is a <b>name</b> for the reason
+     * {@link #importName()} is: the plugin that owns this type and the host reading it are on different
+     * classloaders, where comparing {@code Class} objects silently answers false.
+     *
+     * <p>Two registered types may not share one of these — see {@link ValueCatalog.Builder#add}.
+     */
+    public String javaName() {
+        return importName.isEmpty() ? sourceName : importName;
+    }
+
+    /**
      * Whether this type's values <em>are</em> a set the editor already shows in full — which is what makes
      * {@link ValueShape#ONE_OF} over it meaningless. "One of yes and no" is a boolean, said twice and worse.
      */

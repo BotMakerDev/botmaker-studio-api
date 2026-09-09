@@ -19,6 +19,25 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`ValueCatalog.forJava(Class<?>)` — a type is asked for by the Java class it is.** `forJava(Duration.class)`
+  answers the `DURATION` registration; `forJava(String)` does the same from a type name. The id stays the
+  persisted identity and stays what a project file holds; what changes is that nobody outside the plugin
+  registering a type has to write it down. A wrapper finds its primitive, so `Integer.class` and `int.class`
+  are one type — which is how a list of them is asked for. The class is read and never loaded: only its names
+  are taken off the object the caller already holds, because two classloaders make a `Class` comparison
+  meaningless.
+- **`ValueType.javaName()`** — the import when there is one, the source spelling otherwise. What the index
+  above is keyed on.
+- **`ValueCatalog.javaClashesWith(ValueCatalog)`** — the Java types two plugins both claim, reported the way
+  `clashesWith` reports two claims on one id. Merging still never throws and drops no registration: the loser
+  keeps its id, so a project that stored values of it still reads them.
+
+### Changed
+
+- **`ValueCatalog.Builder.add` refuses two types claiming one Java type**, exactly as it already refuses one
+  id registered twice. It was true of the SDK's seventeen types by accident rather than by construction, and
+  an index built on an accident answers whichever registration happened to come first.
+
 - **An `Optional` sibling for every nullable member a plugin receives**, and the old member is deprecated
   with a `@ReplacedBy` pointing at it. Nothing changes behaviour and the host still implements the original
   in every case — the siblings are `default` views over them, so an older host and a newer one answer the
