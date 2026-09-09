@@ -5,6 +5,63 @@ reasoning.
 
 ## Done
 
+### 2026-09-10 — parameter data: the seventh contribution surface
+
+`StudioPlugin.parameterRows(String groupId)` and `StudioPlugin.parameterEdited(ParameterEdit)`, plus
+`ParameterRow` and `ParameterEdit` beside `ParameterGroup`. Phase 4 of
+`~/.claude/plans/settings-becomes-a-plugin.md`, which the plan itself calls the riskiest phase and the one to
+stop on rather than force. **No host is wired to it yet** — that is phase 5, the ~94-file retype of Studio
+onto this module's vocabulary; what landed here is the surface, its javadoc and its tests.
+
+**The problem it answers.** `ParameterGroup` (2026-08-29, categories 2026-09-02) already said the right
+thing: a plugin declares the *section* of the Parameters window and the generated class its values become
+fields of, while the user declares the values themselves. But the values were read out of `activities.json`
+by Studio's own `ActivitiesConfig`, a file and a parser that predate the plugin system by a year. Three
+consequences, all of them the same shape as the leaks this module exists to close: the host knew what a
+`tag`, a `visibility` and a stored duration were; a *second* plugin could not have had parameters at all;
+and the check the previous plan's phase 7 proposed — `Settings.load("name", T.class)` verified against the
+declared variables — would have put one plugin's API (a class name, a method name, the meaning of a class
+literal) inside the host. That phase was cancelled and this surface replaces its foundation.
+
+**The cut is the same one `StudioServices.sources()` made on 2026-09-01.** The host keeps what only the host
+has — one window rather than one per plugin, the ordering, the rendering, the undo, the theme. The owner
+keeps the file, the meaning of the text and the decision of when to write. Neither half is a vocabulary.
+
+**Every component of a row was already here**, which is the test this surface had to pass and the reason it
+needed no exemption: a name, a `ValueChoice`, the stored `List<String>`, a description, a category out of
+`ParameterGroup.categories()`, a `Visibility`, the declared options, a `Range`. The value crosses as
+**text**, exactly as it does through `ValueCodec`, so rule 3 (*no syntax tree*) and rule 2 (*no `Class<?>`
+the host loads*) hold by construction rather than by care.
+
+**`ParameterRow` is a final class with a builder and `ParameterEdit` is a record, and the asymmetry is the
+point.** Compatibility trap #2 bans growing a record a **plugin** constructs — the canonical constructor is
+part of the binary signature, so a component added later throws `NoSuchMethodError` in every plugin already
+compiled. A plugin builds rows, so rows get a builder, exactly as `ValueType` did for the same reason. The
+*host* builds an edit and a plugin only reads it, so an edit can be a record and can grow: the same call
+`Sources.Use` makes, written down here as a pair so the rule reads as a direction rather than as a blanket
+ban on records. `ParameterRow` implements `equals`/`hashCode` over every component, because the host
+compares what a plugin answered against what it sent and object identity is meaningless across two
+classloaders — the same reasoning as `ValueType` comparing by `id()`.
+
+**`parameterEdited` answers the row as stored.** One return type carries a clamp to a declared `Range`, a
+list pruned to the options still on offer, a duration spelled back canonically, and a flat refusal — the
+window renders what comes back, and the host models none of it. `Optional.empty()` means *not mine*, for a
+row or a group this plugin does not own, and leaves the screen alone.
+
+**Two things were deliberately not added, recorded so they are not re-derived.** There is **no listener**: a
+push is a capability with a lifecycle (a registration, a thread, an unsubscribe) and the only thing it buys
+is a plugin's own dialog editing a value behind the window's back, which no plugin has. And there is **no
+`kind` enum** over adding, deleting, renaming or retyping a row. Those are different questions — they need
+the declaration rather than the value, and retyping needs the coercion rules that belong to the editor,
+where a user can watch them happen. They arrive as their own `default` methods when the window that performs
+them does, and because `ParameterEdit` is host-constructed, waiting costs nothing.
+
+`ParameterDataTest` holds what a host and a plugin both rely on before either exists: that a plugin
+implementing only `id()` contributes no rows and is answered `Optional.empty()` for an edit (the versioning
+rule, as one assertion), that every default is the reading that keeps a project open, that a row with no
+type at all holds an *unknown* one rather than a `null`, that a value list is copied rather than shared, and
+that a row survives `withValue`/`toBuilder` with equality intact.
+
 ### 2026-09-02 — JDK 25 LTS and JavaFX 25 across all eleven repositories
 
 The whole constellation moves from Java 21 to **Java 25 LTS**, and from JavaFX 21 to **25.0.4** — the newest

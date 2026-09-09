@@ -5,6 +5,7 @@ import com.botmaker.plugin.api.value.ValueCatalog;
 import com.botmaker.plugin.api.value.ValueType;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * What a BotMaker Studio plugin is, from the host's side: an id and a set of contributions.
@@ -28,6 +29,9 @@ import java.util.List;
  *       stored text means.</li>
  *   <li><b>parameters</b> — {@link #parameters(String)}: the sections of the Parameters window this plugin
  *       owns, and the generated class each one's values become fields of.</li>
+ *   <li><b>parameter data</b> — {@link #parameterRows(String)} and
+ *       {@link #parameterEdited(ParameterEdit)}: the rows currently declared in one of those sections, and
+ *       where a changed value goes. The window is the host's; the file behind it is not.</li>
  *   <li><b>toolbar</b> &mdash; {@link #toolbarItems()}: buttons, contributed as data. The host owns the
  *       grouping, the order, the packing and the overflow menu; a plugin owns what a press does.</li>
  *   <li><b>source seeds</b> &mdash; {@link #sourceSeeds()}: what a <em>fresh</em> value of one of this
@@ -142,6 +146,59 @@ public interface StudioPlugin {
      */
     default List<ParameterGroup> parameters(String pinnedVersion) {
         return List.of();
+    }
+
+    /**
+     * The rows currently declared in one of this plugin's {@linkplain #parameters(String) sections}.
+     *
+     * <p><b>This is the surface that stops the host owning a project's parameter file.</b> The Parameters
+     * window is the host's — one window, one section per group, so a user configuring a bot configures one
+     * thing — but what the rows <em>are</em> is project data belonging to whoever stores it. Before this
+     * existed, the host parsed that file itself, which meant the host knew one plugin's storage format and
+     * no second plugin could have had one.
+     *
+     * <p><b>Asked, never pushed.</b> The host calls this when it draws the section and again after an edit;
+     * a plugin does not notify. There is no listener here because a listener is a capability with a
+     * lifecycle — a registration, a thread, an unsubscribe — and the one thing it would buy (a plugin's own
+     * dialog changing a value behind the window's back) is worth revisiting when a plugin has such a dialog,
+     * not before. Everything the window itself changes comes back through
+     * {@link #parameterEdited(ParameterEdit)}, whose answer is the new row.
+     *
+     * <p>An id this plugin does not own answers nothing, which is the ordinary state rather than an error:
+     * the host asks each plugin for each section it declared, and a plugin that has since stopped declaring
+     * one is simply not asked again.
+     *
+     * @param groupId the {@link ParameterGroup#id()} whose rows are wanted; never {@code null}, and
+     *                {@link ParameterGroup#DEFAULT_ID} for the default section
+     * @return the rows, in the order the window should list them within their categories
+     */
+    default List<ParameterRow> parameterRows(String groupId) {
+        return List.of();
+    }
+
+    /**
+     * A value the user changed — store it, and answer with the row as stored.
+     *
+     * <p>The answer is what the window then renders, so a plugin that clamps a number to its
+     * {@link com.botmaker.plugin.api.value.Range}, prunes a list to the options still on offer or spells a
+     * duration back out canonically reports all of it by answering a row that differs from the edit. A
+     * plugin that <b>refuses</b> the edit answers the row it still holds, and the control snaps back; a
+     * plugin that does not own the row, or the group, answers {@link Optional#empty()} and the host leaves
+     * the screen alone.
+     *
+     * <p><b>Persisting is the plugin's, and so is when.</b> The host has already told the user their edit
+     * landed by the time this returns, so writing a file on every keystroke is the plugin's problem to batch
+     * — nothing here promises a save point, and {@link #projectClosing()} is the one moment a plugin is told
+     * the project is going away.
+     *
+     * <p>Throwing is contained and reported, and the row on screen is then left as it was: an edit that
+     * cannot be stored must not be able to take the window down with it.
+     *
+     * @param edit the group, the name and the new stored text — see {@link ParameterEdit}
+     * @return the row as it now stands, or empty when this plugin does not own it
+     */
+    default Optional<ParameterRow> parameterEdited(ParameterEdit edit) {
+        return Optional.empty();
     }
 
     /**

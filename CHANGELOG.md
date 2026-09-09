@@ -19,6 +19,24 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **Parameter data — `StudioPlugin.parameterRows(String)` and `StudioPlugin.parameterEdited(ParameterEdit)`,
+  with `ParameterRow` and `ParameterEdit`.** The seventh contribution surface, and the first where a plugin
+  hands over *project data* rather than something it decided at build time. `ParameterGroup` already said
+  that a plugin declares the section and a user declares the values in it; what was missing was a way for
+  the values to reach the window without the host parsing one plugin's file. Both methods are `default` and
+  answer nothing, so a plugin compiled against an earlier release contributes no rows and is asked for
+  nothing.
+- **`ParameterRow`** — one row as its owner hands it over: a name, a `ValueChoice`, the stored
+  `List<String>`, a description, a category out of the group's declared set, a `Visibility`, the declared
+  options and a `Range`. Every component is vocabulary this module already owns, the value is text exactly
+  as `ValueCodec` stores it, and no `Class<?>` crosses. **A final class with a builder, not a record**: a
+  plugin constructs it, so a component added later would throw `NoSuchMethodError` in every plugin already
+  compiled (compatibility trap #2).
+- **`ParameterEdit`** — the group, the name and the new stored text, on the way back. **A record, and it may
+  grow**: the *host* constructs it and a plugin only reads it, which is the same call `Use` makes.
+  `parameterEdited` answers the row as stored, or `Optional.empty()` for a row it does not own — one return
+  type that carries a clamp, a normalisation and a refusal without the host modelling any of them.
+
 - **`ValueCatalog.forJava(Class<?>)` — a type is asked for by the Java class it is.** `forJava(Duration.class)`
   answers the `DURATION` registration; `forJava(String)` does the same from a type name. The id stays the
   persisted identity and stays what a project file holds; what changes is that nobody outside the plugin

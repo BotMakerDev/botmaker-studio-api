@@ -172,6 +172,45 @@ reach is the one the user has open and half-edited, and it does not parse.
 canonical constructor would take a `NoSuchMethodError` the day a component is added. That is why replacements
 are a `Map<String,String>` and not a `Replacement` record — see `docs/refactor/25-compatibility.md` §2.
 
+## Parameter data (2026-09-10) — the window is the host's, the file behind it is not
+
+`StudioPlugin.parameterRows(String groupId)` and `parameterEdited(ParameterEdit)`, with `ParameterRow` and
+`ParameterEdit` beside `ParameterGroup`. The seventh surface, and the first one where a plugin hands over
+**project data** rather than something it decided at build time.
+
+It exists because the Parameters window read one plugin's storage format itself. `ParameterGroup` had always
+said the right thing — a plugin declares the *section*, a user declares the values in it — and then the host
+parsed the values out of `activities.json`, a file that predates the plugin system. A second plugin could not
+have had parameters at all, and the host knew what a `tag`, a `visibility` and a stored duration were. So
+this is the same cut as `StudioServices.sources()`: the host keeps the window, the undo, the rendering and
+the ordering; the plugin keeps the file, the meaning of the text and when it is written.
+
+**Every component of a row is already vocabulary this module owns** — a name, a `ValueChoice`, a stored
+`List<String>`, a `Visibility`, a declared option set, a `Range`, a category out of
+`ParameterGroup.categories()`. Nothing plugin-specific crosses, no `Class<?>` crosses, and the value is
+**text**, exactly as it is through `ValueCodec`. That is rules 2 and 3 above, satisfied by not needing an
+exemption.
+
+**The pair is shaped as a class and a record on purpose, and it is the clearest example of compatibility
+trap #2 in the module.** A plugin *builds* a row, so `ParameterRow` is a final class with a builder — a
+record's canonical constructor is part of its binary signature and a component added later throws
+`NoSuchMethodError` in every plugin already compiled. The host *builds* an edit and a plugin only reads it,
+so `ParameterEdit` is a record and may grow a component safely. The trap is a ban on records a **plugin**
+constructs, not a ban on records; `Use` (host-constructed, above) is the same call made the same way.
+
+**`parameterEdited` answers the row as stored**, `Optional.empty()` for a row this plugin does not own. That
+one return type is what carries a clamp, a normalisation and a refusal without the host modelling any of
+them: the window renders what comes back, so a value pulled to its `Range` or a duration spelled canonically
+shows up by itself, and a plugin that will not accept the edit answers the row it still holds.
+
+**Asked, never pushed, and deliberately only these two verbs.** There is no listener, because a listener is a
+capability with a lifecycle — a registration, a thread, an unsubscribe — and the only thing it buys is a
+plugin's own dialog changing a value behind the window's back, which no plugin has yet. And there is no
+`kind` enum over adding, deleting, renaming or retyping a parameter: those need the *declaration* rather than
+the value, and retyping needs the editor's coercion rules. They arrive as their own methods when the window
+that performs them does. A record the host constructs can grow; guessing now buys nothing and freezes the
+guess.
+
 ## The three rules that are easy to break
 
 **1. Every method but `StudioPlugin.id()` is `default`, and stays that way.** A bot's source can be
