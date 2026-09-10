@@ -212,13 +212,26 @@ too. So the host names the project once per bind and the plugin reads its own fi
 expensive may happen in it** — a project open must not pay for a window nobody has looked at — which is the
 rule `AbstractStudioPlugin`'s four lazy builders already follow.
 
-**Asked, never pushed, and deliberately only these two verbs.** There is no listener, because a listener is a
-capability with a lifecycle — a registration, a thread, an unsubscribe — and the only thing it buys is a
-plugin's own dialog changing a value behind the window's back, which no plugin has yet. And there is no
-`kind` enum over adding, deleting, renaming or retyping a parameter: those need the *declaration* rather than
-the value, and retyping needs the editor's coercion rules. They arrive as their own methods when the window
-that performs them does. A record the host constructs can grow; guessing now buys nothing and freezes the
-guess.
+**Asked, never pushed.** There is no listener, because a listener is a capability with a lifecycle — a
+registration, a thread, an unsubscribe — and the only thing it buys is a plugin's own dialog changing a value
+behind the window's back, which no plugin has yet.
+
+**The declaration half is `parameterDeclared(ParameterDeclaration)`, and it is one method rather than nine.**
+Adding a parameter, deleting one, renaming it, retyping it, changing its choices, its range, its category,
+its note or who it is offered to are nine things a window does and one thing this says: *here is the row I
+want under this name*. The owner compares it with the row it holds and reconciles the difference by its own
+rules; the answer is the row as stored. That is why there is no `kind` enum and no verb: a verb would make
+the contract learn what retyping means, which is a rule about the plugin's own value types and differs
+between plugins, and an enum would freeze today's list of verbs into a surface only a major release may
+extend. **State the desired end value and let the owner reconcile it** is the shape to reach for whenever a
+surface looks like it needs a verb.
+
+Two consequences worth knowing. `Optional.empty()` covers a removal, a group the plugin does not own and a
+refusal alike — the host redraws the section from `parameterRows` after every declaration, so it never has to
+tell them apart, and a plugin wanting a refusal to be visible answers the row it kept. And a declaration says
+what the host *changed*: a component whose wanted value equals the one the row already had is the host
+carrying it along, not asking for it, which is what lets a retype reset the value the window is still showing
+while an undo restores an old type and its old value in one call.
 
 ## The three rules that are easy to break
 

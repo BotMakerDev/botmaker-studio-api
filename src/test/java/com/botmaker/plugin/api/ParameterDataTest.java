@@ -194,4 +194,45 @@ class ParameterDataTest {
         assertTrue(edit.changes(keys));
         assertEquals(List.of("F1", "F2", "F3"), keys.withValue(edit.value()).value());
     }
+
+    // ---- the declaration half ---------------------------------------------------------------------------
+
+    /** The three shapes a declaration comes in, and what each says without any verb attached to it. */
+    @Test
+    void aDeclarationIsAnAddARemovalOrARowAsWanted() {
+        ParameterRow wanted = row("rest").value("5s").build();
+
+        ParameterDeclaration added = ParameterDeclaration.added("discord", wanted);
+        assertTrue(added.isNew());
+        assertFalse(added.isRemoval());
+        assertEquals("", added.name(), "a row that does not exist yet has no handle");
+
+        ParameterDeclaration removed = ParameterDeclaration.removed("discord", "rest");
+        assertTrue(removed.isRemoval());
+        assertEquals("rest", removed.name());
+
+        ParameterDeclaration held = ParameterDeclaration.of("discord", wanted);
+        assertFalse(held.isNew());
+        assertFalse(held.isRemoval());
+        assertEquals("rest", held.name());
+    }
+
+    /** A rename is the one shape where the two names differ — which is why both are carried. */
+    @Test
+    void aRenameIsADeclarationWhoseTwoNamesDiffer() {
+        ParameterDeclaration rename =
+                new ParameterDeclaration("", "rest", row("restBetweenRuns").build());
+
+        assertEquals("rest", rename.name());
+        assertEquals("restBetweenRuns", rename.wanted().name());
+    }
+
+    @Test
+    void aDeclarationThatNamesNoRowAndWantsNoneSaysNothing() {
+        assertThrows(IllegalArgumentException.class, () -> new ParameterDeclaration("", " ", null));
+        assertThrows(IllegalArgumentException.class, () -> ParameterDeclaration.added("", null));
+        // A blank group is the default section, exactly as it is for an edit.
+        assertEquals(ParameterGroup.DEFAULT_ID,
+                ParameterDeclaration.removed(null, "rest").groupId());
+    }
 }

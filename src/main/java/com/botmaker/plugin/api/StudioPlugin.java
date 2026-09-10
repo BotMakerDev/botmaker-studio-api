@@ -205,6 +205,37 @@ public interface StudioPlugin {
     }
 
     /**
+     * A row the host wants this plugin's section to hold — store it, and answer with the row as stored.
+     *
+     * <p>This is the <em>declaration</em> half of the same window: adding a parameter, deleting one, renaming
+     * it, retyping it, changing its choices, its range, its category, its note or who it is offered to. It is
+     * one method rather than nine because what crosses is the row as wanted rather than the transition —
+     * see {@link ParameterDeclaration}, which is where that decision is written down.
+     *
+     * <p><b>The reconciliation is the plugin's, and so are the rules that are not expressible as a row.</b>
+     * A retype resets the value and drops the bounds; declared options survive a change of shape and not a
+     * change of base type; a value is clamped into a newly declared range. None of that is stated here,
+     * because each is a rule about what the plugin's own value types mean. The answer says what happened:
+     * a row that differs from the one asked for is the plugin reporting its own reconciliation, exactly as
+     * {@link #parameterEdited(ParameterEdit)} reports a clamp.
+     *
+     * <p><b>{@link Optional#empty()} means the row does not stand.</b> That covers three cases the host
+     * treats alike, because it redraws the section from {@link #parameterRows(String)} afterwards either
+     * way: a removal that happened, a declaration this plugin does not own, and one it refused — a name that
+     * is not an identifier, or one already taken in that section. A plugin that wants a refusal to be
+     * readable answers the row it still holds instead.
+     *
+     * <p>Persisting, and when, is the plugin's exactly as it is for an edit; throwing is contained and
+     * reported, with the section left as it was.
+     *
+     * @param declaration the section, the row's current name, and the row as the host wants it
+     * @return the row as it now stands, or empty when no row does
+     */
+    default Optional<ParameterRow> parameterDeclared(ParameterDeclaration declaration) {
+        return Optional.empty();
+    }
+
+    /**
      * The toolbar buttons this plugin contributes.
      *
      * <p>Data, not nodes — see {@link ToolbarItem} for why, and for the rule that the label is a supplier so

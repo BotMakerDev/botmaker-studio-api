@@ -19,6 +19,16 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **The declaration half — `StudioPlugin.parameterDeclared(ParameterDeclaration)`.** The host says *here is
+  the row I want under this name*, and the owner answers with the row as it stored it. That one call is
+  adding a parameter, deleting one, renaming it, retyping it, changing its declared choices, its range, its
+  category, its note or who it is offered to — nine things a window does, and no verb the contract has to
+  learn. A verb would have made this module know what retyping means, which is a rule about a plugin's own
+  value types; a `kind` enum would have frozen today's list of verbs. `ParameterDeclaration` is a record the
+  **host** constructs, so it may grow a component, exactly like `ParameterEdit` and `Sources.Use`.
+  `Optional.empty()` covers a removal, a group the plugin does not own and a refusal alike — the host redraws
+  the section from `parameterRows` afterwards either way.
+
 - **Parameter data — `StudioPlugin.parameterRows(String)` and `StudioPlugin.parameterEdited(ParameterEdit)`,
   with `ParameterRow` and `ParameterEdit`.** The seventh contribution surface, and the first where a plugin
   hands over *project data* rather than something it decided at build time. `ParameterGroup` already said
