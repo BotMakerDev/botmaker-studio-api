@@ -26,6 +26,14 @@ is allowed to make. Additions arrive as `default` methods.
   the values to reach the window without the host parsing one plugin's file. Both methods are `default` and
   answer nothing, so a plugin compiled against an earlier release contributes no rows and is asked for
   nothing.
+- **`StudioPlugin.projectOpened(StudioServices)`** — the mirror of `projectClosing()`, and what makes the
+  data surfaces answerable. `parameterRows` takes a group id and nothing else, deliberately: rows are asked
+  for every time a window is drawn, and a surface handed the host on every call would make every future one
+  take it too. So the host says *here is the project* once per bind, and the plugin reads its own file from
+  `projectDir()`/`resourcesDir()` when it is asked. A capability rather than a surface, for the reason
+  `projectClosing()` already gives from the other end: a plugin is constructed once and then serves whatever
+  is bound to it, so which project it has is the one fact it cannot establish for itself. `default`, and
+  nothing expensive belongs in it — a project open must not pay for a window nobody has looked at.
 - **`ParameterRow`** — one row as its owner hands it over: a name, a `ValueChoice`, the stored
   `List<String>`, a description, a category out of the group's declared set, a `Visibility`, the declared
   options and a `Range`. Every component is vocabulary this module already owns, the value is text exactly

@@ -39,8 +39,11 @@ import java.util.Optional;
  *       the toolbar and for the same reason — see {@link SourceSeed}.</li>
  * </ul>
  *
- * <p>{@link #projectClosing()} is not a seventh surface — it contributes nothing. It is the one thing a plugin
- * cannot find out for itself: that the project it opened an operating-system resource for is gone.
+ * <p>{@link #projectOpened(StudioServices)} and {@link #projectClosing()} are not surfaces — they contribute
+ * nothing. They are the two things a plugin cannot find out for itself: which project it is now serving, and
+ * that the project it opened an operating-system resource for is gone. The first is what lets a plugin
+ * answer {@link #parameterRows(String)} out of that project's own files, since a data surface takes no
+ * services argument.
  *
  * <p><b>Panels are deliberately not a surface.</b> A plugin contributes to the editor; it does not
  * contribute editors. The Activity Canvas and every other whole view stays the host's.
@@ -218,6 +221,39 @@ public interface StudioPlugin {
      */
     default List<ToolbarItem> toolbarItems() {
         return List.of();
+    }
+
+    /**
+     * A project has been bound to this plugin — this is which one.
+     *
+     * <p><b>The mirror of {@link #projectClosing()}, and a capability for the same reason.</b> Which project
+     * is open is the one fact a plugin cannot establish for itself: a plugin is constructed once by
+     * {@code ServiceLoader} and then serves whatever the host binds to it, so without being told it is
+     * holding a project it cannot name. Nothing else can supply it — a plugin polling for the answer would
+     * be guessing at a moment the host knows precisely, which is the argument {@code projectClosing()}
+     * already makes from the other end.
+     *
+     * <p><b>It is what makes the data surfaces answerable at all.</b> {@link #parameterRows(String)} takes a
+     * group id and nothing else, deliberately: rows are asked for every time a window is drawn, and a
+     * surface that had to be handed the host on each call would make every future one take it too. So the
+     * host says <em>here is the project</em> once per bind, and the plugin reads its own file from
+     * {@link StudioServices#projectDir()} or {@link StudioServices#resourcesDir()} whenever it is asked.
+     *
+     * <p>Called once per bind, <b>after</b> the outgoing project's plugins have been told it is closing, and
+     * again whenever a change to the project's libraries rebinds the set. A plugin that keeps the services
+     * should replace what it held rather than accumulate, since the instance is reused across projects.
+     *
+     * <p><b>Do nothing expensive here.</b> This runs while a project is opening, on the path the user is
+     * waiting on. Read the file when a surface is asked for, not now — the same rule that keeps
+     * {@code buildCatalog}/{@code buildValueTypes} lazy, and for the same reason: a plugin that parses a
+     * project on bind is a plugin every project open pays for whether or not anything reads the result.
+     *
+     * <p>Throwing is contained and reported, and the project still opens: a plugin must not be able to
+     * prevent one from being bound.
+     *
+     * @param services the open project's paths, theme, dialogs and run channel; never {@code null}
+     */
+    default void projectOpened(StudioServices services) {
     }
 
     /**

@@ -203,6 +203,15 @@ one return type is what carries a clamp, a normalisation and a refusal without t
 them: the window renders what comes back, so a value pulled to its `Range` or a duration spelled canonically
 shows up by itself, and a plugin that will not accept the edit answers the row it still holds.
 
+**`projectOpened(StudioServices)` arrived with it (2026-09-10) and is not a surface** — it is
+`projectClosing()`'s mirror, and the same kind of fact: a plugin is constructed once by `ServiceLoader` and
+then serves whatever the host binds, so *which* project it has is something only the host can tell it. It is
+here because a data surface takes a group id and nothing else. That was a choice: rows are asked for every
+time a window is drawn, and threading the host through each call would put it in every future data surface
+too. So the host names the project once per bind and the plugin reads its own file when asked. **Nothing
+expensive may happen in it** — a project open must not pay for a window nobody has looked at — which is the
+rule `AbstractStudioPlugin`'s four lazy builders already follow.
+
 **Asked, never pushed, and deliberately only these two verbs.** There is no listener, because a listener is a
 capability with a lifecycle — a registration, a thread, an unsubscribe — and the only thing it buys is a
 plugin's own dialog changing a value behind the window's back, which no plugin has yet. And there is no

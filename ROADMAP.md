@@ -5,6 +5,30 @@ reasoning.
 
 ## Done
 
+### 2026-09-10 (later) — `projectOpened`, the half the surface could not work without
+
+`StudioPlugin.projectOpened(StudioServices)`, `default` and no-op, called once per bind before the incoming
+plugins are asked for anything. Phase 6 of `settings-becomes-a-plugin.md` found the hole the moment the SDK
+plugin tried to answer `parameterRows`: **it had no way to know which project it was serving.**
+`StudioServices` reaches a plugin only through a `SlotContext` or an `ActionContext` — that is, only when a
+user is already editing something — and a row list is asked for before any of that. `SdkPlugin` had the
+symptom written down already, in the javadoc of its toolbar items: *"constructed with no `StudioServices`,
+so a label supplier here has no project to read one out of"*.
+
+**Two shapes were possible and the choice is the interesting part.** Threading the services through each
+call (`parameterRows(services, groupId)`) is local and needs no lifecycle — and it puts the host in the
+signature of every data surface that follows, forever, for a fact that changes once per project rather than
+once per call. The lifecycle pair is the other answer, and it is the one the contract already reaches for:
+`projectClosing()` exists precisely because a plugin cannot learn that its project is gone, and *which
+project it now has* is the same fact from the other end. So it is the mirror method, with the mirror rules —
+total (a plugin that throws does not stop the next one or the project), reused instance (replace what is
+held, never accumulate), and **nothing expensive**, because this runs on the path a user is waiting on.
+
+`PluginHost.bind` grew a `StudioServices` argument and calls it from `swap`, after the outgoing set has been
+told the old project is closing — one plugin may serve both, and being handed the new project while it still
+believes it holds the old is how a release runs against the wrong paths. Nobody is told on `unbind`: there is
+no project to name, and `projectClosing()` has already said it is over.
+
 ### 2026-09-10 — parameter data: the seventh contribution surface
 
 `StudioPlugin.parameterRows(String groupId)` and `StudioPlugin.parameterEdited(ParameterEdit)`, plus
