@@ -19,6 +19,14 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- `ToolbarGroup.OVERLAY` — the overlay editor's own item row. A plugin contributes to it through the
+  `toolbarItems()` it already has; the host filters by group, so there is no second surface.
+- `ActionContext.overWindowTitle()`, `overBounds()` and `insertAtCursor(String...)`, all `default`. The only
+  host facts an overlay action cannot get for itself: which window the HUD is drawn over, where it is, and the
+  editor's insertion cursor. `insertAtCursor` closes the loss recorded when the macro recorder became a
+  plugin — recorded actions could no longer land at the overlay's cursor.
+- `ActionContext.Area` — four ints, for `overBounds()`.
+
 - **The declaration half — `StudioPlugin.parameterDeclared(ParameterDeclaration)`.** The host says *here is
   the row I want under this name*, and the owner answers with the row as it stored it. That one call is
   adding a parameter, deleting one, renaming it, retyping it, changing its declared choices, its range, its

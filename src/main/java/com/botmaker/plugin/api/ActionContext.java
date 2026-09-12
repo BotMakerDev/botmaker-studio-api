@@ -55,4 +55,48 @@ public interface ActionContext {
 
     /** The host capabilities — capture, dialogs, theme. The same object a slot editor is given. */
     StudioServices services();
+
+    /** Where something sits on screen, in screen pixels. */
+    record Area(int x, int y, int width, int height) {}
+
+    /**
+     * The window title the host's overlay editor is currently drawn over, or empty when no overlay is open.
+     *
+     * <p><b>Empty is the ordinary answer</b>, because every item on the main toolbar is clicked with no
+     * overlay up. Read it the way {@link #openProjectName()} is read.
+     *
+     * <p>It passes this interface's own host-only test, and not obviously. A plugin <em>can</em> enumerate
+     * every window on this machine for itself — {@code botmaker-shared} is published. What it cannot know is
+     * <em>which one Studio chose to draw its own HUD over</em>, which is a fact about the host's surface
+     * rather than about the desktop: the same category as which project is open.
+     */
+    default Optional<String> overWindowTitle() {
+        return Optional.empty();
+    }
+
+    /**
+     * Where that window sits right now, or empty when no overlay is open.
+     *
+     * <p>Asked at click time rather than carried, because a user drags and resizes the thing the overlay is
+     * drawn over while the overlay is up.
+     */
+    default Optional<Area> overBounds() {
+        return Optional.empty();
+    }
+
+    /**
+     * Append Java source at the overlay editor's insertion cursor.
+     *
+     * <p>A no-op when no overlay is open, which is the same shape as every member above: an item pressed
+     * where its subject does not exist does nothing rather than throwing.
+     *
+     * <p>Java source text crosses and no type is named, exactly as {@link Sources#replace} and
+     * {@code SlotContext.replaceEnclosingCall} already do. The cursor itself is host state by construction —
+     * it is a position in the file the editor has open.
+     *
+     * @param statements whole statements, each ending in its own semicolon; the host places them in order at
+     *                   the cursor and leaves the cursor after the last one
+     */
+    default void insertAtCursor(String... statements) {
+    }
 }

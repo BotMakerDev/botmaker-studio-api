@@ -37,6 +37,20 @@ public enum ToolbarGroup {
     TOOLS,
 
     /**
+     * The overlay editor's own row — actions whose subject is the window the HUD is drawn over.
+     *
+     * <p>Separate from {@link #TOOLS}, which is where the instruments are <em>opened</em> from. This is what
+     * is offered once one is open and a user is looking at the running target rather than at the code: point
+     * the bot at this window, cut a picture out of it, drop a recorded click into the program. An item here is
+     * drawn by {@code ProgramShapeOverlay} and never appears on the main bar.
+     *
+     * <p>It is the one group whose items are handed a context that answers
+     * {@link ActionContext#overWindowTitle()} — which is the whole reason it is a group of its own rather
+     * than an order within {@link #TOOLS}.
+     */
+    OVERLAY,
+
+    /**
      * The host's own items, and <b>a plugin may not claim it</b>.
      *
      * <p>Reserved for what belongs to Studio as an editor rather than to any bot: the things that would still
