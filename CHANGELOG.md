@@ -15,7 +15,7 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
-## [Unreleased]
+## [0.1.0] — 2026-09-16
 
 ### Added
 

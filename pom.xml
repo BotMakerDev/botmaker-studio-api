@@ -47,7 +47,7 @@
              so the automation's never-move-backwards rule would have frozen it there.
              Offline builds that have never fetched the baseline pass -Dbotmaker.japicmp.skip=true, which
              also deactivates the api-gate profile below. -->
-        <botmaker.japicmp.baseline>v0.0.3</botmaker.japicmp.baseline>
+        <botmaker.japicmp.baseline>v0.0.4</botmaker.japicmp.baseline>
         <botmaker.japicmp.skip>false</botmaker.japicmp.skip>
     </properties>
 
