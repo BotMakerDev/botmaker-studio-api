@@ -15,6 +15,22 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Added
+
+- **`ValueCodec.wireOfLiteral(String)`**, `default` and declining by default — `literal` read backwards.
+  A user parameter is a field in the bot's own Java now (`@Param` in `botmaker-plugin-basics`), so its
+  value *is* that field's initialiser: an editor that can write one but not read one can only offer to
+  overwrite. `literal` writes the parsed value structurally (`java.time.Duration.ofMillis(3000L)`,
+  `new java.awt.Color(255, 0, 0)`) so a bot cannot throw while starting, and nothing but the codec can undo
+  that spelling. Empty means *not recognised*, and the host then shows the source read-only rather than
+  guessing — which is also the right answer for a hand-written initialiser no plugin would emit.
+  The round trip is the contract: `wireOfLiteral(literal(parse(wire)))` equals `store(parse(wire))`.
+- **`ValueCatalog.valueOfInitializer(ValueChoice, String)`** — the shape-aware composition of it, mirroring
+  `initializer` in the other direction. A `java.util.List.of(…)` source answers one wire per item, and an
+  item the codec declines makes the whole answer empty: half a list is not a value.
+
 ## [0.1.0] — 2026-09-16
 
 ### Added

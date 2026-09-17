@@ -71,4 +71,32 @@ public interface ValueCodec<T> {
      * {@link ValueType#importName()}, in which case the simple name is used and the import is arranged.
      */
     String literal(T value);
+
+    /**
+     * The stored text a piece of Java source came from — {@link #literal} read backwards.
+     *
+     * <p><b>Why this exists</b> (2026-09-17): a user parameter is a field in the bot's own Java now
+     * ({@code @Param}), so its value <em>is</em> that field's initialiser, and an editor that can write one
+     * but not read one can only ever offer to overwrite. {@code literal} writes the parsed value
+     * structurally — {@code java.time.Duration.ofMillis(3000L)}, {@code new java.awt.Color(255, 0, 0)} —
+     * precisely so a bot cannot throw while starting, and nothing about those spellings can be undone
+     * without knowing the type. Only the codec knows.
+     *
+     * <p><b>Empty means "I do not recognise this"</b>, and the host shows the source text read-only rather
+     * than guessing. That is the honest answer for a hand-written initialiser the plugin never emits — a
+     * method call, an expression over another field, a constant from elsewhere — and it keeps the value the
+     * author wrote instead of replacing it with a default.
+     *
+     * <p><b>Total, and the round trip is the contract</b>: for every {@code wire} this type can store,
+     * {@code wireOfLiteral(literal(parse(wire)))} answers {@code store(parse(wire))}. Whitespace is the
+     * host's to normalise, not this method's: the source arrives as written, and an implementation that
+     * cares should be tolerant rather than exact. Never throws — an unparseable argument is not a
+     * recognised literal, which is the empty answer.
+     *
+     * <p>The default declines, so a plugin that never wanted its type edited from Java is unaffected and a
+     * plugin written before this method existed still compiles and still loads.
+     */
+    default java.util.Optional<String> wireOfLiteral(String javaSource) {
+        return java.util.Optional.empty();
+    }
 }

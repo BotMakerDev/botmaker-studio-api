@@ -221,6 +221,84 @@ public final class ValueCatalog {
     }
 
     /**
+     * {@link #initializer} read backwards: the stored value a field's initialiser came from, or empty.
+     *
+     * <p>The shape is composed here and the item is the codec's, exactly as on the way out — so
+     * {@code java.util.List.of(a, b)} answers two items for a list-shaped choice, and a codec is written
+     * once for both shapes. An item the codec does not recognise makes the <em>whole</em> answer empty:
+     * half a list is not a value, and the host must show the source it cannot read rather than a partial
+     * reading of it.
+     *
+     * <p>Empty for an unknown type, for a list-shaped choice whose source is not a {@code List.of(…)} call,
+     * and for anything the codec declines. The host then shows the initialiser as written, read-only.
+     */
+    public Optional<List<String>> valueOfInitializer(ValueChoice choice, String initializer) {
+        if (choice == null || initializer == null) return Optional.empty();
+        Optional<ValueCodec<?>> found = codec(choice.type().id());
+        if (found.isEmpty()) return Optional.empty();
+        ValueCodec<?> codec = found.get();
+        String source = initializer.strip();
+        if (!choice.isList()) {
+            return codec.wireOfLiteral(source).map(List::of);
+        }
+        Optional<List<String>> items = listItems(source);
+        if (items.isEmpty()) return Optional.empty();
+        List<String> wires = new java.util.ArrayList<>(items.get().size());
+        for (String item : items.get()) {
+            Optional<String> wire = codec.wireOfLiteral(item);
+            if (wire.isEmpty()) return Optional.empty();
+            wires.add(wire.get());
+        }
+        return Optional.of(List.copyOf(wires));
+    }
+
+    /**
+     * The arguments of a {@code List.of(…)} call, or empty when the source is not one.
+     *
+     * <p>Split on the commas at depth zero rather than with a parser: this method sees what
+     * {@link #initializer} wrote, which is one literal per item, and the host has a real Java parser for
+     * anything else. Brackets and quotes are tracked so a literal containing a comma — a string, a
+     * {@code Color(255, 0, 0)} — is one item; an unbalanced source answers empty rather than a wrong split.
+     */
+    private static Optional<List<String>> listItems(String source) {
+        String prefix = "java.util.List.of(";
+        String shortPrefix = "List.of(";
+        String inner;
+        if (source.startsWith(prefix) && source.endsWith(")")) {
+            inner = source.substring(prefix.length(), source.length() - 1);
+        } else if (source.startsWith(shortPrefix) && source.endsWith(")")) {
+            inner = source.substring(shortPrefix.length(), source.length() - 1);
+        } else {
+            return Optional.empty();
+        }
+        if (inner.isBlank()) return Optional.of(List.of());
+
+        List<String> items = new java.util.ArrayList<>();
+        StringBuilder item = new StringBuilder();
+        int depth = 0;
+        boolean inString = false;
+        boolean inChar = false;
+        for (int i = 0; i < inner.length(); i++) {
+            char c = inner.charAt(i);
+            boolean escaped = i > 0 && inner.charAt(i - 1) == '\\';
+            if (c == '"' && !inChar && !escaped) inString = !inString;
+            else if (c == '\'' && !inString && !escaped) inChar = !inChar;
+            else if (!inString && !inChar && (c == '(' || c == '[' || c == '{')) depth++;
+            else if (!inString && !inChar && (c == ')' || c == ']' || c == '}')) depth--;
+            else if (!inString && !inChar && c == ',' && depth == 0) {
+                items.add(item.toString().strip());
+                item.setLength(0);
+                continue;
+            }
+            if (depth < 0) return Optional.empty();
+            item.append(c);
+        }
+        if (depth != 0 || inString || inChar) return Optional.empty();
+        items.add(item.toString().strip());
+        return Optional.of(List.copyOf(items));
+    }
+
+    /**
      * The classes a field of this type has to import — empty for a primitive, a JDK type written fully
      * qualified, or an unknown type.
      */
