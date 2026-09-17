@@ -195,44 +195,8 @@ class ParameterDataTest {
         assertEquals(List.of("F1", "F2", "F3"), keys.withValue(edit.value()).value());
     }
 
-    // ---- the declaration half ---------------------------------------------------------------------------
-
-    /** The three shapes a declaration comes in, and what each says without any verb attached to it. */
-    @Test
-    void aDeclarationIsAnAddARemovalOrARowAsWanted() {
-        ParameterRow wanted = row("rest").value("5s").build();
-
-        ParameterDeclaration added = ParameterDeclaration.added("discord", wanted);
-        assertTrue(added.isNew());
-        assertFalse(added.isRemoval());
-        assertEquals("", added.name(), "a row that does not exist yet has no handle");
-
-        ParameterDeclaration removed = ParameterDeclaration.removed("discord", "rest");
-        assertTrue(removed.isRemoval());
-        assertEquals("rest", removed.name());
-
-        ParameterDeclaration held = ParameterDeclaration.of("discord", wanted);
-        assertFalse(held.isNew());
-        assertFalse(held.isRemoval());
-        assertEquals("rest", held.name());
-    }
-
-    /** A rename is the one shape where the two names differ — which is why both are carried. */
-    @Test
-    void aRenameIsADeclarationWhoseTwoNamesDiffer() {
-        ParameterDeclaration rename =
-                new ParameterDeclaration("", "rest", row("restBetweenRuns").build());
-
-        assertEquals("rest", rename.name());
-        assertEquals("restBetweenRuns", rename.wanted().name());
-    }
-
-    @Test
-    void aDeclarationThatNamesNoRowAndWantsNoneSaysNothing() {
-        assertThrows(IllegalArgumentException.class, () -> new ParameterDeclaration("", " ", null));
-        assertThrows(IllegalArgumentException.class, () -> ParameterDeclaration.added("", null));
-        // A blank group is the default section, exactly as it is for an edit.
-        assertEquals(ParameterGroup.DEFAULT_ID,
-                ParameterDeclaration.removed(null, "rest").groupId());
-    }
+    // The declaration half stood here until 2026-09-17: ParameterDeclaration, and the three shapes it came
+    // in. A user parameter is a @Param field in the bot's own Java now and the host edits it off the syntax
+    // tree, so the only declaration left is the plugin's own — made in the plugin's own code, where it needs
+    // no wire form. What crosses is still a row and still a value edit; what no longer crosses is a verb.
 }

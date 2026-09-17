@@ -204,36 +204,13 @@ public interface StudioPlugin {
         return Optional.empty();
     }
 
-    /**
-     * A row the host wants this plugin's section to hold — store it, and answer with the row as stored.
-     *
-     * <p>This is the <em>declaration</em> half of the same window: adding a parameter, deleting one, renaming
-     * it, retyping it, changing its choices, its range, its category, its note or who it is offered to. It is
-     * one method rather than nine because what crosses is the row as wanted rather than the transition —
-     * see {@link ParameterDeclaration}, which is where that decision is written down.
-     *
-     * <p><b>The reconciliation is the plugin's, and so are the rules that are not expressible as a row.</b>
-     * A retype resets the value and drops the bounds; declared options survive a change of shape and not a
-     * change of base type; a value is clamped into a newly declared range. None of that is stated here,
-     * because each is a rule about what the plugin's own value types mean. The answer says what happened:
-     * a row that differs from the one asked for is the plugin reporting its own reconciliation, exactly as
-     * {@link #parameterEdited(ParameterEdit)} reports a clamp.
-     *
-     * <p><b>{@link Optional#empty()} means the row does not stand.</b> That covers three cases the host
-     * treats alike, because it redraws the section from {@link #parameterRows(String)} afterwards either
-     * way: a removal that happened, a declaration this plugin does not own, and one it refused — a name that
-     * is not an identifier, or one already taken in that section. A plugin that wants a refusal to be
-     * readable answers the row it still holds instead.
-     *
-     * <p>Persisting, and when, is the plugin's exactly as it is for an edit; throwing is contained and
-     * reported, with the section left as it was.
-     *
-     * @param declaration the section, the row's current name, and the row as the host wants it
-     * @return the row as it now stands, or empty when no row does
-     */
-    default Optional<ParameterRow> parameterDeclared(ParameterDeclaration declaration) {
-        return Optional.empty();
-    }
+    // parameterDeclared(ParameterDeclaration) stood here from 2026-09-10 to 2026-09-17: the declaration half
+    // of the parameters window, one call carrying the row as wanted rather than a verb. It is gone with the
+    // record it took, because a *user* parameter is no longer a row a plugin stores — it is a @Param field in
+    // the bot's own Java, and the host declares it by editing the syntax tree. What a plugin still owns is
+    // its own rows (an activity's enable flag, a capture target), and those it declares in its own code,
+    // where a wire form for "here is the row I want" buys nothing. The host reads them through
+    // parameterRows(String) and changes a value through parameterEdited(ParameterEdit), which are unchanged.
 
     /**
      * The toolbar buttons this plugin contributes.

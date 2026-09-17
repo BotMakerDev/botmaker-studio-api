@@ -216,22 +216,19 @@ rule `AbstractStudioPlugin`'s four lazy builders already follow.
 registration, a thread, an unsubscribe — and the only thing it buys is a plugin's own dialog changing a value
 behind the window's back, which no plugin has yet.
 
-**The declaration half is `parameterDeclared(ParameterDeclaration)`, and it is one method rather than nine.**
-Adding a parameter, deleting one, renaming it, retyping it, changing its choices, its range, its category,
-its note or who it is offered to are nine things a window does and one thing this says: *here is the row I
-want under this name*. The owner compares it with the row it holds and reconciles the difference by its own
-rules; the answer is the row as stored. That is why there is no `kind` enum and no verb: a verb would make
-the contract learn what retyping means, which is a rule about the plugin's own value types and differs
-between plugins, and an enum would freeze today's list of verbs into a surface only a major release may
-extend. **State the desired end value and let the owner reconcile it** is the shape to reach for whenever a
-surface looks like it needs a verb.
+**There is no declaration half any more (2026-09-17).** `parameterDeclared(ParameterDeclaration)` and its
+record are deleted: a *user* parameter is a `@Param` static field in the bot's own Java, and the host adds,
+renames, retypes, refiles and removes one by editing the syntax tree. A plugin's rows are the plugin's own —
+an activity's enable flag, a capture target — and a plugin declares those in its own code, where a wire form
+for *here is the row I want* buys nothing. What is left of the surface is `parameterRows(String)` and
+`parameterEdited(ParameterEdit)`: read the rows, change a value.
 
-Two consequences worth knowing. `Optional.empty()` covers a removal, a group the plugin does not own and a
-refusal alike — the host redraws the section from `parameterRows` after every declaration, so it never has to
-tell them apart, and a plugin wanting a refusal to be visible answers the row it kept. And a declaration says
-what the host *changed*: a component whose wanted value equals the one the row already had is the host
-carrying it along, not asking for it, which is what lets a retype reset the value the window is still showing
-while an undo restores an old type and its old value in one call.
+**The rule the deleted method was an instance of still stands**: state the desired end value and let the
+owner reconcile it, rather than adding a verb. A verb would have made the contract learn what retyping means,
+which is a rule about a plugin's own value types; an enum of verbs would have frozen today's list into a
+surface only a major release may extend. Reach for it whenever a surface looks like it needs a verb —
+`parameterEdited` is the one that remains, and its answer is the row *as stored*, which is how a clamp, a
+canonical spelling or a pruned value reports itself.
 
 ## The three rules that are easy to break
 

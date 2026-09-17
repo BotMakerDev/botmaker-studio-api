@@ -31,6 +31,20 @@ is allowed to make. Additions arrive as `default` methods.
   `initializer` in the other direction. A `java.util.List.of(…)` source answers one wire per item, and an
   item the codec declines makes the whole answer empty: half a list is not a value.
 
+### Removed
+
+- **`StudioPlugin.parameterDeclared(ParameterDeclaration)` and the `ParameterDeclaration` record.** They
+  shipped on 2026-09-10 and are gone eight days later, for the reason they existed: a user parameter is not
+  a row a plugin stores any more, it is a `@Param` static field in the bot's own Java, and the host adds,
+  renames, retypes, refiles and removes one by editing the syntax tree. A plugin's rows are the plugin's own
+  — an activity's enable flag, a capture target — and a plugin declares those in its own code, where a wire
+  form for *here is the row I want* buys nothing. `parameterRows(String)`, `parameterEdited(ParameterEdit)`,
+  `ParameterRow`, `ParameterEdit` and `ParameterGroup` are unchanged: read the rows, change a value.
+- **This is a breaking change**, and it is allowed here only because there are no third-party plugins yet
+  (umbrella `CLAUDE.md`, *Compatibility §2 is suspended*). A plugin that overrode the method fails to
+  compile, which is the honest outcome — a `default` kept as a courtesy would have been a surface the host
+  no longer calls, and a plugin writing user parameters nobody reads.
+
 ## [0.1.0] — 2026-09-16
 
 ### Added
