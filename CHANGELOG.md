@@ -15,6 +15,40 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+No source changes since v0.1.2; re-released for updated upstream pins.
+
+No source changes since v0.1.1; re-released for updated upstream pins.
+
+### Added
+
+- **`ValueCodec.wireOfLiteral(String)`**, `default` and declining by default — `literal` read backwards.
+  A user parameter is a field in the bot's own Java now (`@Param` in `botmaker-plugin-basics`), so its
+  value *is* that field's initialiser: an editor that can write one but not read one can only offer to
+  overwrite. `literal` writes the parsed value structurally (`java.time.Duration.ofMillis(3000L)`,
+  `new java.awt.Color(255, 0, 0)`) so a bot cannot throw while starting, and nothing but the codec can undo
+  that spelling. Empty means *not recognised*, and the host then shows the source read-only rather than
+  guessing — which is also the right answer for a hand-written initialiser no plugin would emit.
+  The round trip is the contract: `wireOfLiteral(literal(parse(wire)))` equals `store(parse(wire))`.
+- **`ValueCatalog.valueOfInitializer(ValueChoice, String)`** — the shape-aware composition of it, mirroring
+  `initializer` in the other direction. A `java.util.List.of(…)` source answers one wire per item, and an
+  item the codec declines makes the whole answer empty: half a list is not a value.
+
+### Removed
+
+- **`StudioPlugin.parameterDeclared(ParameterDeclaration)` and the `ParameterDeclaration` record.** They
+  shipped on 2026-09-10 and are gone eight days later, for the reason they existed: a user parameter is not
+  a row a plugin stores any more, it is a `@Param` static field in the bot's own Java, and the host adds,
+  renames, retypes, refiles and removes one by editing the syntax tree. A plugin's rows are the plugin's own
+  — an activity's enable flag, a capture target — and a plugin declares those in its own code, where a wire
+  form for *here is the row I want* buys nothing. `parameterRows(String)`, `parameterEdited(ParameterEdit)`,
+  `ParameterRow`, `ParameterEdit` and `ParameterGroup` are unchanged: read the rows, change a value.
+- **This is a breaking change**, and it is allowed here only because there are no third-party plugins yet
+  (umbrella `CLAUDE.md`, *Compatibility §2 is suspended*). A plugin that overrode the method fails to
+  compile, which is the honest outcome — a `default` kept as a courtesy would have been a surface the host
+  no longer calls, and a plugin writing user parameters nobody reads.
+
 ## [0.1.2] — 2026-09-18
 
 No source changes since v0.1.1; re-released for updated upstream pins.
