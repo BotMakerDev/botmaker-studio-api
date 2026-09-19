@@ -115,6 +115,18 @@ public interface StudioPlugin {
     }
 
     /**
+     * The fields this plugin maintains through its own window, which the host shows but does not let its
+     * code canvas edit — see {@link ManagedField}.
+     *
+     * <p>Read once per project bind, like the toolbar. A plugin that throws here costs only its own entries.
+     * {@code default} for the reason every method here but {@code id()} is: an older plugin manages nothing,
+     * and every field stays exactly as editable as it was.
+     */
+    default List<ManagedField> managedFields() {
+        return List.of();
+    }
+
+    /**
      * The value types this plugin registers, with the codec that says what each one's stored text means.
      *
      * <p>This is the surface that makes the vocabulary <b>open</b>. It was a closed enum in the SDK until

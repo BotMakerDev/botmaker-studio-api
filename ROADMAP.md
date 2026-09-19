@@ -5,6 +5,19 @@ reasoning.
 
 ## Done
 
+### 2026-09-19 — a plugin can say which constants are its window's
+
+`StudioPlugin.managedFields()` and `ManagedField(typeName, reason)`, `default` and empty. A plugin names a
+field **type**; the host matches a `static final` field of that type, draws it with the plugin's
+`SlotEditor.preview` and refuses a canvas edit with the plugin's sentence, and refuses a class holding
+nothing else whole.
+
+It is a **capability, not a vocabulary**, which is the test this surface has to pass: the host learns that
+some constants are maintained elsewhere, and nothing about what a picture is. The alternative considered and
+rejected was a path rule in Studio naming `Pictures.java` — the maintainer's objection is the rule itself, that
+an `ImageTemplate` constant is the SDK plugin's concept and the host may not know it. Data crosses as text (a
+type name, a sentence); no plugin code runs while a file is drawn.
+
 ### 2026-09-10 (later) — `projectOpened`, the half the surface could not work without
 
 `StudioPlugin.projectOpened(StudioServices)`, `default` and no-op, called once per bind before the incoming

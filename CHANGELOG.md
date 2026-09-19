@@ -15,6 +15,17 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Added
+
+- **`StudioPlugin.managedFields()` and `ManagedField`** — a plugin says which `static final` constants it
+  keeps in step through its own window (its type, and the sentence to show instead). The host draws them,
+  gives their value the plugin's `SlotEditor.preview`, and refuses a canvas edit; a class holding nothing but
+  such constants is refused whole. It is what lets a picture class be read-only without the host knowing what
+  a picture is. A `default` returning nothing, so an older plugin manages nothing and every field stays as
+  editable as it was.
+
 ## [0.1.3] — 2026-09-19
 
 No source changes since v0.1.2; re-released for updated upstream pins.
