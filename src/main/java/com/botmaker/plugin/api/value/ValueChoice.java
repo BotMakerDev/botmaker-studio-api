@@ -44,6 +44,21 @@ public record ValueChoice(ValueType type, ValueShape shape) {
         return shape.hasOptions();
     }
 
+    /**
+     * This pair as a {@link ValueForm}.
+     *
+     * <p>The other half of the bridge, and the lossless half: a {@code ValueChoice} is exactly a
+     * {@link ValueForm.Leaf} or a {@code List} of one, so nothing it can say is dropped. What does not
+     * survive is {@link #hasOptions()}, which is not a property of a type and is asked of the declaration
+     * instead — {@code @Param(options = …)}, {@code ParameterRow.options()}, {@code ValueType.options()}.
+     *
+     * <p>Both directions exist so forms can arrive one caller at a time. Both are deleted with this record.
+     */
+    public ValueForm form() {
+        ValueForm leaf = new ValueForm.Leaf(type);
+        return isList() ? ValueForm.listOf(leaf) : leaf;
+    }
+
     /** What the user is shown — "Point", "One of Point", "Many of Point", or "List of Point". */
     public String label() {
         return shape.prefix() + type.label();

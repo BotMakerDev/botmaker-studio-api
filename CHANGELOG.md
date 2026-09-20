@@ -21,6 +21,14 @@ No source changes since v0.1.4; re-released for updated upstream pins.
 
 ### Added
 
+- **`ValueForm`** — the type of a value as a tree: a catalogued `Leaf`, an `Of` over a host `Container`
+  (`List`, `Map`), or a `Declared` class the bot itself writes. Nested to any depth, so a field declared
+  `Map<String, List<Point>>` is something the vocabulary can now say at all. `ValueChoice.form()` and
+  `ValueForm.asChoice(boolean)` bridge the two while callers move across; the bridge is lossless out of a
+  choice and answers the unknown type for anything a choice cannot express, which is the state that already
+  means *displayed, never rewritten*. Nothing changes behaviour yet. Design:
+  `docs/refactor/32-generic-values.md`.
+
 - **`StudioPlugin.managedFields()` and `ManagedField`** — a plugin says which `static final` constants it
   keeps in step through its own window (its type, and the sentence to show instead). The host draws them,
   gives their value the plugin's `SlotEditor.preview`, and refuses a canvas edit; a class holding nothing but

@@ -16,9 +16,15 @@ one artifact (`javafx-controls`, `provided`).
   `MemberId`, and the package-private `SourceOrder`. The *result* type:
   `PaletteCatalog.of(Class<?>...)` builds it by reflection. `CatalogBuilder`, `MemberRef` and the arity
   shapes `M0`–`M5` were deleted on 2026-08-27 — see *The catalog* below.
-- `com.botmaker.plugin.api.value` — the **value vocabulary**: `ValueType`, `ValueShape`, `ValueChoice`,
-  `Visibility`, `Range`, `ValueCodec` and `ValueCatalog`. What a bot's *variable* can be, which is a question
-  the contract answers so a plugin can own a type without the SDK granting it one.
+- `com.botmaker.plugin.api.value` — the **value vocabulary**: `ValueType`, `ValueForm`, `ValueShape`,
+  `ValueChoice`, `Visibility`, `Range`, `ValueCodec` and `ValueCatalog`. What a bot's *variable* can be, which
+  is a question the contract answers so a plugin can own a type without the SDK granting it one.
+  **`ValueForm` is replacing the `ValueShape`/`ValueChoice` pair** (`../docs/refactor/32-generic-values.md`):
+  a type is a tree — a catalogued leaf, a `List`/`Map` over other forms, or a class the bot declares — so
+  `Map<String, List<Point>>` is sayable and a shape stops encoding a widget choice inside a type. The two
+  live side by side behind `ValueChoice.form()`/`ValueForm.asChoice(boolean)` only until every caller has
+  moved; **write new code against `ValueForm`**. The containers are sealed into the host's vocabulary and a
+  plugin still contributes **leaves** through `ValueCatalog`.
 - `com.botmaker.plugin.api.palette` — **`@Palette`**, **`@Hidden`**, `@PaletteLabel`, `@PaletteDefault`: the
   marks a plugin puts on its own classes, read **at runtime by `PaletteCatalog.of`**. All four are
   `RUNTIME` since 2026-08-27, because the plugin itself reflects on them. Their elements are plain `String`s
