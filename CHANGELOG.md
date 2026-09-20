@@ -21,6 +21,12 @@ No source changes since v0.1.4; re-released for updated upstream pins.
 
 ### Added
 
+- **`ManagedValue(String id, String reason)` and `StudioPlugin.managedValues()`** — which of a plugin's
+  values the code canvas may not edit, and the sentence to show when it refuses. A plugin declares the ids
+  it answers to; the bot's own Java carries them on a `@Managed("id")` method or class
+  (`com.botmaker.plugin.basics.managed.Managed`), and the host matches the two without knowing what either
+  means. These are also the ids `PluginValues.open` will answer for.
+
 - **`PluginValues`, off `StudioServices.pluginValues()`, and `PluginSource`** — a plugin's own values, kept
   as **compiled Java in the bot's own source** instead of JSON. The plugin ships one file
   (`StudioPlugin.pluginSources()`), the host copies it into the project once when the plugin is added, and
@@ -107,6 +113,12 @@ No source changes since v0.1.4; re-released for updated upstream pins.
   editable as it was.
 
 ### Removed
+
+- **`ManagedField` and `StudioPlugin.managedFields()`**, replaced by `ManagedValue` above. A managed field
+  claimed every `static final` field whose declared *type* matched, which cannot tell two same-typed classes
+  apart, and the host inferred from it that a class of nothing but such constants was managed whole. Both
+  were guesses about shape: a bot keeping one picture beside ordinary code was locked out of it, and a
+  second class of pictures could not be told from the first. An annotation is a statement.
 
 - **`ValueChoice` and `ValueShape`.** A choice was a `ValueType` plus a four-constant shape, and it could
   not say `Map<String, Duration>`, `List<List<Point>>` or anything else with two type arguments or two

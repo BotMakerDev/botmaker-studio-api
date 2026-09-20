@@ -115,14 +115,18 @@ public interface StudioPlugin {
     }
 
     /**
-     * The fields this plugin maintains through its own window, which the host shows but does not let its
-     * code canvas edit — see {@link ManagedField}.
+     * The values this plugin maintains through its own window, which the host shows but does not let its
+     * code canvas edit — see {@link ManagedValue}.
+     *
+     * <p>Each one names an id a {@code @Managed} method or type in the bot's Java carries, and the sentence
+     * to show when the canvas refuses an edit to it. These are also the ids {@link PluginValues#open} will
+     * answer for: what the plugin declares here is what it may read and write.
      *
      * <p>Read once per project bind, like the toolbar. A plugin that throws here costs only its own entries.
      * {@code default} for the reason every method here but {@code id()} is: an older plugin manages nothing,
-     * and every field stays exactly as editable as it was.
+     * and every value stays exactly as editable as it was.
      */
-    default List<ManagedField> managedFields() {
+    default List<ManagedValue> managedValues() {
         return List.of();
     }
 

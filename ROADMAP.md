@@ -5,6 +5,29 @@ reasoning.
 
 ## Done
 
+### 2026-09-20 — `ManagedValue`: what a plugin owns is an annotation, not a type match
+
+Phase 2 of `../docs/refactor/33-plugin-java.md`, and it deletes `ManagedField` and
+`StudioPlugin.managedFields()` — added two days earlier, on 2026-09-18, and see the entry further down.
+
+**A `ManagedField` named a Java type and inferred the rest.** Every `static final` field whose declared type
+resolved to it was the plugin's, wherever it was written; and a class of nothing but such fields was refused
+*whole*, which is how a file of picture constants got locked without anybody saying it should be. Two
+inferences from shape, and both are wrong in an ordinary case: a bot that keeps one picture beside its own
+code was locked out of that code, and two classes of the same type cannot be told apart at all — which
+matters the moment a plugin has two values of one type, as the SDK's two `CaptureSource`s will.
+
+**`ManagedValue(String id, String reason)` matches an annotation the author can read.** The plugin declares
+the ids it answers to; the bot's Java carries `@Managed("id")` on a method or a class, where the annotation
+is `com.botmaker.plugin.basics.managed.Managed` — a bot's own classpath, never the contract's, for the reason
+`@Param` lives there. Neither side names the other's types; the id is the whole pairing.
+
+**Two targets, one marker, and the difference is who names the parts.** On a **method** it is a fixed value
+the plugin shipped a declaration for, and only that method's body is refused. On a **class** it is an open
+set the user grows — one constant per captured picture — and the whole class is refused, because the rest of
+the bot writes `Pictures.COLLECT` at its use sites and the window is what keeps that name and every use of it
+in step. A flow's activities are named nowhere else, which is why a flow is a method.
+
 ### 2026-09-20 — `PluginValues`: the plugin ships the file, the host rewrites one expression
 
 Phase 1 of the rewritten `../docs/refactor/33-plugin-java.md`, and it **withdraws the entry below**, which
