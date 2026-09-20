@@ -202,6 +202,30 @@ public final class ValueCatalog {
         return found.isPresent() ? found : container(javaType.getName());
     }
 
+    /**
+     * The container a written type <em>name</em> means — {@code List}, {@code java.util.List},
+     * {@code Map.Entry}.
+     *
+     * <p>The counterpart of {@link #forJava(String)} and it exists for the same reason: a host reading a
+     * bot's source has no bindings, so a container is whatever it is <em>written</em> as. A simple name is
+     * accepted as well as a qualified one, matched against the registered spelling's own last segments, so
+     * a file that imports {@code Map} and one that spells it out both read.
+     *
+     * <p>Empty is ordinary and means the field is not a composite this catalog can take apart — a
+     * {@code Set} nobody contributed, a bot's own generic class, an array.
+     */
+    public Optional<ValueContainer<?>> containerForJava(String written) {
+        String name = written == null ? "" : written.strip();
+        if (name.isEmpty()) return Optional.empty();
+        Optional<ValueContainer<?>> exact = container(name);
+        if (exact.isPresent()) return exact;
+        for (ValueContainer<?> candidate : containers.values()) {
+            String source = candidate.sourceName();
+            if (source.equals(name) || source.endsWith("." + name)) return Optional.of(candidate);
+        }
+        return Optional.empty();
+    }
+
     /** The spellings {@link #forJava(Class)} accepts, in the order it tries them. */
     private static List<String> javaNames(Class<?> type) {
         List<String> names = new ArrayList<>(4);
@@ -410,6 +434,25 @@ public final class ValueCatalog {
                 }
                 yield Optional.ofNullable(container.build(parts));
             }
+            case ValueForm.Declared ignored -> Optional.empty();
+        };
+    }
+
+    /**
+     * The value a field of this form starts with when nothing else says: the leaf type's own default, or an
+     * <em>empty</em> composite.
+     *
+     * <p>Empty rather than one empty item, for the reason a list-shaped row already seeded nothing: a
+     * container a user has not filled in has no parts, and seeding one would put a blank entry in every new
+     * map. Empty {@link Optional} for a type nothing registered and for a class the bot declares —
+     * {@code 32-generic-values.md} §<i>A bot's own generic class</i> refuses to invent a default, because a
+     * placeholder written into a user's file is a value they did not choose.
+     */
+    public Optional<Object> defaultValue(ValueForm form) {
+        return switch (form) {
+            case null -> Optional.empty();
+            case ValueForm.Leaf leaf -> codec(leaf.type().id()).map(codec -> parseOf(codec, codec.defaultWire()));
+            case ValueForm.Of of -> container(of.container().id()).map(registered -> registered.build(List.of()));
             case ValueForm.Declared ignored -> Optional.empty();
         };
     }

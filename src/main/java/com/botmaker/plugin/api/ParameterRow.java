@@ -2,6 +2,7 @@ package com.botmaker.plugin.api;
 
 import com.botmaker.plugin.api.value.Range;
 import com.botmaker.plugin.api.value.ValueChoice;
+import com.botmaker.plugin.api.value.ValueForm;
 import com.botmaker.plugin.api.value.ValueType;
 import com.botmaker.plugin.api.value.Visibility;
 
@@ -19,15 +20,22 @@ import java.util.Objects;
  *
  * <h2>Every component is already contract vocabulary</h2>
  *
- * <p>A name, a {@link ValueChoice}, a stored {@code List<String>}, a {@link Visibility}, a declared option
- * set, a {@link Range}, a category out of {@link ParameterGroup#categories()}. Nothing plugin-specific
- * crosses and nothing here is a {@link Class} the host would have to load — <b>the value is text</b>, exactly
- * as it is through {@link com.botmaker.plugin.api.value.ValueCodec} today, and turning it into a widget is
- * the host's job while turning it into a Java literal is the owning plugin's.
+ * <p>A name, a {@link ValueForm}, the value's Java source, a {@link Visibility}, a declared option set, a
+ * {@link Range}, a category out of {@link ParameterGroup#categories()}. Nothing plugin-specific crosses and
+ * nothing here is a {@link Class} the host would have to load.
  *
- * <p>The value is a <em>list</em> for every row, one entry for an ordinary one and one per item for a
- * list-shaped one. One shape in the surface means one reader and one writer, which is worth the
- * {@code ["90s"]} a duration crosses as.
+ * <h2>The value is one source string, because a composite has no other canonical form</h2>
+ *
+ * <p>It was a {@code List<String>} of wires until 2026-09-20 — one entry for an ordinary row, one per item
+ * for a list-shaped one — and that list was only ever there to carry the <em>list</em> shape. A
+ * {@link ValueForm} says {@code Map<String, List<Duration>>}, which no flat list of wires can encode, so the
+ * value crosses as what {@code ValueCatalog.initializer} writes and {@code ValueCatalog.valueOf} reads back:
+ * <b>the Java initialiser a field of this form would take</b>. {@code 32-generic-values.md} decision 6.
+ *
+ * <p>That is not the same as a wire encoding coming back in a different spelling. A wire existed so a
+ * <em>bot</em> could read a value with the contract jar absent; nothing at runtime reads a value once the
+ * model is compiled code. The source is the artifact, and a value's canonical form is the source that
+ * produces it.
  *
  * <h2>Built, never constructed — and the asymmetry with {@link ParameterEdit} is the rule, not an accident</h2>
  *
@@ -53,8 +61,9 @@ public final class ParameterRow {
     public static final String GENERAL = "General";
 
     private final String name;
+    private final ValueForm form;
     private final ValueChoice type;
-    private final List<String> value;
+    private final String value;
     private final String description;
     private final String category;
     private final Visibility visibility;
@@ -63,22 +72,34 @@ public final class ParameterRow {
 
     private ParameterRow(Builder b) {
         this.name = b.name;
-        this.type = b.type == null ? ValueChoice.of(ValueType.unknown("")) : b.type;
-        this.value = List.copyOf(b.value);
+        this.form = b.form == null ? ValueForm.of(ValueType.unknown("")) : b.form;
+        this.value = b.value == null ? "" : b.value;
         this.description = b.description == null ? "" : b.description;
         this.category = b.category == null ? "" : b.category.trim();
         this.visibility = b.visibility == null ? Visibility.PUBLIC : b.visibility;
         this.options = List.copyOf(b.options);
         this.bounds = b.bounds == null ? Range.NONE : b.bounds;
+        this.type = b.type == null ? this.form.asChoice(!this.options.isEmpty()) : b.type;
     }
 
     /**
-     * A builder for the row {@code name} names, holding a value of {@code type}.
+     * A builder for the row {@code name} names, holding a value of {@code form}.
      *
      * @param name the field name the generated class carries for this value, and the name a bot writes down
      *             to read it — a valid Java identifier, unique within its group rather than across the
      *             project
-     * @param type what kind of value, and in what shape
+     * @param form what kind of value — a catalogued leaf, or a container over other forms
+     */
+    public static Builder named(String name, ValueForm form) {
+        return new Builder(name, form);
+    }
+
+    /**
+     * The same, for a caller that still holds a {@link ValueChoice}.
+     *
+     * <p>The choice is kept as well as its form, so a row built this way answers {@link #type()} exactly what
+     * it was given rather than a value derived back out of the form — the bridge must not change what an
+     * existing caller stores. It goes with {@code ValueChoice} itself.
      */
     public static Builder named(String name, ValueChoice type) {
         return new Builder(name, type);
@@ -89,19 +110,25 @@ public final class ParameterRow {
         return name;
     }
 
-    /** What kind of value, and in what shape. */
+    /** What kind of value: a catalogued leaf, or a container over other forms. */
+    public ValueForm form() {
+        return form;
+    }
+
+    /**
+     * What kind of value, as a {@link ValueChoice} — lossy for anything a choice cannot say, which reads as
+     * the unknown type. For the surfaces that have not moved to {@link #form()} yet.
+     */
     public ValueChoice type() {
         return type;
     }
 
-    /** The stored value: one entry, or one per item for a list-shaped row. Unmodifiable, never {@code null}. */
-    public List<String> value() {
+    /**
+     * The value, as the Java initialiser a field of this {@link #form()} takes. Never {@code null}; blank
+     * when there is none.
+     */
+    public String value() {
         return value;
-    }
-
-    /** The single value, for the shapes that have exactly one; the first item of a list. */
-    public String singleValue() {
-        return value.isEmpty() ? "" : value.getFirst();
     }
 
     /** A sentence explaining what the value is for, in the user's words. May be empty. */
@@ -155,18 +182,13 @@ public final class ParameterRow {
      * This row with another value and everything else unchanged — what a plugin answers an edit with once it
      * has stored, and possibly normalised, what the host sent.
      */
-    public ParameterRow withValue(List<String> newValue) {
-        return toBuilder().value(newValue).build();
-    }
-
-    /** Convenience for the single-valued shapes, which is most of them. */
     public ParameterRow withValue(String newValue) {
-        return withValue(List.of(newValue == null ? "" : newValue));
+        return toBuilder().value(newValue).build();
     }
 
     /** A builder holding everything this row holds — the way to change more than one thing at a time. */
     public Builder toBuilder() {
-        return new Builder(name, type)
+        return new Builder(name, form, type)
                 .value(value)
                 .description(description)
                 .category(category)
@@ -185,7 +207,7 @@ public final class ParameterRow {
         if (this == o) return true;
         if (!(o instanceof ParameterRow other)) return false;
         return name.equals(other.name)
-                && type.equals(other.type)
+                && form.equals(other.form)
                 && value.equals(other.value)
                 && description.equals(other.description)
                 && category.equals(other.category)
@@ -196,41 +218,46 @@ public final class ParameterRow {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, type, value, description, category, visibility, options, bounds);
+        return Objects.hash(name, form, value, description, category, visibility, options, bounds);
     }
 
     @Override
     public String toString() {
-        return "ParameterRow[" + name + " : " + type.label() + " = " + value + "]";
+        return "ParameterRow[" + name + " : " + form.sourceName() + " = " + value + "]";
     }
 
-    /** Collects a row. Every setter is optional; {@link #named(String, ValueChoice)} carries the two that are not. */
+    /** Collects a row. Every setter is optional; {@link #named(String, ValueForm)} carries the two that are not. */
     public static final class Builder {
 
         private final String name;
+        private final ValueForm form;
         private final ValueChoice type;
-        private List<String> value = List.of();
+        private String value = "";
         private String description;
         private String category;
         private Visibility visibility;
         private List<String> options = List.of();
         private Range bounds;
 
+        private Builder(String name, ValueForm form) {
+            this(name, form, null);
+        }
+
         private Builder(String name, ValueChoice type) {
+            this(name, type == null ? null : type.form(), type);
+        }
+
+        private Builder(String name, ValueForm form, ValueChoice type) {
             this.name = name == null ? "" : name.trim();
             if (this.name.isEmpty()) throw new IllegalArgumentException("a parameter row needs a name");
+            this.form = form;
             this.type = type;
         }
 
-        /** The stored value, one entry per item. A {@code null} list is no value rather than an error. */
-        public Builder value(List<String> value) {
-            this.value = value == null ? List.of() : List.copyOf(value);
-            return this;
-        }
-
-        /** Convenience for the single-valued shapes. */
+        /** The value, as the Java initialiser a field of this form takes. {@code null} is no value. */
         public Builder value(String value) {
-            return value(List.of(value == null ? "" : value));
+            this.value = value == null ? "" : value;
+            return this;
         }
 
         /** The sentence a user reads instead of the field name. */

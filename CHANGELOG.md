@@ -50,6 +50,21 @@ No source changes since v0.1.4; re-released for updated upstream pins.
 
 ### Changed
 
+- **`ParameterRow` carries a `ValueForm`, and its value is one source string.** `named(String, ValueForm)`
+  is the way a row is built; `form()` is what it holds and `type()` is the `ValueChoice` derived from it for
+  the surfaces that have not moved. `value()` was a `List<String>` of wires — one entry for an ordinary row,
+  one per item for a list-shaped one — and that list was only ever there to carry the *list*: a form says
+  `Map<String, List<Duration>>`, which no flat list of wires can encode. It crosses as the Java initialiser
+  a field of that form takes, which is what `ValueCatalog.initializer` writes and `valueOf` reads back.
+  `ParameterEdit.value()` changes the same way and for the same reason, so one spelling crosses in both
+  directions. `singleValue()` is gone from both. `32-generic-values.md` decision 6, breaking, taken while no
+  third-party plugin exists.
+
+- **`ValueCatalog.containerForJava(String)` and `defaultValue(ValueForm)`** — the container a written type
+  *name* means (the counterpart of `forJava(String)`, for a host reading a bot's source with no bindings),
+  and the value a fresh field of a form starts with: the leaf's own default, or an **empty** composite. A
+  container a user has not filled in has no parts, so seeding one item is not the default a list should get.
+
 - **`ValueCodec.wireOfLiteral(String)` is replaced by `valueOfLiteral(String) → Optional<T>`, and it is
   abstract.** The old method answered the *stored text* a literal came from and was a `default` returning
   empty, so a type could be registered with no reader and nothing said so — nine of the seventeen shipped

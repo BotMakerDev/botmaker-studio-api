@@ -3,12 +3,12 @@ package com.botmaker.plugin.api;
 import com.botmaker.plugin.api.value.Range;
 import com.botmaker.plugin.api.value.ValueCatalog;
 import com.botmaker.plugin.api.value.ValueChoice;
+import com.botmaker.plugin.api.value.ValueForm;
 import com.botmaker.plugin.api.value.ValueShape;
 import com.botmaker.plugin.api.value.ValueType;
 import com.botmaker.plugin.api.value.Visibility;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -82,7 +82,7 @@ class ParameterDataTest {
         };
 
         Optional<ParameterRow> stored = plugin.parameterEdited(ParameterEdit.of("", "retries", "900"));
-        assertEquals("5", stored.orElseThrow().singleValue());
+        assertEquals("5", stored.orElseThrow().value());
         assertEquals(Optional.empty(), plugin.parameterEdited(ParameterEdit.of("", "unknown", "x")));
     }
 
@@ -99,8 +99,7 @@ class ParameterDataTest {
     void everyDefaultIsTheSafeReading() {
         ParameterRow bare = row("rest").build();
 
-        assertEquals(List.of(), bare.value());
-        assertEquals("", bare.singleValue());
+        assertEquals("", bare.value());
         assertEquals("", bare.description());
         assertEquals("rest", bare.displayLabel());
         assertEquals("", bare.category());
@@ -114,21 +113,31 @@ class ParameterDataTest {
     /** A row with no type at all is an unknown type rather than a {@code null} the host would trip over. */
     @Test
     void aRowWithNoTypeHoldsAnUnknownOne() {
-        ParameterRow untyped = ParameterRow.named("legacy", null).value("kept").build();
+        ParameterRow untyped = ParameterRow.named("legacy", (ValueForm) null).value("kept").build();
 
         assertFalse(untyped.type().type().known());
-        assertEquals("kept", untyped.singleValue());
+        assertFalse(untyped.form().known());
+        assertEquals("kept", untyped.value());
     }
 
+    /**
+     * A row carries a {@link ValueForm}, and a row named with a {@link ValueChoice} carries both — the choice
+     * exactly as it was given, because the bridge must not change what an existing caller stores.
+     */
     @Test
-    void theValueIsCopiedRatherThanShared() {
-        List<String> live = new ArrayList<>(List.of("a"));
-        ParameterRow listed = ParameterRow.named("keys", ValueChoice.listOf(TEXT)).value(live).build();
+    void aRowCarriesItsFormAndAnyChoiceItWasNamedWith() {
+        ParameterRow listed = ParameterRow.named("keys", ValueChoice.listOf(TEXT)).build();
 
-        live.add("b");
+        assertEquals(ValueForm.listOf(ValueForm.of(TEXT)), listed.form());
+        assertEquals(ValueChoice.listOf(TEXT), listed.type());
 
-        assertEquals(List.of("a"), listed.value());
-        assertThrows(UnsupportedOperationException.class, () -> listed.value().add("c"));
+        ParameterRow mapped = ParameterRow.named("retries",
+                ValueForm.mapOf(ValueForm.of(TEXT), ValueForm.of(WHOLE))).build();
+
+        assertEquals("java.util.Map<String, Integer>", mapped.form().sourceName());
+        // Nothing a ValueChoice can say describes a map, so the derived one reads as the unknown type —
+        // which is the state that already means displayed, never rewritten.
+        assertFalse(mapped.type().type().known());
     }
 
     @Test
@@ -140,7 +149,7 @@ class ParameterDataTest {
 
         ParameterRow edited = declared.withValue("5s");
 
-        assertEquals("5s", edited.singleValue());
+        assertEquals("5s", edited.value());
         assertNotEquals(declared, edited);
         assertEquals(declared, edited.withValue("3s"));
         assertEquals(declared.hashCode(), edited.withValue("3s").hashCode());
@@ -163,13 +172,12 @@ class ParameterDataTest {
     // ---- ParameterEdit --------------------------------------------------------------------------------
 
     @Test
-    void anEditNamesARowAndCarriesText() {
+    void anEditNamesARowAndCarriesSource() {
         ParameterEdit edit = new ParameterEdit(null, "  rest ", null);
 
         assertEquals(ParameterGroup.DEFAULT_ID, edit.groupId());
         assertEquals("rest", edit.name());
-        assertEquals(List.of(), edit.value());
-        assertEquals("", edit.singleValue());
+        assertEquals("", edit.value());
         assertThrows(IllegalArgumentException.class, () -> ParameterEdit.of("", " ", "x"));
     }
 
@@ -183,16 +191,19 @@ class ParameterDataTest {
         assertFalse(ParameterEdit.of("", "rest", "5s").changes(null));
     }
 
-    /** A list-shaped row's value crosses item by item, and an edit to it does too. */
+    /**
+     * A composite row's value crosses as the one initialiser that produces it, however deep it goes — which
+     * is the whole reason the list of wires went.
+     */
     @Test
-    void aListShapedRowCrossesOneEntryPerItem() {
+    void aCompositeValueCrossesAsOneInitializer() {
         ParameterRow keys = ParameterRow.named("hotkeys", new ValueChoice(TEXT, ValueShape.OPEN_LIST))
-                .value(List.of("F1", "F2")).build();
-        ParameterEdit edit = new ParameterEdit("", "hotkeys", List.of("F1", "F2", "F3"));
+                .value("java.util.List.of(\"F1\", \"F2\")").build();
+        ParameterEdit edit = new ParameterEdit("", "hotkeys", "java.util.List.of(\"F1\", \"F2\", \"F3\")");
 
         assertTrue(keys.type().isList());
         assertTrue(edit.changes(keys));
-        assertEquals(List.of("F1", "F2", "F3"), keys.withValue(edit.value()).value());
+        assertEquals("java.util.List.of(\"F1\", \"F2\", \"F3\")", keys.withValue(edit.value()).value());
     }
 
     // The declaration half stood here until 2026-09-17: ParameterDeclaration, and the three shapes it came

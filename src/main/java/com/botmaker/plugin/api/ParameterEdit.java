@@ -1,7 +1,5 @@
 package com.botmaker.plugin.api;
 
-import java.util.List;
-
 /**
  * A value the user changed in the Parameters window, on its way back to the plugin that owns it.
  *
@@ -27,27 +25,24 @@ import java.util.List;
  * @param groupId the {@link ParameterGroup#id()} the row was rendered under. The plugin may own several
  *                sections, and a name is unique only within one of them.
  * @param name    the {@link ParameterRow#name()} that changed. Never blank.
- * @param value   the new stored value: one entry, or one per item for a list-shaped row. Text, exactly as a
- *                {@link com.botmaker.plugin.api.value.ValueCodec} stores it — never a parsed object, and
- *                never a syntax tree.
+ * @param value   the new value, as the Java initialiser a field of the row's
+ *                {@link ParameterRow#form() form} takes — never a parsed object, and never a syntax tree.
+ *                It crosses as source for the reason {@link ParameterRow#value()} does: a composite has no
+ *                wire encoding, and inventing one for this direction alone would put back exactly what
+ *                {@code 33-plugin-java.md} removes.
  */
-public record ParameterEdit(String groupId, String name, List<String> value) {
+public record ParameterEdit(String groupId, String name, String value) {
 
     public ParameterEdit {
         groupId = groupId == null ? ParameterGroup.DEFAULT_ID : groupId.trim();
         name = name == null ? "" : name.trim();
         if (name.isEmpty()) throw new IllegalArgumentException("a parameter edit names no row");
-        value = value == null ? List.of() : List.copyOf(value);
+        value = value == null ? "" : value;
     }
 
-    /** An edit to a single-valued row, which is most of them. */
+    /** An edit named against a group's default id. */
     public static ParameterEdit of(String groupId, String name, String value) {
-        return new ParameterEdit(groupId, name, List.of(value == null ? "" : value));
-    }
-
-    /** The single value; the first item of a list. */
-    public String singleValue() {
-        return value.isEmpty() ? "" : value.getFirst();
+        return new ParameterEdit(groupId, name, value);
     }
 
     /** Whether this edit is against {@code row} — same name, and a value that differs from what it holds. */
