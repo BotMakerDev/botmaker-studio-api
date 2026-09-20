@@ -23,8 +23,11 @@ one artifact (`javafx-controls`, `provided`).
   a type is a tree — a catalogued leaf, a `List`/`Map` over other forms, or a class the bot declares — so
   `Map<String, List<Point>>` is sayable and a shape stops encoding a widget choice inside a type. The two
   live side by side behind `ValueChoice.form()`/`ValueForm.asChoice(boolean)` only until every caller has
-  moved; **write new code against `ValueForm`**. The containers are sealed into the host's vocabulary and a
-  plugin still contributes **leaves** through `ValueCatalog`.
+  moved; **write new code against `ValueForm`**. A plugin contributes **leaves** through `ValueCatalog` as
+  before, and now **containers** too: `ValueContainer<C>` is a composite registered beside a type, and the
+  contract seeds only three (`List`, `Map`, `Map.Entry`) with no privilege over a plugin's own. A container
+  takes a value apart and puts it back — **no string function crosses**; the host writes all syntax, once,
+  as `Owner.factory(p₁, …, pₙ)`.
 - `com.botmaker.plugin.api.palette` — **`@Palette`**, **`@Hidden`**, `@PaletteLabel`, `@PaletteDefault`: the
   marks a plugin puts on its own classes, read **at runtime by `PaletteCatalog.of`**. All four are
   `RUNTIME` since 2026-08-27, because the plugin itself reflects on them. Their elements are plain `String`s

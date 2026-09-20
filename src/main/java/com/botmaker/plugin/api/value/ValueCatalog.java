@@ -82,20 +82,41 @@ public final class ValueCatalog {
      */
     private final Map<String, ValueType> byJava;
 
-    private ValueCatalog(Map<String, Entry> byId) {
+    /**
+     * The composites a value may be built out of, by {@link ValueContainer#id()}, in registration order.
+     *
+     * <p>Open for the same reason the types are: a plugin's {@code Either<L, R>} is as legitimate as its
+     * {@code Channel}, and refusing it would mean every composite anyone ever wants has to be added to the
+     * contract by its maintainer. The three the contract seeds are ordinary registrations with no privilege
+     * — {@code java.util.List}, {@code java.util.Map} and {@code java.util.Map.Entry} — so a project with no
+     * plugin installed still has a list and a map, and the built-ins exercise the same interface a plugin's
+     * container will.
+     */
+    private final Map<String, ValueContainer<?>> containers;
+
+    private ValueCatalog(Map<String, Entry> byId, Map<String, ValueContainer<?>> containers) {
         this.byId = Collections.unmodifiableMap(new LinkedHashMap<>(byId));
         Map<String, ValueType> java = new LinkedHashMap<>();
         this.byId.values().forEach(e -> java.putIfAbsent(e.type().javaName(), e.type()));
         this.byJava = Collections.unmodifiableMap(java);
+        this.containers = Collections.unmodifiableMap(new LinkedHashMap<>(containers));
     }
 
     public static Builder builder() {
         return new Builder();
     }
 
-    /** A catalog that knows nothing. Every lookup answers unknown; useful as a merge seed and in tests. */
+    /**
+     * A catalog that knows no <em>types</em>. Every type lookup answers unknown; useful as a merge seed and
+     * in tests.
+     *
+     * <p>It still has the three seeded containers, because a list of nothing is still a list: the shape of a
+     * field is a separate question from whether anything registered the type inside it, and answering *no
+     * such container* for {@code java.util.List} would make an unknown leaf inside a list unreadable twice
+     * over.
+     */
     public static ValueCatalog empty() {
-        return new ValueCatalog(Map.of());
+        return builder().build();
     }
 
     /**
@@ -152,6 +173,31 @@ public final class ValueCatalog {
     /** The type registered for a Java type <em>name</em>, exactly as {@link ValueType#javaName()} spells it. */
     public Optional<ValueType> forJava(String javaName) {
         return Optional.ofNullable(javaName == null ? null : byJava.get(javaName.trim()));
+    }
+
+    /** The registered containers, in registration order — what a picker offers to wrap a form in. */
+    public List<ValueContainer<?>> containers() {
+        return List.copyOf(containers.values());
+    }
+
+    /** The container {@code id} names, or empty when nothing registered it. */
+    public Optional<ValueContainer<?>> container(String id) {
+        return Optional.ofNullable(id == null ? null : containers.get(id.trim()));
+    }
+
+    /**
+     * The container registered for a Java class — {@code containerFor(List.class)} answers {@link
+     * ValueContainer#LIST}.
+     *
+     * <p><b>The class is read, never loaded</b>, exactly as in {@link #forJava(Class)}: only its name is
+     * taken off the object the caller already holds. Empty is an ordinary answer and means the field is not
+     * a composite this catalog can take apart — a {@code Set} with no plugin contributing one, an array.
+     */
+    public Optional<ValueContainer<?>> containerFor(Class<?> javaType) {
+        if (javaType == null) return Optional.empty();
+        String canonical = javaType.getCanonicalName();
+        Optional<ValueContainer<?>> found = container(canonical != null ? canonical : javaType.getName());
+        return found.isPresent() ? found : container(javaType.getName());
     }
 
     /** The spellings {@link #forJava(Class)} accepts, in the order it tries them. */
@@ -348,13 +394,19 @@ public final class ValueCatalog {
         return fqn.isEmpty() ? List.of() : List.of(fqn);
     }
 
-    /** This catalog's registrations, plus {@code other}'s for every id this one does not already claim. */
+    /**
+     * This catalog's registrations, plus {@code other}'s for every id this one does not already claim.
+     *
+     * <p>Containers merge on the same left-biased rule and for the same reason. The three seeded ones are in
+     * both sides of every merge and collide harmlessly, which is what {@code putIfAbsent} is for.
+     */
     public ValueCatalog merge(ValueCatalog other) {
-        if (other == null || other.byId.isEmpty()) return this;
-        if (byId.isEmpty()) return other;
-        Map<String, Entry> merged = new LinkedHashMap<>(byId);
-        other.byId.forEach(merged::putIfAbsent);
-        return new ValueCatalog(merged);
+        if (other == null || (other.byId.isEmpty() && other.containers.size() <= containers.size())) return this;
+        Map<String, Entry> mergedTypes = new LinkedHashMap<>(byId);
+        other.byId.forEach(mergedTypes::putIfAbsent);
+        Map<String, ValueContainer<?>> mergedContainers = new LinkedHashMap<>(containers);
+        other.containers.forEach(mergedContainers::putIfAbsent);
+        return new ValueCatalog(mergedTypes, mergedContainers);
     }
 
     /** The ids {@code other} declares that this catalog already claims — what a merge would drop. */
@@ -423,8 +475,34 @@ public final class ValueCatalog {
     public static final class Builder {
 
         private final Map<String, Entry> byId = new LinkedHashMap<>();
+        private final Map<String, ValueContainer<?>> containers = new LinkedHashMap<>();
 
         private Builder() {
+            // The contract's own three, seeded into every catalog so a project with no plugin still has a
+            // list and a map. They are registered through the same method a plugin uses, which is what keeps
+            // the built-ins honest about the interface they define.
+            add(ValueContainer.LIST);
+            add(ValueContainer.MAP);
+            add(ValueContainer.ENTRY);
+        }
+
+        /**
+         * Registers a composite a value may be built out of.
+         *
+         * <p>Re-registering an id within one builder is a programming error and throws, exactly as it is for
+         * a type. Across plugins it is a merge, and the merge is left-biased and silent.
+         */
+        public Builder add(ValueContainer<?> container) {
+            Objects.requireNonNull(container, "container");
+            if (container.arity() < 1) {
+                throw new IllegalArgumentException(
+                        "container " + container.id() + " must take at least one type argument");
+            }
+            if (containers.containsKey(container.id())) {
+                throw new IllegalArgumentException("container " + container.id() + " is registered twice");
+            }
+            containers.put(container.id(), container);
+            return this;
         }
 
         /**
@@ -457,7 +535,7 @@ public final class ValueCatalog {
         }
 
         public ValueCatalog build() {
-            return new ValueCatalog(byId);
+            return new ValueCatalog(byId, containers);
         }
     }
 }

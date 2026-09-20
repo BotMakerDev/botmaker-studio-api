@@ -15,13 +15,18 @@ import java.util.List;
  * value cell is not drawable in a table row; nothing caps what may be read out of a user's file, displayed
  * and left intact. Read-only is a first-class outcome, not a failure path.
  *
- * <h2>Why a sealed interface rather than a record with a nullable container</h2>
+ * <h2>Three cases, because there are three literal grammars</h2>
+ *
+ * <p>A {@link Declared} writes {@code new C<>(…)}; an {@link Of} writes whatever its {@link ValueContainer}
+ * declares, which is a static factory. {@code List} is not a {@code Declared} because it is an interface
+ * with no constructor — <b>not</b> because it is generic, which {@code Declared} handles perfectly well. So
+ * the set of cases is closed and sealed, and the set of <em>containers</em> is deliberately not: a plugin
+ * registers a {@link ValueContainer} in a {@link ValueCatalog} exactly as it registers a leaf and its codec.
+ * That is the contract growing a capability rather than a vocabulary.
  *
  * <p>A {@code Map} has two arguments and a {@code List} one, so arity belongs to the container, and a shape
  * that can be asked for its <em>second</em> argument only when it has one is what keeps a picker and a codec
- * total. Sealing also states the platform rule out loud: these three cases are the host's vocabulary and a
- * plugin may not add a fourth. A plugin adds <b>leaves</b>, through {@link ValueCatalog}, exactly as before —
- * the contract grows capabilities, never vocabularies.
+ * total.
  *
  * <p><b>A record, and frozen as one</b> — see {@link Range} for why a component may never be added.
  */
@@ -40,11 +45,11 @@ public sealed interface ValueForm {
      * than stored, for the same reason {@link ValueChoice} corrects an impossible shape: every reader gets
      * the correction — a file, a fixture, a caller's literal.
      */
-    record Of(Container container, List<ValueForm> arguments) implements ValueForm {
+    record Of(ValueContainer<?> container, List<ValueForm> arguments) implements ValueForm {
 
         public Of {
-            if (container == null) container = Container.LIST;
-            arguments = container.fill(arguments);
+            if (container == null) container = ValueContainer.LIST;
+            arguments = fill(container.arity(), arguments);
         }
 
         /** The element of a {@code List}, or the value of a {@code Map} — the last argument either way. */
@@ -72,66 +77,19 @@ public sealed interface ValueForm {
     }
 
     /**
-     * The containers a host writes and reads.
-     *
-     * <p>{@code Set} and {@code Optional} are out of scope until something asks for them, and arrays are not
-     * a container here at all — they keep the behaviour they have today, read as unknown and shown read-only.
-     *
-     * <p><b>This enum may grow</b>, like {@link ValueShape} before it, so a {@code switch} over a container
-     * needs a {@code default}.
+     * {@code arguments}, padded with unknown leaves or truncated to {@code arity}. Total: a caller that
+     * supplies the wrong number gets a usable form rather than an exception, and the unknown leaf it is
+     * padded with is the state that already means <em>nothing registered this</em>.
      */
-    enum Container {
-
-        /** {@code java.util.List<E>}. */
-        LIST(1, "java.util.List", "List of…"),
-        /** {@code java.util.Map<K, V>}. */
-        MAP(2, "java.util.Map", "Map from… to…");
-
-        private final int arity;
-        private final String sourceName;
-        private final String label;
-
-        Container(int arity, String sourceName, String label) {
-            this.arity = arity;
-            this.sourceName = sourceName;
-            this.label = label;
+    private static List<ValueForm> fill(int arity, List<ValueForm> arguments) {
+        List<ValueForm> given = arguments == null ? List.of() : arguments;
+        if (given.size() == arity) return List.copyOf(given);
+        ValueForm[] filled = new ValueForm[arity];
+        for (int i = 0; i < arity; i++) {
+            ValueForm argument = i < given.size() ? given.get(i) : null;
+            filled[i] = argument == null ? new Leaf(ValueType.unknown("")) : argument;
         }
-
-        /** How many type arguments this container takes. */
-        public int arity() {
-            return arity;
-        }
-
-        /** The class a generator writes, fully qualified. */
-        public String sourceName() {
-            return sourceName;
-        }
-
-        /** What a menu calls wrapping a form in this container. */
-        public String label() {
-            return label;
-        }
-
-        /** The import a generator needs, which is {@link #sourceName()}. */
-        public String importName() {
-            return sourceName;
-        }
-
-        /**
-         * {@code arguments}, padded with unknown leaves or truncated to {@link #arity()}. Total: a caller
-         * that supplies the wrong number gets a usable form rather than an exception, and the unknown leaf it
-         * is padded with is the state that already means <em>nothing registered this</em>.
-         */
-        List<ValueForm> fill(List<ValueForm> arguments) {
-            List<ValueForm> given = arguments == null ? List.of() : arguments;
-            if (given.size() == arity) return List.copyOf(given);
-            ValueForm[] filled = new ValueForm[arity];
-            for (int i = 0; i < arity; i++) {
-                ValueForm argument = i < given.size() ? given.get(i) : null;
-                filled[i] = argument == null ? new Leaf(ValueType.unknown("")) : argument;
-            }
-            return List.of(filled);
-        }
+        return List.of(filled);
     }
 
     /** One free value of {@code type}. */
@@ -141,12 +99,12 @@ public sealed interface ValueForm {
 
     /** A list of {@code form}. */
     static ValueForm listOf(ValueForm form) {
-        return new Of(Container.LIST, List.of(form));
+        return new Of(ValueContainer.LIST, List.of(form));
     }
 
     /** A map from {@code key} to {@code value}. */
     static ValueForm mapOf(ValueForm key, ValueForm value) {
-        return new Of(Container.MAP, List.of(key, value));
+        return new Of(ValueContainer.MAP, List.of(key, value));
     }
 
     /**
@@ -225,7 +183,7 @@ public sealed interface ValueForm {
         return switch (this) {
             case Leaf leaf -> new ValueChoice(leaf.type(),
                     hasOptions ? ValueShape.ONE_OF : ValueShape.ONE);
-            case Of of when of.container() == Container.LIST && of.last() instanceof Leaf leaf ->
+            case Of of when of.container() == ValueContainer.LIST && of.last() instanceof Leaf leaf ->
                     new ValueChoice(leaf.type(), hasOptions ? ValueShape.ANY_OF : ValueShape.OPEN_LIST);
             default -> ValueChoice.of(ValueType.unknown(sourceName()));
         };

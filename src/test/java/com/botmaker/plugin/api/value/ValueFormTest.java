@@ -61,11 +61,11 @@ class ValueFormTest {
     void aWrongNumberOfArgumentsIsCorrectedRatherThanThrown() {
         // Total like the rest of the vocabulary: a caller's mistake produces a form that displays, not an
         // exception that fails an open.
-        ValueForm.Of map = new ValueForm.Of(ValueForm.Container.MAP, List.of(ValueForm.of(TEXT)));
+        ValueForm.Of map = new ValueForm.Of(ValueContainer.MAP, List.of(ValueForm.of(TEXT)));
         assertEquals(2, map.arguments().size());
         assertFalse(map.known());
 
-        ValueForm.Of list = new ValueForm.Of(ValueForm.Container.LIST,
+        ValueForm.Of list = new ValueForm.Of(ValueContainer.LIST,
                 List.of(ValueForm.of(TEXT), ValueForm.of(COUNT)));
         assertEquals(1, list.arguments().size());
     }

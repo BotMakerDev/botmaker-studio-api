@@ -21,13 +21,26 @@ No source changes since v0.1.4; re-released for updated upstream pins.
 
 ### Added
 
-- **`ValueForm`** — the type of a value as a tree: a catalogued `Leaf`, an `Of` over a host `Container`
-  (`List`, `Map`), or a `Declared` class the bot itself writes. Nested to any depth, so a field declared
-  `Map<String, List<Point>>` is something the vocabulary can now say at all. `ValueChoice.form()` and
-  `ValueForm.asChoice(boolean)` bridge the two while callers move across; the bridge is lossless out of a
-  choice and answers the unknown type for anything a choice cannot express, which is the state that already
-  means *displayed, never rewritten*. Nothing changes behaviour yet. Design:
-  `docs/refactor/32-generic-values.md`.
+- **`ValueForm`** — the type of a value as a tree: a catalogued `Leaf`, an `Of` over a `ValueContainer`, or a
+  `Declared` class the bot itself writes. Nested to any depth, so a field declared `Map<String, List<Point>>`
+  is something the vocabulary can now say at all. `ValueChoice.form()` and `ValueForm.asChoice(boolean)`
+  bridge the two while callers move across; the bridge is lossless out of a choice and answers the unknown
+  type for anything a choice cannot express, which is the state that already means *displayed, never
+  rewritten*. Nothing changes behaviour yet. Design: `docs/refactor/32-generic-values.md`.
+- **`ValueContainer<C>`** — a composite a value may be built out of, registered in a `ValueCatalog` exactly
+  as a `ValueType` and its `ValueCodec` are. **A plugin may now contribute its own** — `Set`, `Optional`,
+  an `Either<L, R>` — with no contract change. A container takes a composite apart into typed parts
+  (`parts`) and puts it back together from typed parts (`build`), and declares the static factory's name;
+  **the host owns every character of syntax**, written once for all containers as `Owner.factory(p₁, …, pₙ)`.
+  Nothing about a container is a string function, which is the rule `docs/refactor/33-plugin-java.md` sets
+  for the whole design. `arity()` counts *type* arguments and `parts` counts *values*, with `partForms`
+  carrying the static type of each part so the recursion stays typed.
+- **Three containers seeded into every catalog** — `java.util.List` (`of`), `java.util.Map` (`ofEntries`)
+  and `java.util.Map.Entry` (`entry`) — so a project with no plugin installed still has a list and a map.
+  They are ordinary registrations with no privilege, which is what keeps the built-ins honest about the
+  interface a plugin's container will use. **A map is always written `Map.ofEntries(Map.entry(k, v), …)`**,
+  never `Map.of`: one spelling means one rule for the writer and one for the reader, and no behaviour change
+  at the eleventh entry.
 
 - **`StudioPlugin.managedFields()` and `ManagedField`** — a plugin says which `static final` constants it
   keeps in step through its own window (its type, and the sentence to show instead). The host draws them,
