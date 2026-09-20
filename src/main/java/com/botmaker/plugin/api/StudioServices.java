@@ -81,6 +81,22 @@ public interface StudioServices {
     }
 
     /**
+     * The plugin's own model, kept as compiled Java in the bot's source tree.
+     *
+     * <p>Host-only on every part of it, and for the same reasons as {@link Sources}: the source tree, the
+     * open buffers, the history snapshot and the file roles are the editor's, while what the data means is
+     * the plugin's. It names no plugin's concept — a {@code Record} is a JDK type and the simple name is one
+     * the plugin already owns — so the rule <em>capabilities, never vocabularies</em> holds.
+     *
+     * <p>{@code default} for the reason {@link #runs()} is: a host with no source tree behind it — the
+     * {@code botmaker} CLI's validator — answers honestly without implementing anything, and a plugin's save
+     * path never asks whether writing is supported.
+     */
+    default Models models() {
+        return Models.NONE;
+    }
+
+    /**
      * Says one line in the host's own status area, where it says what it is doing.
      *
      * <p>For the running commentary a long action owes its user — <em>Starting…</em>, <em>Listening on

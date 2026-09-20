@@ -183,6 +183,33 @@ reach is the one the user has open and half-edited, and it does not parse.
 canonical constructor would take a `NoSuchMethodError` the day a component is added. That is why replacements
 are a `Map<String,String>` and not a `Replacement` record — see `docs/refactor/25-compatibility.md` §2.
 
+**And one more passed it on 2026-09-20: `StudioServices.models()`, returning a `Models`** — a plugin's own
+model as **compiled Java in the bot's source tree** rather than JSON (`docs/refactor/33-plugin-java.md`).
+`write(pluginId, simpleName, Record)`, `read(pluginId, simpleName, Class)`, `problem(Class)`; all total, all
+`Optional`, and **no text crosses in either direction**.
+
+**A plugin hands over a record instance and the host derives both directions from its components.** The two
+alternatives both fail a stated requirement. A plugin that *emits text* makes every plugin a code generator
+whose output the host cannot check. A plugin that supplies a *write callback* supplies one direction, and the
+other then has to be written separately by the same author and kept in step by discipline — which is the
+measured state of `ValueCodec`: `literal` has seventeen implementations and `wireOfLiteral`, a `default`
+returning empty, has nine, because the reader has exactly one caller. **The half nobody is forced to write is
+the half that rots**, and a record makes it impossible not to have both.
+
+**`problem(Class)` is refusal at registration, and it is how *what Studio writes always compiles* becomes a
+property.** The set the host accepts is made equal to the set it can write — a registered leaf, a registered
+container of legal types, another legal record, an enum constant, `String`, primitives and boxes — and
+anything else is refused **with the component named**, at startup, rather than carefully avoided at write
+time.
+
+**The plugin names its own id**, which `33`'s sketch did not. One `StudioServices` instance serves every
+plugin, so the package segment has to arrive with the call; the alternative was a per-plugin services object
+threaded through every place an editor is built. A plugin already names its own id to reach its own storage
+(`PluginData`), so nothing about the trust model changes.
+
+`Record` is a JDK type and a simple name is one the plugin already owns, so *capabilities, never
+vocabularies* holds — compare `Assets`, which had to say the word *picture*.
+
 ## Parameter data (2026-09-10) — the window is the host's, the file behind it is not
 
 `StudioPlugin.parameterRows(String groupId)` and `parameterEdited(ParameterEdit)`, with `ParameterRow` and

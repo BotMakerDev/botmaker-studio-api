@@ -21,6 +21,15 @@ No source changes since v0.1.4; re-released for updated upstream pins.
 
 ### Added
 
+- **`Models`, off `StudioServices.models()`** — a plugin's own model, kept as **compiled Java in the bot's
+  source tree** instead of JSON. A plugin hands over a *record instance*; Studio derives both the writer and
+  the reader from its components and writes one locked `.java` file into a package belonging to that plugin.
+  No text crosses in either direction and a plugin writes no emitter, no parser and no template. What may be
+  in a model is a registered value type, a container of legal types, another legal record, an enum constant,
+  `String`, the eight primitives and their boxes — and `problem(Class)` says which component is not, so a
+  plugin learns at startup rather than the first time a user saves. `default`, answering `Models.NONE`, so a
+  host with no source tree behind it — the `botmaker` CLI's validator — is unaffected. Design:
+  `docs/refactor/33-plugin-java.md`.
 - **`ValueForm`** — the type of a value as a tree: a catalogued `Leaf`, an `Of` over a `ValueContainer`, or a
   `Declared` class the bot itself writes. Nested to any depth, so a field declared `Map<String, List<Point>>`
   is something the vocabulary can now say at all. It **replaces `ValueChoice` and `ValueShape`**, which are

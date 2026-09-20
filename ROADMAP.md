@@ -5,6 +5,38 @@ reasoning.
 
 ## Done
 
+### 2026-09-20 — `Models`: a plugin's model as compiled Java
+
+Phase K of `../docs/refactor/33-plugin-java.md`, contract half. One capability off `StudioServices`, beside
+`sources()` and by the same test: the host is the only possible source of it.
+
+**A plugin hands over a record instance.** The host derives the writer and the reader from its components
+and writes one file into `<bot package>.plugins.<segment>`. Nothing crosses as text in either direction,
+which is the rule `33` states and which the rejected alternatives both break: a plugin that emits text makes
+every plugin a code generator the host cannot check, and a plugin that supplies a *write* callback supplies
+one direction and leaves the other to discipline.
+
+**That second failure is measured, not hypothetical.** `ValueCodec.literal` had seventeen implementations and
+`wireOfLiteral` — a `default` returning empty — had nine, because the reader had exactly one caller. The half
+nobody is forced to write is the half that rots. A record makes it impossible not to have both: the
+components give the constructor to write and the accessors to read, from one declaration the compiler checks.
+
+**Three methods, all total.** `write(pluginId, simpleName, value)` answers the file or empty;
+`read(pluginId, simpleName, type)` answers the model or empty (a project that never had one is the ordinary
+case, not an exception); `problem(Class)` answers *which component* is illegal, so a plugin asks once at
+startup rather than discovering it when a user saves. The set the host accepts is made equal to the set it
+can write, which is how *what Studio writes always compiles* becomes a property rather than a hope.
+
+**The plugin names its own id.** The sketch in `33` took two arguments; one `StudioServices` instance serves
+every plugin, so the segment has to arrive with the call. The alternative was a per-plugin services object
+threaded through every place an editor is built. A plugin already names its own id to address its own
+storage (`PluginData`), so the trust model is unchanged, and the last segment maps to a package by the same
+normalisation — with one forced difference, that a dash becomes `_` because a folder may be called
+`my-plugin` and a package may not.
+
+**`Record` is a JDK type and a simple name is one the plugin already owns**, so *capabilities, never
+vocabularies* holds. `Models.NONE` is the total default, as `Sources.NONE` and `Runs.NONE` are.
+
 ### 2026-09-20 — `ValueChoice` and `ValueShape` are deleted
 
 Phase G of `../docs/refactor/32-generic-values.md`. `ValueForm` had been carrying every caller since phase D;
