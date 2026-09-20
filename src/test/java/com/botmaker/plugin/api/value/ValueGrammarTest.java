@@ -269,6 +269,66 @@ class ValueGrammarTest {
         assertTrue(catalog().valueOf(form, "java.util.Set.of(\"a\")").isEmpty());
     }
 
+    // ---- what an editor asks, which is one level at a time --------------------------------------------------
+
+    @Test
+    void aCompositeIsTakenApartOneLevelWithEachPartsFormBesideIt() {
+        ValueForm map = ValueForm.mapOf(TEXT_FORM, COUNT_FORM);
+
+        List<ValueCatalog.Part> entries = catalog()
+                .partsOfInitializer(map, "java.util.Map.ofEntries("
+                        + "java.util.Map.entry(\"a\", 1), java.util.Map.entry(\"b\", 2))")
+                .orElseThrow();
+
+        assertEquals(2, entries.size());
+        assertEquals("java.util.Map.entry(\"a\", 1)", entries.getFirst().initializer());
+        // A map's parts are entries, so a cell reaches the key and the value by asking again.
+        List<ValueCatalog.Part> pair = catalog()
+                .partsOfInitializer(entries.getFirst().form(), entries.getFirst().initializer())
+                .orElseThrow();
+        assertEquals(List.of("\"a\"", "1"), pair.stream().map(ValueCatalog.Part::initializer).toList());
+        assertEquals(TEXT_FORM, pair.getFirst().form());
+        assertEquals(COUNT_FORM, pair.get(1).form());
+    }
+
+    /** A part whose own codec cannot read it is still a part: the cell shows it and refuses to rewrite it. */
+    @Test
+    void aPartNothingReadsIsStillAPart() {
+        List<ValueCatalog.Part> parts = catalog()
+                .partsOfInitializer(ValueForm.listOf(ValueForm.of(DURATION)),
+                        "java.util.List.of(Duration.parse(\"5s\"))")
+                .orElseThrow();
+
+        assertEquals(List.of("Duration.parse(\"5s\")"),
+                parts.stream().map(ValueCatalog.Part::initializer).toList());
+        // The whole-value reader still declines, which is what keeps the file untouched.
+        assertTrue(catalog().valueOf(ValueForm.listOf(ValueForm.of(DURATION)),
+                "java.util.List.of(Duration.parse(\"5s\"))").isEmpty());
+    }
+
+    @Test
+    void partsAlreadyWrittenAreComposedBackIntoTheFactoryCall() {
+        ValueForm list = ValueForm.listOf(TEXT_FORM);
+
+        assertEquals(Optional.of("java.util.List.of(\"a\", \"b\")"),
+                catalog().initializerOfParts(list, List.of("\"a\"", "\"b\"")));
+        assertEquals(Optional.of("java.util.List.of()"), catalog().initializerOfParts(list, List.of()));
+        // A blank part declines rather than writing `of(, "b")`.
+        assertTrue(catalog().initializerOfParts(list, List.of("", "\"b\"")).isEmpty());
+        // And a container that cannot hold that many parts declines too.
+        assertTrue(catalog().initializerOfParts(new ValueForm.Of(ValueContainer.ENTRY,
+                List.of(TEXT_FORM, COUNT_FORM)), List.of("\"a\"", "1", "2")).isEmpty());
+    }
+
+    @Test
+    void aLeafsLiteralAndItsStoredTextReadBothWays() {
+        assertEquals(Optional.of("hello"), catalog().itemOfLiteral(ValueCatalog.TEXT_ID, "\"hello\""));
+        assertEquals("\"hello\"", catalog().literal(ValueCatalog.TEXT_ID, "hello").orElseThrow().source());
+        // A codec that declines a source declines here too, rather than answering the text as it stands.
+        assertTrue(catalog().itemOfLiteral("DURATION", "Duration.parse(\"5s\")").isEmpty());
+        assertTrue(catalog().itemOfLiteral("NOTHING_REGISTERS_THIS", "\"x\"").isEmpty());
+    }
+
     // ---- imports -------------------------------------------------------------------------------------------
 
     @Test

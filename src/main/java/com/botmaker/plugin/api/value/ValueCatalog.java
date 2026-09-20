@@ -349,6 +349,22 @@ public final class ValueCatalog {
     /** One item's Java source and the class it needs imported ({@code ""} when it needs none). */
     public record Literal(String source, String importName) {}
 
+    /**
+     * {@link #literal} read backwards: the stored item {@code source} was written from, or empty when this
+     * type's codec does not recognise it.
+     *
+     * <p>The pair exists for an <b>editor</b>, which holds a leaf's value as the text its own control shows
+     * while a row holds Java source. A composite has no such text — its canonical form is the initialiser
+     * and nothing else — which is why this is per item and there is no list-shaped counterpart:
+     * {@link #partsOfInitializer} takes a composite apart into parts that are themselves source.
+     */
+    public Optional<String> itemOfLiteral(String typeId, String source) {
+        Optional<ValueCodec<?>> found = codec(typeId);
+        if (found.isEmpty() || source == null) return Optional.empty();
+        ValueCodec<?> codec = found.get();
+        return valueOfLiteral(codec, source.strip()).map(value -> storeOf(codec, value));
+    }
+
     public List<String> imports(ValueChoice choice) {
         if (choice == null) return List.of();
         String fqn = choice.type().importName();
@@ -436,6 +452,59 @@ public final class ValueCatalog {
             }
             case ValueForm.Declared ignored -> Optional.empty();
         };
+    }
+
+    /** One part of a composite: the source it is written as, and the form that source is of. */
+    public record Part(ValueForm form, String initializer) {}
+
+    /**
+     * A composite initialiser taken apart one level: the parts as they are <em>written</em>, each with its
+     * own form. Empty for anything that is not a call to this container's factory.
+     *
+     * <p><b>Why an editor gets source rather than values.</b> {@link #valueOf} answers the composite as a
+     * live object, which is what a generator wants and what a value cell cannot use: a cell edits one part
+     * at a time, and a part it cannot read must be shown as written rather than dropped from the answer.
+     * Taking the source apart one level keeps that possible — a map with one unreadable value still draws as
+     * a map, with that one row read-only.
+     *
+     * <p>Recursion is the caller's: a part that is itself an {@link ValueForm.Of} is passed back in. That is
+     * how a {@code Map}'s parts are reached, since they are {@link java.util.Map.Entry entries} rather than
+     * keys and values.
+     */
+    public Optional<List<Part>> partsOfInitializer(ValueForm form, String initializer) {
+        if (!(form instanceof ValueForm.Of of) || initializer == null) return Optional.empty();
+        Optional<ValueContainer<?>> registered = container(of.container().id());
+        if (registered.isEmpty()) return Optional.empty();
+        ValueContainer<?> container = registered.get();
+
+        Optional<List<String>> split = SourceSplit.arguments(initializer.strip(), container.factorySource());
+        if (split.isEmpty()) return Optional.empty();
+        List<String> written = split.get();
+        List<ValueForm> forms = container.partForms(of.arguments(), written.size());
+        if (forms.size() != written.size()) return Optional.empty();
+
+        List<Part> parts = new ArrayList<>(written.size());
+        for (int i = 0; i < written.size(); i++) parts.add(new Part(forms.get(i), written.get(i)));
+        return Optional.of(List.copyOf(parts));
+    }
+
+    /**
+     * {@link #partsOfInitializer} written forwards: the call this container spells over parts already
+     * written as source. Empty when the container is not registered, when a part is blank, or when this
+     * container cannot hold that many parts — an {@link ValueContainer#ENTRY entry} of three, say.
+     *
+     * <p>A blank part declines rather than writing {@code of(, b)}: the host has no spelling for a value its
+     * editor could not produce, and a guess compiles into a user's bot.
+     */
+    public Optional<String> initializerOfParts(ValueForm form, List<String> parts) {
+        if (!(form instanceof ValueForm.Of of) || parts == null) return Optional.empty();
+        Optional<ValueContainer<?>> registered = container(of.container().id());
+        if (registered.isEmpty()) return Optional.empty();
+        if (parts.stream().anyMatch(part -> part == null || part.isBlank())) return Optional.empty();
+        if (registered.get().partForms(of.arguments(), parts.size()).size() != parts.size()) {
+            return Optional.empty();
+        }
+        return Optional.of(registered.get().factorySource() + "(" + String.join(", ", parts) + ")");
     }
 
     /**

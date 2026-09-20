@@ -60,6 +60,15 @@ No source changes since v0.1.4; re-released for updated upstream pins.
   directions. `singleValue()` is gone from both. `32-generic-values.md` decision 6, breaking, taken while no
   third-party plugin exists.
 
+- **`ValueCatalog.partsOfInitializer`, `initializerOfParts` and `itemOfLiteral`** — the grammar as an
+  *editor* needs it. `valueOf` answers a composite as one live object, which a generator wants and a value
+  cell cannot use: a cell edits one part at a time, and a part its codec refuses must be drawn as written
+  rather than dropped from the answer. So a composite is taken apart one level at a time into parts that are
+  themselves source, each with its own form, and composed back through the container's own factory. A blank
+  part or a count the container cannot hold declines, exactly as everything else here declines rather than
+  guesses. `itemOfLiteral` is `literal` read backwards for one leaf — the only place a second spelling of a
+  value still exists, because a leaf's own control has text where a composite has none.
+
 - **`ValueCatalog.containerForJava(String)` and `defaultValue(ValueForm)`** — the container a written type
   *name* means (the counterpart of `forJava(String)`, for a host reading a bot's source with no bindings),
   and the value a fresh field of a form starts with: the leaf's own default, or an **empty** composite. A
