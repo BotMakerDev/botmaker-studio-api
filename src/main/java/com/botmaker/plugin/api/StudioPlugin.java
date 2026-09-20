@@ -1,6 +1,8 @@
 package com.botmaker.plugin.api;
 
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
+import com.botmaker.plugin.api.model.ModelCall;
+import com.botmaker.plugin.api.model.ModelStatement;
 import com.botmaker.plugin.api.value.ValueCatalog;
 import com.botmaker.plugin.api.value.ValueType;
 
@@ -142,6 +144,28 @@ public interface StudioPlugin {
      */
     default ValueCatalog valueTypes() {
         return ValueCatalog.empty();
+    }
+
+    /**
+     * The calls this plugin's model may be written as — one {@link ModelCall} per method the host may emit
+     * into the bot's own Java.
+     *
+     * <p>Declaring a call is how a plugin says <i>this is a line of my model, and these are its
+     * arguments</i>. The host then writes {@code Activities.declare(Collect::body, "Collect", …);} and reads
+     * it back, and the plugin hands over and receives {@link ModelStatement}s — <b>no text in either
+     * direction, and no code generator on the plugin's side</b>. See {@link Models} for why a model is
+     * stored as calls at all.
+     *
+     * <p>The call's own {@link ModelCall#id()} is what a statement names, and it is derived from the owner
+     * and the method rather than declared, so there is no second identity to keep in step. A statement
+     * naming a call this plugin did not declare is not written.
+     *
+     * <p>Declared once, at startup, so {@link Models#problem(ModelCall)} can be asked before a user has
+     * saved anything: an argument whose form no codec can write is a plugin's mistake, and the useful moment
+     * to learn about it is the first run rather than the first save.
+     */
+    default List<ModelCall> modelCalls() {
+        return List.of();
     }
 
     /**

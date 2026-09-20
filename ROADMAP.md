@@ -10,22 +10,47 @@ reasoning.
 Phase K of `../docs/refactor/33-plugin-java.md`, contract half. One capability off `StudioServices`, beside
 `sources()` and by the same test: the host is the only possible source of it.
 
-**A plugin hands over a record instance.** The host derives the writer and the reader from its components
-and writes one file into `<bot package>.plugins.<segment>`. Nothing crosses as text in either direction,
-which is the rule `33` states and which the rejected alternatives both break: a plugin that emits text makes
-every plugin a code generator the host cannot check, and a plugin that supplies a *write* callback supplies
-one direction and leaves the other to discipline.
+**A model is a sequence of calls.** A plugin declares the calls its model may be written as
+(`StudioPlugin.modelCalls()` → `ModelCall`: an owner, a method, and one `Argument` per parameter) and hands
+over `ModelStatement`s — *call `Activities.declare` with these six things*. The host writes the Java into
+`<bot package>.plugins.<segment>` and reads it back. Nothing crosses as text in either direction, which is
+the rule `33` states and which the rejected alternatives both break: a plugin that emits text makes every
+plugin a code generator the host cannot check, and a plugin that supplies a *write* callback supplies one
+direction and leaves the other to discipline.
 
 **That second failure is measured, not hypothetical.** `ValueCodec.literal` had seventeen implementations and
 `wireOfLiteral` — a `default` returning empty — had nine, because the reader had exactly one caller. The half
-nobody is forced to write is the half that rots. A record makes it impossible not to have both: the
-components give the constructor to write and the accessors to read, from one declaration the compiler checks.
+nobody is forced to write is the half that rots. One declaration that both halves are derived from makes it
+impossible not to have both.
 
-**Three methods, all total.** `write(pluginId, simpleName, value)` answers the file or empty;
-`read(pluginId, simpleName, type)` answers the model or empty (a project that never had one is the ordinary
-case, not an exception); `problem(Class)` answers *which component* is illegal, so a plugin asks once at
-startup rather than discovering it when a user saves. The set the host accepts is made equal to the set it
-can write, which is how *what Studio writes always compiles* becomes a property rather than a hope.
+**`ModelCall` is `ValueContainer` one level up, and that is the whole argument for this shape.**
+`factoryOwner`/`owner`, `factory`/`method`, `partForms`/`arguments`: `ValueCatalog.initializer` already
+writes `java.util.List.of(a, b, c)` and `valueOf` already reads it back by matching the prefix and splitting
+at depth zero. **A statement is that with a semicolon**, so the writer and the reader are machinery that
+exists and is tested rather than machinery this had to invent.
+
+**A record handed over reflectively was built first and withdrawn the same day.** It worked. What it had to
+answer, and a sequence of statements never asks: naming a constant from an activity name, stably and
+uniquely; choosing between a seven-component canonical constructor and a six-argument convenience one; a
+compact constructor normalising `id` into a duplicate of `name` inside the user's repository; keeping map
+order deterministic; cross-file constant references; and Jackson's `"empty": false`, a derived value
+persisted beside what it was derived from. The observation that replaced it is that **the bot already stores
+the hard half as calls** — `Activities.define("Collect", ctx -> {…})` — so the rest should be stored the same
+way, and then the file reads like the file beside it.
+
+**`MethodRef` is the one argument that is not a value.** `Collect::body` has no type of its own — its type is
+whatever functional interface the parameter declares — so no codec could honestly claim it is a literal of
+something, and forcing it through `ValueType` would have meant a `sourceName` that lies. It crosses as two
+names, written and read exactly as an enum constant is. What it buys: renaming or deleting a body in the
+bot's Java is a **compile error** in the generated file, rather than a model pointing at nothing discovered
+three screens into a run.
+
+**Three methods, all total.** `write(pluginId, simpleName, statements)` answers the file or empty;
+`read(pluginId, simpleName)` answers the statements in order, or an empty list (a project that never had one
+is the ordinary case, not an exception); `problem(ModelCall)` answers *which argument* cannot be written, so
+a plugin asks once at startup rather than discovering it when a user saves. The set the host accepts is made
+equal to the set it can write, which is how *what Studio writes always compiles* becomes a property rather
+than a hope.
 
 **The plugin names its own id.** The sketch in `33` took two arguments; one `StudioServices` instance serves
 every plugin, so the segment has to arrive with the call. The alternative was a per-plugin services object
@@ -34,8 +59,10 @@ storage (`PluginData`), so the trust model is unchanged, and the last segment ma
 normalisation — with one forced difference, that a dash becomes `_` because a folder may be called
 `my-plugin` and a package may not.
 
-**`Record` is a JDK type and a simple name is one the plugin already owns**, so *capabilities, never
-vocabularies* holds. `Models.NONE` is the total default, as `Sources.NONE` and `Runs.NONE` are.
+**A class, a method name and a `ValueForm` are facts about Java**, so *capabilities, never vocabularies*
+holds. `Models.NONE` is the total default, as `Sources.NONE` and `Runs.NONE` are. `ModelCall` is reached
+through `of(…)` and never a constructor, the same rule as `ParameterRow` and for the same reason: a plugin's
+compiled classes cannot be rewritten by anybody, so a record it constructs may not grow a component.
 
 ### 2026-09-20 — `ValueChoice` and `ValueShape` are deleted
 

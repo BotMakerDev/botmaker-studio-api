@@ -185,30 +185,46 @@ are a `Map<String,String>` and not a `Replacement` record — see `docs/refactor
 
 **And one more passed it on 2026-09-20: `StudioServices.models()`, returning a `Models`** — a plugin's own
 model as **compiled Java in the bot's source tree** rather than JSON (`docs/refactor/33-plugin-java.md`).
-`write(pluginId, simpleName, Record)`, `read(pluginId, simpleName, Class)`, `problem(Class)`; all total, all
-`Optional`, and **no text crosses in either direction**.
+`write(pluginId, simpleName, List<ModelStatement>)`, `read(pluginId, simpleName)`, `problem(ModelCall)`; all
+total, and **no text crosses in either direction**.
 
-**A plugin hands over a record instance and the host derives both directions from its components.** The two
-alternatives both fail a stated requirement. A plugin that *emits text* makes every plugin a code generator
-whose output the host cannot check. A plugin that supplies a *write callback* supplies one direction, and the
-other then has to be written separately by the same author and kept in step by discipline — which is the
-measured state of `ValueCodec`: `literal` has seventeen implementations and `wireOfLiteral`, a `default`
-returning empty, has nine, because the reader has exactly one caller. **The half nobody is forced to write is
-the half that rots**, and a record makes it impossible not to have both.
+**A model is a sequence of calls, and a call is `ValueContainer` one level up.** A plugin declares its calls
+(`StudioPlugin.modelCalls()` → `ModelCall`: owner, method, one `Argument` per parameter) and hands over
+`ModelStatement`s; the host writes `Activities.declare(Collect::body, "Collect", …);` and reads it back. The
+writer and the reader already existed — `ValueCatalog.initializer` writes `java.util.List.of(a, b, c)` and
+`valueOf` reads it back at depth zero, so a statement is that with a semicolon. `factoryOwner`/`owner`,
+`factory`/`method`, `partForms`/`arguments`: it is the same interface, and the host owns all the syntax once.
 
-**`problem(Class)` is refusal at registration, and it is how *what Studio writes always compiles* becomes a
-property.** The set the host accepts is made equal to the set it can write — a registered leaf, a registered
-container of legal types, another legal record, an enum constant, `String`, primitives and boxes — and
-anything else is refused **with the component named**, at startup, rather than carefully avoided at write
-time.
+**Why not a record handed over reflectively** — the design tried first and withdrawn the same day. It worked,
+and it had to answer a list of questions a sequence of statements never asks: naming a constant from a name,
+stably and uniquely; choosing between a canonical constructor and a convenience one; a compact constructor
+normalising a component into a duplicate of another inside the user's repository; keeping map order
+deterministic; and Jackson's `"empty": false`, a derived value persisted beside what it was derived from.
+The observation that replaced it: **the bot already stores the hard half as calls**
+(`Activities.define("Collect", ctx -> {…})`), so store the rest the same way.
+
+**The two alternatives that were never on the table** still shape this. A plugin that *emits text* makes
+every plugin a code generator whose output the host cannot check. A plugin that supplies a *write callback*
+supplies one direction and leaves the other to discipline — the measured state of `ValueCodec`, where
+`literal` has seventeen implementations and `wireOfLiteral`, a `default` returning empty, has nine, because
+the reader has exactly one caller. **The half nobody is forced to write is the half that rots.**
+
+**`MethodRef` is the one argument that is not a value.** `Collect::body` has no type of its own — its type is
+whatever functional interface the parameter declares — so no codec could honestly claim it is a literal of
+something. It crosses as two names, and it is why a rename in the bot's Java becomes a *compile error* in the
+generated file rather than a model pointing at nothing.
+
+**`problem(ModelCall)` is refusal at registration**: one question per argument, *is this a form the catalog
+can write and read back*, asked at startup and answered with the argument named. It is on the host because
+the catalog it is answered against is the **merged** one, which no plugin can assemble alone.
 
 **The plugin names its own id**, which `33`'s sketch did not. One `StudioServices` instance serves every
 plugin, so the package segment has to arrive with the call; the alternative was a per-plugin services object
 threaded through every place an editor is built. A plugin already names its own id to reach its own storage
 (`PluginData`), so nothing about the trust model changes.
 
-`Record` is a JDK type and a simple name is one the plugin already owns, so *capabilities, never
-vocabularies* holds — compare `Assets`, which had to say the word *picture*.
+A class, a method name and a `ValueForm` are facts about Java, so *capabilities, never vocabularies* holds —
+compare `Assets`, which had to say the word *picture*.
 
 ## Parameter data (2026-09-10) — the window is the host's, the file behind it is not
 
