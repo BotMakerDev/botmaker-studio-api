@@ -5,6 +5,23 @@ reasoning.
 
 ## Done
 
+### 2026-09-21 — `33-plugin-java.md` is implemented, and the contract asked for nothing more
+
+The plan finished on phases 5–7 without another contract change, which is the result worth recording: the
+four members added on 2026-09-20 — `PluginSource`, `StudioPlugin.pluginSources()`, `PluginValues` off
+`StudioServices`, and `ManagedValue` — carried a flow editor, a runtime swap and a whole template migration
+with nothing added and nothing adjusted.
+
+That is the *capabilities, never vocabularies* rule paying out. `PluginValues.open(id)` hands back a
+`ValueContext`; what a `Flow` is, that an activity's body is a method reference, that a preset is a named
+set of enable flags — none of it is spelled in `com.botmaker.plugin.api`. The SDK registers those shapes as
+`ValueContainer`s in its own catalog and the host takes them apart generically. A contract that had learned
+the word *activity* would have needed a release of its own for every one of those decisions.
+
+**§2 of `25-compatibility.md` stays suspended** while there are no third-party plugins, and this plan used
+that suspension: `ValueContext` lost `List<String> value()`/`set(List<String>)` for `form()`/`source()`/
+`set(String, String...)` in phase 1. Reinstate it the day a second plugin exists.
+
 ### 2026-09-20 — a container may have arity zero, which is how a fixed shape is registered
 
 Phase 4 of `../docs/refactor/33-plugin-java.md` needed one thing of the contract, and this is it.
