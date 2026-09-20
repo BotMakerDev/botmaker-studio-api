@@ -23,10 +23,10 @@ No source changes since v0.1.4; re-released for updated upstream pins.
 
 - **`ValueForm`** — the type of a value as a tree: a catalogued `Leaf`, an `Of` over a `ValueContainer`, or a
   `Declared` class the bot itself writes. Nested to any depth, so a field declared `Map<String, List<Point>>`
-  is something the vocabulary can now say at all. `ValueChoice.form()` and `ValueForm.asChoice(boolean)`
-  bridge the two while callers move across; the bridge is lossless out of a choice and answers the unknown
-  type for anything a choice cannot express, which is the state that already means *displayed, never
-  rewritten*. Nothing changes behaviour yet. Design: `docs/refactor/32-generic-values.md`.
+  is something the vocabulary can now say at all. It **replaces `ValueChoice` and `ValueShape`**, which are
+  deleted below. `ValueForm.leaf()` is the one question that survived them: the single type a form's values
+  are typed as, which is what a declared set of choices and a declared range are asked of, and `null` for a
+  form with more than one. Design: `docs/refactor/32-generic-values.md`.
 - **`ValueContainer<C>`** — a composite a value may be built out of, registered in a `ValueCatalog` exactly
   as a `ValueType` and its `ValueCodec` are. **A plugin may now contribute its own** — `Set`, `Optional`,
   an `Either<L, R>` — with no contract change. A container takes a composite apart into typed parts
@@ -51,8 +51,7 @@ No source changes since v0.1.4; re-released for updated upstream pins.
 ### Changed
 
 - **`ParameterRow` carries a `ValueForm`, and its value is one source string.** `named(String, ValueForm)`
-  is the way a row is built; `form()` is what it holds and `type()` is the `ValueChoice` derived from it for
-  the surfaces that have not moved. `value()` was a `List<String>` of wires — one entry for an ordinary row,
+  is the only way a row is built and `form()` is what it holds. `value()` was a `List<String>` of wires — one entry for an ordinary row,
   one per item for a list-shaped one — and that list was only ever there to carry the *list*: a form says
   `Map<String, List<Duration>>`, which no flat list of wires can encode. It crosses as the Java initialiser
   a field of that form takes, which is what `ValueCatalog.initializer` writes and `valueOf` reads back.
@@ -90,6 +89,27 @@ No source changes since v0.1.4; re-released for updated upstream pins.
   such constants is refused whole. It is what lets a picture class be read-only without the host knowing what
   a picture is. A `default` returning nothing, so an older plugin manages nothing and every field stays as
   editable as it was.
+
+### Removed
+
+- **`ValueChoice` and `ValueShape`.** A choice was a `ValueType` plus a four-constant shape, and it could
+  not say `Map<String, Duration>`, `List<List<Point>>` or anything else with two type arguments or two
+  levels — a field javac accepts perfectly well, read as unknown and refused. The shape also answered two
+  unrelated questions at once, *how many* and *out of what set*, and the second was never a property of a
+  type: it is what the declaration wrote down, which is `ParameterRow.options()` and has been all along.
+  `ValueForm` says the first and nothing says the second twice. `ParameterRow.type()` and
+  `named(String, ValueChoice)` go with them, as does `ValueForm.asChoice(boolean)`, the one-directional
+  bridge that existed so callers could move across one at a time.
+
+- **`ValueCatalog.imports(ValueChoice)`**, replaced by `imports(ValueForm)`, which walks the whole tree.
+  The flat writer and reader are **renamed rather than deleted**: `initializer(ValueChoice, List<String>)`
+  and `valueOfInitializer(ValueChoice, String)` are now `initializerOfWires(ValueForm, List<String>)` and
+  `wiresOfInitializer(ValueForm, String)`. They compose nothing of their own — each delegates to
+  `initializer`/`valueOf` — and exist for the one kind of caller that still holds a value as one string per
+  item, a plugin whose own JSON file keeps it that way. They are named for the wire so that nothing reaches
+  for them by accident, and they go when those files do.
+
+  Breaking, like everything above, and taken while no third-party plugin exists.
 
 ## [0.1.4] — 2026-09-19
 

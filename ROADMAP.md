@@ -5,6 +5,30 @@ reasoning.
 
 ## Done
 
+### 2026-09-20 — `ValueChoice` and `ValueShape` are deleted
+
+Phase G of `../docs/refactor/32-generic-values.md`. `ValueForm` had been carrying every caller since phase D;
+what is gone now is the pair it replaced, its bridge (`ValueForm.asChoice`, `ValueChoice.form()`) and
+`ParameterRow.type()`.
+
+**A shape answered two unrelated questions at once**, and that is the part worth keeping in mind rather than
+the deletion. *How many* is the type's business and is a container now. *Out of what set* never was: it is
+what the author wrote down beside the declaration, which the row has always carried as `options()`, and
+encoding it in the type meant the same fact lived in two places and had to be kept in step — the whole
+purpose of `VariableModel.listShapeOf`, which read a sibling field to decide which of two identical shapes a
+stored `ANY_OF` had meant. That function is gone too, and so is the question.
+
+What survived is one method. `ValueForm.leaf()` answers the single type a form's values are typed as — the
+form itself, or a container's last argument, and `null` for a tree with more than one. Every caller that read
+`ValueChoice.type()` asks it, and the two questions it exists for are the declared set and the declared
+`Range`, both of which are meaningless without one leaf to be values of.
+
+**The flat pair is renamed, not deleted.** `initializerOfWires(ValueForm, List<String>)` and
+`wiresOfInitializer(ValueForm, String)` are the old `initializer`/`valueOfInitializer`, keyed on a form and
+named for what they carry. They exist for a caller holding one string per item — a plugin's own JSON file —
+delegate to the live-value grammar and compose nothing, and go when those files do (phase L). Naming them for
+the wire is deliberate: nothing should reach for them without noticing.
+
 ### 2026-09-19 — a plugin can say which constants are its window's
 
 `StudioPlugin.managedFields()` and `ManagedField(typeName, reason)`, `default` and empty. A plugin names a

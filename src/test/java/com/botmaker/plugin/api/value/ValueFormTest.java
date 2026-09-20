@@ -6,16 +6,15 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The type tree, and the bridge that lets it arrive one caller at a time.
+ * The type tree: how it spells itself, how deep it goes, and which single type its values are of.
  *
- * <p>What is checked here is what {@link ValueChoice} could not say and what must survive the trip back to
- * it. The bridge is lossy in exactly one direction and the four-constant table of
- * {@code docs/refactor/32-generic-values.md} is the specification: {@code ONE} and {@code ONE_OF} are the
- * form itself, {@code ANY_OF} and {@code OPEN_LIST} are a list of it, and whether the author wrote the set
- * down is a question the declaration answers rather than the type.
+ * <p>What is checked here is what the deleted {@code ValueChoice} could not say — two type arguments, two
+ * levels, a class the bot declares — and the one question that survived it, which is the leaf a declared set
+ * and a declared range are asked of. {@code docs/refactor/32-generic-values.md} is the specification.
  */
 class ValueFormTest {
 
@@ -40,10 +39,10 @@ class ValueFormTest {
     }
 
     @Test
-    void aMapIsSomethingValueChoiceCouldNotSay() {
+    void aMapIsSomethingTheDeletedChoicePairCouldNotSay() {
         ValueForm form = ValueForm.mapOf(ValueForm.of(TEXT), ValueForm.of(POINT));
-        // Simple names inside the brackets, exactly as ValueChoice.sourceName already writes them: the
-        // import is the form's separate answer, not part of its spelling.
+        // Simple names inside the brackets: the import is the form's separate answer, not part of its
+        // spelling.
         assertEquals("java.util.Map<String, Point>", form.sourceName());
         assertEquals(1, form.depth());
     }
@@ -87,35 +86,18 @@ class ValueFormTest {
     }
 
     @Test
-    void everyShapeRoundTripsThroughTheBridge() {
-        for (ValueShape shape : ValueShape.values()) {
-            ValueChoice choice = new ValueChoice(TEXT, shape);
-            ValueChoice back = choice.form().asChoice(choice.hasOptions());
-            assertEquals(choice, back, shape.name());
-        }
+    void theLeafIsTheTypeTheUserTypesValuesOf() {
+        assertEquals(TEXT, ValueForm.of(TEXT).leaf());
+        assertEquals(TEXT, ValueForm.listOf(ValueForm.of(TEXT)).leaf());
+        // A map's values are what its cell types, so the value argument is the leaf and the key is not.
+        assertEquals(COUNT, ValueForm.mapOf(ValueForm.of(TEXT), ValueForm.of(COUNT)).leaf());
     }
 
     @Test
-    void theBridgeCarriesTheSourceSpellingUnchanged() {
-        for (ValueShape shape : ValueShape.values()) {
-            ValueChoice choice = new ValueChoice(TEXT, shape);
-            assertEquals(choice.sourceName(), choice.form().sourceName(), shape.name());
-        }
-    }
-
-    @Test
-    void whatAChoiceCannotSayBecomesUnknownRatherThanWrong() {
-        // A map has no ValueChoice, so the bridge answers the state that already means "shown, never
-        // rewritten" — silently dropping the value half would retype a user's field.
-        ValueChoice back = ValueForm.mapOf(ValueForm.of(TEXT), ValueForm.of(COUNT)).asChoice(false);
-        assertFalse(back.type().known());
-        assertEquals("java.util.Map<String, Integer>", back.type().id());
-        assertEquals(ValueShape.ONE, back.shape());
-    }
-
-    @Test
-    void aNestedListIsNotFlattenedIntoAList() {
-        ValueChoice back = ValueForm.listOf(ValueForm.listOf(ValueForm.of(TEXT))).asChoice(false);
-        assertFalse(back.type().known());
+    void aContainerOfContainersHasNoLeafOfItsOwn() {
+        // The two questions a leaf answers — what may this be, between which numbers — are meaningless for a
+        // tree with several, so there is no answer rather than an arbitrary one.
+        assertNull(ValueForm.listOf(ValueForm.listOf(ValueForm.of(TEXT))).leaf());
+        assertNull(new ValueForm.Declared("com.mybot.Box", List.of(ValueForm.of(TEXT))).leaf());
     }
 }

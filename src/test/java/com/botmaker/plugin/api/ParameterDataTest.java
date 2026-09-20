@@ -2,9 +2,7 @@ package com.botmaker.plugin.api;
 
 import com.botmaker.plugin.api.value.Range;
 import com.botmaker.plugin.api.value.ValueCatalog;
-import com.botmaker.plugin.api.value.ValueChoice;
 import com.botmaker.plugin.api.value.ValueForm;
-import com.botmaker.plugin.api.value.ValueShape;
 import com.botmaker.plugin.api.value.ValueType;
 import com.botmaker.plugin.api.value.Visibility;
 import org.junit.jupiter.api.Test;
@@ -35,7 +33,7 @@ class ParameterDataTest {
             .boxed("Integer").primitive().bounded().build();
 
     private static ParameterRow.Builder row(String name) {
-        return ParameterRow.named(name, ValueChoice.of(TEXT));
+        return ParameterRow.named(name, ValueForm.of(TEXT));
     }
 
     // ---- a plugin that has never heard of this surface -------------------------------------------------
@@ -69,7 +67,7 @@ class ParameterDataTest {
 
             @Override
             public List<ParameterRow> parameterRows(String groupId) {
-                return List.of(ParameterRow.named("retries", ValueChoice.of(WHOLE))
+                return List.of(ParameterRow.named("retries", ValueForm.of(WHOLE))
                         .value("2").bounds(new Range("1", "5")).build());
             }
 
@@ -90,8 +88,8 @@ class ParameterDataTest {
 
     @Test
     void aRowNeedsAName() {
-        assertThrows(IllegalArgumentException.class, () -> ParameterRow.named("  ", ValueChoice.of(TEXT)));
-        assertThrows(IllegalArgumentException.class, () -> ParameterRow.named(null, ValueChoice.of(TEXT)));
+        assertThrows(IllegalArgumentException.class, () -> ParameterRow.named("  ", ValueForm.of(TEXT)));
+        assertThrows(IllegalArgumentException.class, () -> ParameterRow.named(null, ValueForm.of(TEXT)));
     }
 
     /** Every default is the reading that keeps a project open: a value, a visibility and a range all absent. */
@@ -113,31 +111,25 @@ class ParameterDataTest {
     /** A row with no type at all is an unknown type rather than a {@code null} the host would trip over. */
     @Test
     void aRowWithNoTypeHoldsAnUnknownOne() {
-        ParameterRow untyped = ParameterRow.named("legacy", (ValueForm) null).value("kept").build();
+        ParameterRow untyped = ParameterRow.named("legacy", null).value("kept").build();
 
-        assertFalse(untyped.type().type().known());
         assertFalse(untyped.form().known());
         assertEquals("kept", untyped.value());
     }
 
-    /**
-     * A row carries a {@link ValueForm}, and a row named with a {@link ValueChoice} carries both — the choice
-     * exactly as it was given, because the bridge must not change what an existing caller stores.
-     */
+    /** A row carries its whole type tree, including the ones the deleted choice pair could not say. */
     @Test
-    void aRowCarriesItsFormAndAnyChoiceItWasNamedWith() {
-        ParameterRow listed = ParameterRow.named("keys", ValueChoice.listOf(TEXT)).build();
+    void aRowCarriesItsWholeForm() {
+        ParameterRow listed = ParameterRow.named("keys", ValueForm.listOf(ValueForm.of(TEXT))).build();
 
         assertEquals(ValueForm.listOf(ValueForm.of(TEXT)), listed.form());
-        assertEquals(ValueChoice.listOf(TEXT), listed.type());
+        assertEquals(TEXT, listed.form().leaf(), "the leaf a declared set and a range are asked of");
 
         ParameterRow mapped = ParameterRow.named("retries",
                 ValueForm.mapOf(ValueForm.of(TEXT), ValueForm.of(WHOLE))).build();
 
         assertEquals("java.util.Map<String, Integer>", mapped.form().sourceName());
-        // Nothing a ValueChoice can say describes a map, so the derived one reads as the unknown type —
-        // which is the state that already means displayed, never rewritten.
-        assertFalse(mapped.type().type().known());
+        assertTrue(mapped.form().known(), "and it is readable, where a choice had to call it unknown");
     }
 
     @Test
@@ -197,11 +189,11 @@ class ParameterDataTest {
      */
     @Test
     void aCompositeValueCrossesAsOneInitializer() {
-        ParameterRow keys = ParameterRow.named("hotkeys", new ValueChoice(TEXT, ValueShape.OPEN_LIST))
+        ParameterRow keys = ParameterRow.named("hotkeys", ValueForm.listOf(ValueForm.of(TEXT)))
                 .value("java.util.List.of(\"F1\", \"F2\")").build();
         ParameterEdit edit = new ParameterEdit("", "hotkeys", "java.util.List.of(\"F1\", \"F2\", \"F3\")");
 
-        assertTrue(keys.type().isList());
+        assertEquals("java.util.List<String>", keys.form().sourceName());
         assertTrue(edit.changes(keys));
         assertEquals("java.util.List.of(\"F1\", \"F2\", \"F3\")", keys.withValue(edit.value()).value());
     }

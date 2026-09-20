@@ -15,8 +15,11 @@
  * <ul>
  *   <li>{@link com.botmaker.plugin.api.value.ValueType} — one kind of value. No longer an enum; identity is
  *       its persisted {@code id}, never object identity, which two plugin classloaders would make useless.</li>
- *   <li>{@link com.botmaker.plugin.api.value.ValueShape} — how many, and out of what set.</li>
- *   <li>{@link com.botmaker.plugin.api.value.ValueChoice} — the pair of the two, as a variable declares it.</li>
+ *   <li>{@link com.botmaker.plugin.api.value.ValueForm} — the type as a variable declares it, as a tree: a
+ *       leaf, a container over other forms, or a class the bot itself declares.</li>
+ *   <li>{@link com.botmaker.plugin.api.value.ValueContainer} — one composite, registered beside a type. The
+ *       contract seeds {@code List}, {@code Map} and {@code Map.Entry} with no privilege over a plugin's
+ *       own.</li>
  *   <li>{@link com.botmaker.plugin.api.value.ValueCodec} — what one type's text means, in the plugin's own
  *       terms. Its {@code T} never crosses to the host.</li>
  *   <li>{@link com.botmaker.plugin.api.value.ValueCatalog} — the registry, and the merge that assembles one

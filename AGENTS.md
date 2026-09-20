@@ -16,14 +16,16 @@ one artifact (`javafx-controls`, `provided`).
   `MemberId`, and the package-private `SourceOrder`. The *result* type:
   `PaletteCatalog.of(Class<?>...)` builds it by reflection. `CatalogBuilder`, `MemberRef` and the arity
   shapes `M0`–`M5` were deleted on 2026-08-27 — see *The catalog* below.
-- `com.botmaker.plugin.api.value` — the **value vocabulary**: `ValueType`, `ValueForm`, `ValueShape`,
-  `ValueChoice`, `Visibility`, `Range`, `ValueCodec` and `ValueCatalog`. What a bot's *variable* can be, which
+- `com.botmaker.plugin.api.value` — the **value vocabulary**: `ValueType`, `ValueForm`, `ValueContainer`,
+  `Visibility`, `Range`, `ValueCodec` and `ValueCatalog`. What a bot's *variable* can be, which
   is a question the contract answers so a plugin can own a type without the SDK granting it one.
-  **`ValueForm` is replacing the `ValueShape`/`ValueChoice` pair** (`../docs/refactor/32-generic-values.md`):
-  a type is a tree — a catalogued leaf, a `List`/`Map` over other forms, or a class the bot declares — so
-  `Map<String, List<Point>>` is sayable and a shape stops encoding a widget choice inside a type. The two
-  live side by side behind `ValueChoice.form()`/`ValueForm.asChoice(boolean)` only until every caller has
-  moved; **write new code against `ValueForm`**. A plugin contributes **leaves** through `ValueCatalog` as
+  **`ValueForm` replaced the `ValueShape`/`ValueChoice` pair**, deleted 2026-09-20
+  (`../docs/refactor/32-generic-values.md`): a type is a tree — a catalogued leaf, a `List`/`Map` over other
+  forms, or a class the bot declares — so `Map<String, List<Point>>` is sayable and a shape stops encoding a
+  widget choice inside a type. **Whether a set of choices is declared is asked of the row**
+  (`ParameterRow.options()`), never of the type; `ValueForm.leaf()` is the single type a form's values are
+  typed as, which is what that set and a declared `Range` are asked of. A plugin contributes **leaves**
+  through `ValueCatalog` as
   before, and now **containers** too: `ValueContainer<C>` is a composite registered beside a type, and the
   contract seeds only three (`List`, `Map`, `Map.Entry`) with no privilege over a plugin's own. A container
   takes a value apart and puts it back — **no string function crosses**; the host writes all syntax, once,
@@ -194,8 +196,8 @@ have had parameters at all, and the host knew what a `tag`, a `visibility` and a
 this is the same cut as `StudioServices.sources()`: the host keeps the window, the undo, the rendering and
 the ordering; the plugin keeps the file, the meaning of the text and when it is written.
 
-**Every component of a row is already vocabulary this module owns** — a name, a `ValueChoice`, a stored
-`List<String>`, a `Visibility`, a declared option set, a `Range`, a category out of
+**Every component of a row is already vocabulary this module owns** — a name, a `ValueForm`, the value's
+Java source, a `Visibility`, a declared option set, a `Range`, a category out of
 `ParameterGroup.categories()`. Nothing plugin-specific crosses, no `Class<?>` crosses, and the value is
 **text**, exactly as it is through `ValueCodec`. That is rules 2 and 3 above, satisfied by not needing an
 exemption.
@@ -298,8 +300,8 @@ module exists: a plugin wanting a `Channel` variable would need a constant added
   compatibility rate.
 - **`ValueType` and `ValueCatalog.Entry` are classes with builders, not records**, for trap #2 of
   `../docs/refactor/25-compatibility.md`: adding a component to a public record changes its canonical
-  constructor descriptor, which is `NoSuchMethodError` in every already-compiled plugin. `ValueChoice` and
-  `Range` *are* records and are therefore **frozen** — their components may not grow.
+  constructor descriptor, which is `NoSuchMethodError` in every already-compiled plugin. `Range` and
+  `ValueForm`'s three cases *are* records and are therefore **frozen** — their components may not grow.
 
 ## The catalog, and why it is reflection
 

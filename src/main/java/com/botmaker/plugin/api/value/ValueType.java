@@ -150,8 +150,8 @@ public final class ValueType {
     }
 
     /**
-     * Whether this type's values <em>are</em> a set the editor already shows in full — which is what makes
-     * {@link ValueShape#ONE_OF} over it meaningless. "One of yes and no" is a boolean, said twice and worse.
+     * Whether this type's values <em>are</em> a set the editor already shows in full — which is what makes a
+     * declared set over it meaningless. "One of yes and no" is a boolean, said twice and worse.
      */
     public boolean isClosedSet() {
         return closedSet;

@@ -6,10 +6,12 @@ import java.util.List;
  * The type of a value, as a tree: a catalogued leaf, a host container over other forms, or a generic class
  * the bot itself declares.
  *
- * <p>This replaces {@link ValueChoice}, which is a {@link ValueType} plus a {@link ValueShape} and therefore
- * cannot say {@code Map<String, Duration>}, {@code List<List<Point>>}, or anything else with two type
- * arguments or two levels. A bot may perfectly well declare such a field — javac accepts it — and the host
- * read it as unknown and refused to edit it. The design is {@code docs/refactor/32-generic-values.md}.
+ * <p>This replaced {@code ValueChoice}, a {@link ValueType} plus a four-constant {@code ValueShape}, deleted
+ * on 2026-09-20. That pair could not say {@code Map<String, Duration>}, {@code List<List<Point>>}, or
+ * anything else with two type arguments or two levels. A bot may perfectly well declare such a field — javac
+ * accepts it — and the host read it as unknown and refused to edit it. The shape also answered two unrelated
+ * questions at once, <em>how many</em> and <em>out of what set</em>, and the second belongs to the
+ * declaration rather than to the type. The design is {@code docs/refactor/32-generic-values.md}.
  *
  * <p><b>Nesting is unbounded here.</b> A host caps what its <em>picker</em> offers, because a four-level
  * value cell is not drawable in a table row; nothing caps what may be read out of a user's file, displayed
@@ -32,7 +34,7 @@ import java.util.List;
  */
 public sealed interface ValueForm {
 
-    /** One catalogued type: everything a {@link ValueChoice} could say that was not a list. */
+    /** One catalogued type: a value with no parts, whose whole grammar is its own {@link ValueCodec}. */
     record Leaf(ValueType type) implements ValueForm {
 
         public Leaf {
@@ -42,8 +44,7 @@ public sealed interface ValueForm {
 
     /**
      * A host container over other forms. The arity is the container's, and a wrong one is corrected rather
-     * than stored, for the same reason {@link ValueChoice} corrects an impossible shape: every reader gets
-     * the correction — a file, a fixture, a caller's literal.
+     * than stored, so that every reader gets the correction — a file, a fixture, a caller's literal.
      */
     record Of(ValueContainer<?> container, List<ValueForm> arguments) implements ValueForm {
 
@@ -112,8 +113,8 @@ public sealed interface ValueForm {
      *
      * <p>A leaf inside the brackets is spelled the way it is spelled anywhere else, which for a type with an
      * import is its simple name; the import is what {@code ValueCatalog.imports} answers separately. The
-     * containers themselves are written fully qualified, exactly as {@link ValueChoice#sourceName()} already
-     * writes {@code java.util.List}.
+     * containers themselves are written fully qualified, so a caller composing a declaration never needs an
+     * import for the container.
      *
      * <p>Primitives are boxed inside angle brackets and only there, which is the one thing a type argument
      * needs from its leaf that a bare declaration does not.
@@ -156,8 +157,8 @@ public sealed interface ValueForm {
      * Whether every leaf in this form is a type the catalog knows.
      *
      * <p>A form with an unknown leaf anywhere is displayed and never rewritten — one unreadable argument
-     * makes the whole form unreadable, the same rule {@code ValueCatalog.valueOfInitializer} already applies
-     * to one unreadable item of a list.
+     * makes the whole form unreadable, the same rule {@code ValueCatalog.valueOf} already applies to one
+     * unreadable item of a list.
      */
     default boolean known() {
         return switch (this) {
@@ -169,23 +170,19 @@ public sealed interface ValueForm {
     }
 
     /**
-     * This form as a {@link ValueChoice}, for the surfaces that have not moved yet.
+     * The leaf this form's own values are of, or {@code null} when it has none — the element of a list, the
+     * value of a map, the form itself when it is a leaf.
      *
-     * <p><b>Lossy on purpose, and one-directional.</b> Anything a {@code ValueChoice} cannot say — a map, a
-     * nested container, a declared class — answers the unknown type, which is the state that already means
-     * <em>displayed, not edited</em>. The bridge exists so a form can be introduced without moving every
-     * caller in one change; it is deleted with {@code ValueChoice} itself.
-     *
-     * @param hasOptions whether the owner of the declaration wrote the set of values down; the options are
-     *                   not part of a form and never were part of a type
+     * <p>The two questions asked of a leaf — <em>what may this value be</em> (the declared choices) and
+     * <em>between which numbers</em> (the range) — are asked of the type the user types values of, which is
+     * the last argument of a container and nothing at all for a container of containers. Every caller that
+     * used to read {@code ValueChoice.type()} asks this instead.
      */
-    default ValueChoice asChoice(boolean hasOptions) {
+    default ValueType leaf() {
         return switch (this) {
-            case Leaf leaf -> new ValueChoice(leaf.type(),
-                    hasOptions ? ValueShape.ONE_OF : ValueShape.ONE);
-            case Of of when of.container() == ValueContainer.LIST && of.last() instanceof Leaf leaf ->
-                    new ValueChoice(leaf.type(), hasOptions ? ValueShape.ANY_OF : ValueShape.OPEN_LIST);
-            default -> ValueChoice.of(ValueType.unknown(sourceName()));
+            case Leaf leaf -> leaf.type();
+            case Of of when of.last() instanceof Leaf leaf -> leaf.type();
+            default -> null;
         };
     }
 }

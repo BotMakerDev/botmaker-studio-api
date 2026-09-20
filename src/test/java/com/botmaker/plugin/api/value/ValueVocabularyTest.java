@@ -76,9 +76,9 @@ class ValueVocabularyTest {
         assertEquals("discord.Channel", unknown.id());
         assertFalse(c.knows("discord.Channel"));
         assertTrue(c.codec("discord.Channel").isEmpty());
-        assertTrue(c.initializer(ValueChoice.of(unknown), List.of("#general")).isEmpty(),
+        assertTrue(c.initializerOfWires(ValueForm.of(unknown), List.of("#general")).isEmpty(),
                 "a guessed literal is worse than a missing field: it compiles and means something else");
-        assertTrue(c.imports(ValueChoice.of(unknown)).isEmpty());
+        assertTrue(c.imports(ValueForm.of(unknown)).isEmpty());
     }
 
     /** An absent id is a file older than the vocabulary, which has always read as text. */
@@ -102,15 +102,18 @@ class ValueVocabularyTest {
     }
 
     /**
-     * Shape is composed above the codec, so one per-item codec serves all four shapes. That is why
-     * {@link ValueCodec} takes a {@code String} and not the whole stored list.
+     * The container is composed above the codec, so one per-item codec serves a leaf and a list alike. That
+     * is why {@link ValueCodec} takes a {@code String} and not the whole stored list.
      */
     @Test
-    void oneItemCodecServesEveryShape() {
+    void oneItemCodecServesALeafAndAListOfIt() {
         ValueCatalog c = catalog();
-        assertEquals("\"a\"", c.initializer(ValueChoice.of(TEXT), List.of("a")).orElseThrow());
-        assertTrue(c.initializer(ValueChoice.listOf(TEXT), List.of("a", "b")).orElseThrow()
-                .contains("\"b\""), "a list initializer is the item literals, composed");
+        assertEquals("\"a\"", c.initializerOfWires(ValueForm.of(TEXT), List.of("a")).orElseThrow());
+        assertTrue(c.initializerOfWires(ValueForm.listOf(ValueForm.of(TEXT)), List.of("a", "b"))
+                .orElseThrow().contains("\"b\""), "a list initializer is the item literals, composed");
+        assertTrue(c.initializerOfWires(ValueForm.mapOf(ValueForm.of(TEXT), ValueForm.of(TEXT)),
+                        List.of("a")).isEmpty(),
+                "and a form with two leaves declines, because a flat list of items cannot describe one");
     }
 
     /**
@@ -130,12 +133,12 @@ class ValueVocabularyTest {
                 "the clash is reported rather than thrown, so a host can say which plugin lost");
     }
 
-    /** The impossible shape can only come from a file, and a file that says it must still open. */
+    /** A type whose values already are a set has nothing for an author-written subset to add. */
     @Test
     void aClosedSetCannotCarryAnAuthorWrittenSubset() {
         ValueType flag = ValueType.of("YES_NO").source("boolean").primitive().closedSet().build();
-        assertEquals(ValueShape.ONE, new ValueChoice(flag, ValueShape.ONE_OF).shape());
-        assertEquals(ValueShape.ONE_OF, new ValueChoice(TEXT, ValueShape.ONE_OF).shape());
+        assertFalse(flag.shapeable(), "\"one of yes and no\" is a boolean, said twice and worse");
+        assertTrue(TEXT.shapeable());
     }
 
     /**
@@ -220,12 +223,10 @@ class ValueVocabularyTest {
     @Test
     void everyWireParseIsTotal() {
         ValueCatalog c = catalog();
-        assertEquals(ValueShape.ONE, ValueShape.fromWire("A_SHAPE_FROM_THE_FUTURE"));
-        assertEquals(ValueShape.ONE, ValueShape.fromWire(null));
         assertEquals(Visibility.EDITOR_ONLY, Visibility.fromId("neither"));
         assertEquals(Visibility.EDITOR_ONLY, Visibility.fromId(null));
         assertSame(Range.NONE, Range.NONE);
         assertTrue(new Range("", "  ").isEmpty(), "a blank bound is no bound");
-        assertEquals(TEXT, ValueChoice.fromWire(c, null, null, null).type());
+        assertEquals(TEXT, c.type(null), "an absent id is a file older than the vocabulary, and reads as text");
     }
 }

@@ -16,9 +16,9 @@ import java.util.Optional;
  * context it could be handed was one built around an argument of a method call.
  *
  * <p><b>The value is a {@code List<String>}, always.</b> Not a {@code String}, and not a typed value: that
- * is what a project file holds, for every {@link com.botmaker.plugin.api.value.ValueShape shape} —
- * a single value is a one-element list, an empty one is a list of none. An editor for a shape it does not
- * understand reads {@link #single()} and is right about the ordinary case.
+ * is what a project file holds, for a leaf and for a list of one alike — a single value is a one-element
+ * list, an empty one is a list of none. An editor for a form it does not understand reads {@link #single()}
+ * and is right about the ordinary case.
  *
  * <p><b>The type crosses as a {@link TypeRef}, never as a {@code Class}</b> — see the module's rule 2. A
  * value-vocabulary type reaches an editor as the Java type it is written as

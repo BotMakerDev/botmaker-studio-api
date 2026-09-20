@@ -1,7 +1,6 @@
 package com.botmaker.plugin.api;
 
 import com.botmaker.plugin.api.value.Range;
-import com.botmaker.plugin.api.value.ValueChoice;
 import com.botmaker.plugin.api.value.ValueForm;
 import com.botmaker.plugin.api.value.ValueType;
 import com.botmaker.plugin.api.value.Visibility;
@@ -62,7 +61,6 @@ public final class ParameterRow {
 
     private final String name;
     private final ValueForm form;
-    private final ValueChoice type;
     private final String value;
     private final String description;
     private final String category;
@@ -79,7 +77,6 @@ public final class ParameterRow {
         this.visibility = b.visibility == null ? Visibility.PUBLIC : b.visibility;
         this.options = List.copyOf(b.options);
         this.bounds = b.bounds == null ? Range.NONE : b.bounds;
-        this.type = b.type == null ? this.form.asChoice(!this.options.isEmpty()) : b.type;
     }
 
     /**
@@ -94,17 +91,6 @@ public final class ParameterRow {
         return new Builder(name, form);
     }
 
-    /**
-     * The same, for a caller that still holds a {@link ValueChoice}.
-     *
-     * <p>The choice is kept as well as its form, so a row built this way answers {@link #type()} exactly what
-     * it was given rather than a value derived back out of the form — the bridge must not change what an
-     * existing caller stores. It goes with {@code ValueChoice} itself.
-     */
-    public static Builder named(String name, ValueChoice type) {
-        return new Builder(name, type);
-    }
-
     /** The field name, unique within its group. Never blank — the builder refuses one. */
     public String name() {
         return name;
@@ -113,14 +99,6 @@ public final class ParameterRow {
     /** What kind of value: a catalogued leaf, or a container over other forms. */
     public ValueForm form() {
         return form;
-    }
-
-    /**
-     * What kind of value, as a {@link ValueChoice} — lossy for anything a choice cannot say, which reads as
-     * the unknown type. For the surfaces that have not moved to {@link #form()} yet.
-     */
-    public ValueChoice type() {
-        return type;
     }
 
     /**
@@ -161,8 +139,9 @@ public final class ParameterRow {
     }
 
     /**
-     * The set of values this row may take, for a shape that {@link ValueChoice#hasOptions() has one} —
-     * each spelled the way the type's codec stores it. Empty for a free value.
+     * The set of values this row may take, each spelled the way the type's codec stores it. Empty for a free
+     * value, which is what having a set is asked by: the question belongs to the declaration rather than to
+     * the type, which is why a form does not answer it.
      */
     public List<String> options() {
         return options;
@@ -188,7 +167,7 @@ public final class ParameterRow {
 
     /** A builder holding everything this row holds — the way to change more than one thing at a time. */
     public Builder toBuilder() {
-        return new Builder(name, form, type)
+        return new Builder(name, form)
                 .value(value)
                 .description(description)
                 .category(category)
@@ -231,7 +210,6 @@ public final class ParameterRow {
 
         private final String name;
         private final ValueForm form;
-        private final ValueChoice type;
         private String value = "";
         private String description;
         private String category;
@@ -240,18 +218,9 @@ public final class ParameterRow {
         private Range bounds;
 
         private Builder(String name, ValueForm form) {
-            this(name, form, null);
-        }
-
-        private Builder(String name, ValueChoice type) {
-            this(name, type == null ? null : type.form(), type);
-        }
-
-        private Builder(String name, ValueForm form, ValueChoice type) {
             this.name = name == null ? "" : name.trim();
             if (this.name.isEmpty()) throw new IllegalArgumentException("a parameter row needs a name");
             this.form = form;
-            this.type = type;
         }
 
         /** The value, as the Java initialiser a field of this form takes. {@code null} is no value. */

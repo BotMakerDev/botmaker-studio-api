@@ -43,7 +43,7 @@ public final class ValueCatalog {
      *
      * <p>Here for the same reason as {@link #TEXT_ID} and for exactly one caller — the SDK's
      * {@code ActivityModel.enabledVariable()}, which builds a
-     * {@link ValueChoice} for a flag nobody stored, so it needs an id and has no catalog in hand. A
+     * {@link ValueForm} for a flag nobody stored, so it needs an id and has no catalog in hand. A
      * {@link ValueType}'s identity <em>is</em> its id, so naming the id is the whole of what it needs; the
      * label, the group and the Java type it emits stay the registering plugin's, and arrive when a catalog
      * is merged.
@@ -267,46 +267,69 @@ public final class ValueCatalog {
         return e == null ? Optional.empty() : Optional.of(e.codec());
     }
 
+    // ---- the stored-form pair, which outlives its own design only until its files do ---------------------
+    //
+    // These two are the form-directed grammar below asked in terms of *stored text* rather than live values,
+    // for the one kind of caller that still holds a value that way: a plugin whose own JSON file keeps one
+    // string per item. They compose nothing of their own — each delegates to `initializer`/`valueOf` — and
+    // they are deliberately named for the wire so that nothing reaches for them by accident.
+    //
+    // They go with the files. See phase L of the plan in docs/refactor/32-generic-values.md.
+
     /**
-     * The initialiser for a field of this type holding this value: a single literal, or
-     * {@code java.util.List.of(…)} over one literal per item.
+     * The initialiser for a field of {@code form} holding the value these stored items spell: one literal
+     * for a leaf, {@code java.util.List.of(…)} over one literal per item for a list of one.
      *
-     * <p><b>Empty means "decline"</b>, and the only thing that declines is an unknown type. A generator that
-     * gets an empty answer must leave the field out entirely rather than invent one — there is no source
-     * spelling for a type nobody could describe, and a wrong guess compiles into the user's bot.
+     * <p><b>Empty means "decline"</b>, and what declines is an unknown type or a form with more than one
+     * leaf, which no flat list of items can describe. A generator that gets an empty answer must leave the
+     * field out entirely rather than invent one — there is no source spelling for a type nobody could
+     * describe, and a wrong guess compiles into the user's bot.
      */
-    public Optional<String> initializer(ValueChoice choice, List<String> value) {
-        if (choice == null) return Optional.empty();
-        Optional<ValueCodec<?>> found = codec(choice.type().id());
+    public Optional<String> initializerOfWires(ValueForm form, List<String> wires) {
+        ValueType leaf = flatLeaf(form);
+        Optional<ValueCodec<?>> found = leaf == null ? Optional.empty() : codec(leaf.id());
         if (found.isEmpty()) return Optional.empty();
         ValueCodec<?> codec = found.get();
-        List<String> wires = value == null ? List.of() : value;
-        if (!choice.isList()) {
-            return initializer(choice.form(), parseOf(codec, wires.isEmpty() ? "" : wires.getFirst()));
+        List<String> items = wires == null ? List.of() : wires;
+        if (form instanceof ValueForm.Leaf) {
+            return initializer(form, parseOf(codec, items.isEmpty() ? "" : items.getFirst()));
         }
-        return initializer(choice.form(), wires.stream().map(wire -> parseOf(codec, wire)).toList());
+        return initializer(form, items.stream().map(wire -> parseOf(codec, wire)).toList());
     }
 
     /**
-     * {@link #initializer} read backwards: the stored value a field's initialiser came from, or empty.
+     * {@link #initializerOfWires} read backwards: the stored items a field's initialiser came from, or empty.
      *
-     * <p>The shape is composed here and the item is the codec's, exactly as on the way out — so
-     * {@code java.util.List.of(a, b)} answers two items for a list-shaped choice, and a codec is written
-     * once for both shapes. An item the codec does not recognise makes the <em>whole</em> answer empty:
-     * half a list is not a value, and the host must show the source it cannot read rather than a partial
-     * reading of it.
+     * <p>The container is composed by the grammar below and the item is the codec's, exactly as on the way
+     * out — so {@code java.util.List.of(a, b)} answers two items and a codec is written once for both. An
+     * item the codec does not recognise makes the <em>whole</em> answer empty: half a list is not a value,
+     * and the host must show the source it cannot read rather than a partial reading of it.
      *
-     * <p>Empty for an unknown type, for a list-shaped choice whose source is not a {@code List.of(…)} call,
-     * and for anything the codec declines. The host then shows the initialiser as written, read-only.
+     * <p>Empty for an unknown type, for a list whose source is not a {@code List.of(…)} call, and for
+     * anything the codec declines. The host then shows the initialiser as written, read-only.
      */
-    public Optional<List<String>> valueOfInitializer(ValueChoice choice, String initializer) {
-        if (choice == null || initializer == null) return Optional.empty();
-        Optional<ValueCodec<?>> found = codec(choice.type().id());
+    public Optional<List<String>> wiresOfInitializer(ValueForm form, String initializer) {
+        ValueType leaf = flatLeaf(form);
+        if (leaf == null || initializer == null) return Optional.empty();
+        Optional<ValueCodec<?>> found = codec(leaf.id());
         if (found.isEmpty()) return Optional.empty();
         ValueCodec<?> codec = found.get();
-        return valueOf(choice.form(), initializer).map(value -> value instanceof List<?> items
+        return valueOf(form, initializer).map(value -> value instanceof List<?> items
                 ? items.stream().map(item -> storeOf(codec, item)).toList()
                 : List.of(storeOf(codec, value)));
+    }
+
+    /**
+     * The leaf every item of a flat stored value is of — the form itself, or the element of a one-argument
+     * container over it. {@code null} for anything else, which is every form a list of strings cannot hold.
+     */
+    private static ValueType flatLeaf(ValueForm form) {
+        return switch (form) {
+            case ValueForm.Leaf leaf -> leaf.type();
+            case ValueForm.Of of when of.arguments().size() == 1
+                    && of.arguments().getFirst() instanceof ValueForm.Leaf leaf -> leaf.type();
+            case null, default -> null;
+        };
     }
 
     /**
@@ -363,12 +386,6 @@ public final class ValueCatalog {
         if (found.isEmpty() || source == null) return Optional.empty();
         ValueCodec<?> codec = found.get();
         return valueOfLiteral(codec, source.strip()).map(value -> storeOf(codec, value));
-    }
-
-    public List<String> imports(ValueChoice choice) {
-        if (choice == null) return List.of();
-        String fqn = choice.type().importName();
-        return fqn.isEmpty() ? List.of() : List.of(fqn);
     }
 
     // ---- the form-directed grammar -------------------------------------------------------------------------
