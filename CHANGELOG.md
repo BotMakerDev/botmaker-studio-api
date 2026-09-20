@@ -35,6 +35,12 @@ No source changes since v0.1.4; re-released for updated upstream pins.
   Nothing about a container is a string function, which is the rule `docs/refactor/33-plugin-java.md` sets
   for the whole design. `arity()` counts *type* arguments and `parts` counts *values*, with `partForms`
   carrying the static type of each part so the recursion stays typed.
+- **`ValueCatalog.initializer(ValueForm, Object)`, `valueOf(ValueForm, String)` and `imports(ValueForm)`** —
+  one writer and one reader over the whole type tree, both total, both over **live values** rather than a
+  wire encoding. A composite's canonical form is its Java initialiser and nothing else, so there is no second
+  spelling to keep in step. The flat `initializer(ValueChoice, List<String>)` and `valueOfInitializer` now
+  delegate to them and keep their signatures and their behaviour exactly, which is what pins the new
+  implementation against the old tests.
 - **Three containers seeded into every catalog** — `java.util.List` (`of`), `java.util.Map` (`ofEntries`)
   and `java.util.Map.Entry` (`entry`) — so a project with no plugin installed still has a list and a map.
   They are ordinary registrations with no privilege, which is what keeps the built-ins honest about the

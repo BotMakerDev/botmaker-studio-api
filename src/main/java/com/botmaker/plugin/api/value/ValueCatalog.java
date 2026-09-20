@@ -3,10 +3,12 @@ package com.botmaker.plugin.api.value;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * The types a project's variables may be typed with, and what each one's stored text means. What used to be
@@ -254,16 +256,11 @@ public final class ValueCatalog {
         Optional<ValueCodec<?>> found = codec(choice.type().id());
         if (found.isEmpty()) return Optional.empty();
         ValueCodec<?> codec = found.get();
+        List<String> wires = value == null ? List.of() : value;
         if (!choice.isList()) {
-            return Optional.of(render(codec, value == null || value.isEmpty() ? "" : value.getFirst()));
+            return initializer(choice.form(), parseOf(codec, wires.isEmpty() ? "" : wires.getFirst()));
         }
-        if (value == null || value.isEmpty()) return Optional.of("java.util.List.of()");
-        StringBuilder out = new StringBuilder("java.util.List.of(");
-        for (int i = 0; i < value.size(); i++) {
-            if (i > 0) out.append(", ");
-            out.append(render(codec, value.get(i)));
-        }
-        return Optional.of(out.append(')').toString());
+        return initializer(choice.form(), wires.stream().map(wire -> parseOf(codec, wire)).toList());
     }
 
     /**
@@ -283,71 +280,11 @@ public final class ValueCatalog {
         Optional<ValueCodec<?>> found = codec(choice.type().id());
         if (found.isEmpty()) return Optional.empty();
         ValueCodec<?> codec = found.get();
-        String source = initializer.strip();
-        if (!choice.isList()) {
-            return codec.wireOfLiteral(source).map(List::of);
-        }
-        Optional<List<String>> items = listItems(source);
-        if (items.isEmpty()) return Optional.empty();
-        List<String> wires = new java.util.ArrayList<>(items.get().size());
-        for (String item : items.get()) {
-            Optional<String> wire = codec.wireOfLiteral(item);
-            if (wire.isEmpty()) return Optional.empty();
-            wires.add(wire.get());
-        }
-        return Optional.of(List.copyOf(wires));
+        return valueOf(choice.form(), initializer).map(value -> value instanceof List<?> items
+                ? items.stream().map(item -> storeOf(codec, item)).toList()
+                : List.of(storeOf(codec, value)));
     }
 
-    /**
-     * The arguments of a {@code List.of(…)} call, or empty when the source is not one.
-     *
-     * <p>Split on the commas at depth zero rather than with a parser: this method sees what
-     * {@link #initializer} wrote, which is one literal per item, and the host has a real Java parser for
-     * anything else. Brackets and quotes are tracked so a literal containing a comma — a string, a
-     * {@code Color(255, 0, 0)} — is one item; an unbalanced source answers empty rather than a wrong split.
-     */
-    private static Optional<List<String>> listItems(String source) {
-        String prefix = "java.util.List.of(";
-        String shortPrefix = "List.of(";
-        String inner;
-        if (source.startsWith(prefix) && source.endsWith(")")) {
-            inner = source.substring(prefix.length(), source.length() - 1);
-        } else if (source.startsWith(shortPrefix) && source.endsWith(")")) {
-            inner = source.substring(shortPrefix.length(), source.length() - 1);
-        } else {
-            return Optional.empty();
-        }
-        if (inner.isBlank()) return Optional.of(List.of());
-
-        List<String> items = new java.util.ArrayList<>();
-        StringBuilder item = new StringBuilder();
-        int depth = 0;
-        boolean inString = false;
-        boolean inChar = false;
-        for (int i = 0; i < inner.length(); i++) {
-            char c = inner.charAt(i);
-            boolean escaped = i > 0 && inner.charAt(i - 1) == '\\';
-            if (c == '"' && !inChar && !escaped) inString = !inString;
-            else if (c == '\'' && !inString && !escaped) inChar = !inChar;
-            else if (!inString && !inChar && (c == '(' || c == '[' || c == '{')) depth++;
-            else if (!inString && !inChar && (c == ')' || c == ']' || c == '}')) depth--;
-            else if (!inString && !inChar && c == ',' && depth == 0) {
-                items.add(item.toString().strip());
-                item.setLength(0);
-                continue;
-            }
-            if (depth < 0) return Optional.empty();
-            item.append(c);
-        }
-        if (depth != 0 || inString || inChar) return Optional.empty();
-        items.add(item.toString().strip());
-        return Optional.of(List.copyOf(items));
-    }
-
-    /**
-     * The classes a field of this type has to import — empty for a primitive, a JDK type written fully
-     * qualified, or an unknown type.
-     */
     /**
      * The stored form a freshly created value of {@code typeId} starts with — {@code ""} for an id nothing
      * registered, which is the only honest seed for a type nobody can describe.
@@ -392,6 +329,119 @@ public final class ValueCatalog {
         if (choice == null) return List.of();
         String fqn = choice.type().importName();
         return fqn.isEmpty() ? List.of() : List.of(fqn);
+    }
+
+    // ---- the form-directed grammar -------------------------------------------------------------------------
+    //
+    // One writer and one reader over the whole type tree, both total. What crosses here is a *live value*,
+    // never a wire encoding: a composite's canonical form is its Java initialiser and nothing else, so there
+    // is no second spelling to keep in step. See docs/refactor/32-generic-values.md.
+    //
+    // Three rules carry over from the flat pair these generalise, and matter more with nesting rather than
+    // less:
+    //
+    //   * Empty means decline, and declining is not an error. A guess compiles into a user's bot.
+    //   * A partial reading is not a reading. One part a codec refuses empties the *whole* answer, so a map
+    //     with one unreadable value is shown whole and untouched rather than silently losing an entry.
+    //   * The split is not a parser. It reads back what this wrote; anything else answers empty.
+
+    /**
+     * {@code value} written as the Java initialiser a field of type {@code form} would take, or empty when
+     * any part of it cannot be written.
+     *
+     * <p>Everything is written fully qualified, so the result compiles wherever it is placed and
+     * {@link #imports(ValueForm)} is advice rather than a requirement.
+     */
+    public Optional<String> initializer(ValueForm form, Object value) {
+        if (form == null) return Optional.empty();
+        return switch (form) {
+            case ValueForm.Leaf leaf -> codec(leaf.type().id()).map(codec -> literalOf(codec, value));
+            case ValueForm.Of of -> {
+                Optional<ValueContainer<?>> registered = container(of.container().id());
+                if (registered.isEmpty()) yield Optional.empty();
+                ValueContainer<?> container = registered.get();
+                List<Object> parts = value == null ? List.of() : container.partsOf(value);
+                List<ValueForm> forms = container.partForms(of.arguments(), parts.size());
+                if (forms.size() != parts.size()) yield Optional.empty();
+
+                StringBuilder out = new StringBuilder(container.factorySource()).append('(');
+                for (int i = 0; i < parts.size(); i++) {
+                    Optional<String> part = initializer(forms.get(i), parts.get(i));
+                    if (part.isEmpty()) yield Optional.empty();
+                    if (i > 0) out.append(", ");
+                    out.append(part.get());
+                }
+                yield Optional.of(out.append(')').toString());
+            }
+            // A class the bot declares is Studio's to write, because only the host can see the bot's own
+            // source. The catalog describes what it registered and declines the rest.
+            case ValueForm.Declared ignored -> Optional.empty();
+        };
+    }
+
+    /**
+     * {@link #initializer} read backwards: the value {@code initializer} was written from, or empty.
+     *
+     * <p>Empty for an unknown type, a container nothing registered, a source this grammar did not write, and
+     * anything a codec declines. The host then shows the initialiser as it stands, read-only — which is what
+     * makes an unbounded type tree safe rather than dangerous.
+     */
+    public Optional<Object> valueOf(ValueForm form, String initializer) {
+        if (form == null || initializer == null) return Optional.empty();
+        String source = initializer.strip();
+        return switch (form) {
+            case ValueForm.Leaf leaf -> codec(leaf.type().id()).flatMap(codec -> valueOfLiteral(codec, source));
+            case ValueForm.Of of -> {
+                Optional<ValueContainer<?>> registered = container(of.container().id());
+                if (registered.isEmpty()) yield Optional.empty();
+                ValueContainer<?> container = registered.get();
+
+                Optional<List<String>> split = SourceSplit.arguments(source, container.factorySource());
+                if (split.isEmpty()) yield Optional.empty();
+                List<String> written = split.get();
+                List<ValueForm> forms = container.partForms(of.arguments(), written.size());
+                if (forms.size() != written.size()) yield Optional.empty();
+
+                List<Object> parts = new ArrayList<>(written.size());
+                for (int i = 0; i < written.size(); i++) {
+                    Optional<Object> part = valueOf(forms.get(i), written.get(i));
+                    if (part.isEmpty()) yield Optional.empty();
+                    parts.add(part.get());
+                }
+                yield Optional.ofNullable(container.build(parts));
+            }
+            case ValueForm.Declared ignored -> Optional.empty();
+        };
+    }
+
+    /**
+     * The classes a file writing a value of this form would import, in the order they are first reached.
+     *
+     * <p>Advice rather than a requirement: {@link #initializer} writes everything fully qualified, so a file
+     * that imports none of these still compiles. It is here for a host placing a literal into a user's own
+     * source, where an import is arranged rather than avoided.
+     */
+    public List<String> imports(ValueForm form) {
+        Set<String> out = new LinkedHashSet<>();
+        collectImports(form, out);
+        out.remove("");
+        return List.copyOf(out);
+    }
+
+    private void collectImports(ValueForm form, Set<String> out) {
+        switch (form) {
+            case null -> {
+            }
+            case ValueForm.Leaf leaf -> out.add(leaf.type().importName());
+            case ValueForm.Of of -> {
+                out.add(of.container().importName());
+                of.arguments().forEach(argument -> collectImports(argument, out));
+            }
+            case ValueForm.Declared declared -> {
+                out.add(declared.qualifiedName());
+                declared.arguments().forEach(argument -> collectImports(argument, out));
+            }
+        }
     }
 
     /**
@@ -445,6 +495,42 @@ public final class ValueCatalog {
 
     private static <T> String canonical(ValueCodec<T> codec, String wire) {
         return codec.store(codec.parse(wire));
+    }
+
+    /**
+     * One live value as Java source.
+     *
+     * <p>The unchecked cast is the "wildcard capture" the module's {@code CLAUDE.md} already describes for
+     * {@code literal(parse(wire))}: {@code T} stays inside the plugin and only source text comes back. It is
+     * sound because the value reached here came from a form whose leaf names this very codec's type.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> String literalOf(ValueCodec<T> codec, Object value) {
+        return codec.literal((T) value);
+    }
+
+    /** One stored item as the live value it names — the wire half, which only the bridges below still use. */
+    private static <T> Object parseOf(ValueCodec<T> codec, String wire) {
+        return codec.parse(wire);
+    }
+
+    /** A live value back to its stored text. Same, in the other direction. */
+    @SuppressWarnings("unchecked")
+    private static <T> String storeOf(ValueCodec<T> codec, Object value) {
+        return codec.store((T) value);
+    }
+
+    /**
+     * One Java literal back to the live value it was written from.
+     *
+     * <p><b>Two hops today, one tomorrow.</b> {@code wireOfLiteral} answers the stored text and
+     * {@code parse} turns that into the value, so the wire is a way-station inside this method and nowhere
+     * else. Phase C of {@code docs/refactor/32-generic-values.md} replaces the pair with a single
+     * {@code valueOfLiteral} on the codec and this body becomes one call — which is also the point at which
+     * eight SDK types stop having no reader at all.
+     */
+    private static <T> Optional<Object> valueOfLiteral(ValueCodec<T> codec, String source) {
+        return codec.wireOfLiteral(source).map(wire -> (Object) codec.parse(wire));
     }
 
     /**
