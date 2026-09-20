@@ -270,9 +270,17 @@ module exists: a plugin wanting a `Channel` variable would need a constant added
   `List<String>`, renders read-only and declines to emit. That is what a project opened without one of its
   plugins looks like, and refusing the file or coercing the value would destroy a user's data because a jar is
   missing. An **absent** id is different and reads as text — a field older than the vocabulary.
-- **`ValueCodec<T>` is per item.** Shape (`ONE`/`ONE_OF`/`ANY_OF`/`OPEN_LIST`) is composed above it by
-  `ValueCatalog.initializer`, so a codec is written once and serves all four. `T` never crosses to the host —
-  only `literal(parse(wire))` behind a wildcard capture — which is what keeps rule 2 above true for values.
+- **`ValueCodec<T>` is per item.** A composite is composed above it by `ValueCatalog.initializer`, so a codec
+  is written once and serves every shape. `T` never crosses to the host — it is held behind a wildcard
+  capture and a value read back is an `Object` the host only ever hands to the same codec — which is what
+  keeps rule 2 above true for values.
+- **The pair is `literal` and `valueOfLiteral`, and both are abstract** (2026-09-20). `wireOfLiteral`, which
+  answered the *stored text* a literal came from, is deleted: it was a `default` returning empty, and eight
+  of the seventeen registered types never overrode it, so those eight were written into a user's Java by an
+  editor that then refused to edit them. **The half nobody is forced to write is the half that rots**, which
+  is the rule `ValueContainer` was designed under and the reason this one has no default. Declining a
+  *particular* source stays an ordinary answer — the host shows it read-only — and is different from a type
+  that can never read one.
 - **A type is asked for by the Java class it is, not by its id** (2026-09-09). `ValueCatalog.forJava(Class<?>)`
   indexes the registrations on `ValueType.javaName()` — the import when there is one, the source spelling
   otherwise — so a plugin author writes `Duration.class` and never writes `DURATION`. It does not weaken rule

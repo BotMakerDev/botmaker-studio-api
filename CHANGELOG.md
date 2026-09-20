@@ -48,6 +48,18 @@ No source changes since v0.1.4; re-released for updated upstream pins.
   never `Map.of`: one spelling means one rule for the writer and one for the reader, and no behaviour change
   at the eleventh entry.
 
+### Changed
+
+- **`ValueCodec.wireOfLiteral(String)` is replaced by `valueOfLiteral(String) → Optional<T>`, and it is
+  abstract.** The old method answered the *stored text* a literal came from and was a `default` returning
+  empty, so a type could be registered with no reader and nothing said so — nine of the seventeen shipped
+  types implemented it and eight silently did not, which is a value the editor writes into a user's Java and
+  thereafter refuses to edit. The new one answers the **value** directly, which removes the wire as a
+  way-station now that a composite's canonical form is its Java initialiser; and it has no default, so the
+  inverse is something the compiler asks for at the one moment the author has the literal in front of them.
+  Declining a *particular* source is unchanged and still the honest answer for an initialiser a plugin never
+  emits. This is a breaking change to the contract, taken while no third-party plugin exists.
+
 - **`StudioPlugin.managedFields()` and `ManagedField`** — a plugin says which `static final` constants it
   keeps in step through its own window (its type, and the sentence to show instead). The host draws them,
   gives their value the plugin's `SlotEditor.preview`, and refuses a canvas edit; a class holding nothing but

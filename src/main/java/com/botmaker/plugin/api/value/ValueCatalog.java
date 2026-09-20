@@ -523,14 +523,13 @@ public final class ValueCatalog {
     /**
      * One Java literal back to the live value it was written from.
      *
-     * <p><b>Two hops today, one tomorrow.</b> {@code wireOfLiteral} answers the stored text and
-     * {@code parse} turns that into the value, so the wire is a way-station inside this method and nowhere
-     * else. Phase C of {@code docs/refactor/32-generic-values.md} replaces the pair with a single
-     * {@code valueOfLiteral} on the codec and this body becomes one call — which is also the point at which
-     * eight SDK types stop having no reader at all.
+     * <p>One hop since Phase C of {@code docs/refactor/32-generic-values.md}: the codec answers the value
+     * directly and no wire text is involved. This method is what remains of the wildcard capture — the host
+     * cannot name {@code T}, so it widens the answer to {@code Object} and only ever hands it back to the
+     * same codec.
      */
     private static <T> Optional<Object> valueOfLiteral(ValueCodec<T> codec, String source) {
-        return codec.wireOfLiteral(source).map(wire -> (Object) codec.parse(wire));
+        return codec.valueOfLiteral(source).map(value -> (Object) value);
     }
 
     /**

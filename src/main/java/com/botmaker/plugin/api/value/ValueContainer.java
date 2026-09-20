@@ -30,9 +30,10 @@ import java.util.List;
  *
  * <h2>Both halves are abstract, and that is the point</h2>
  *
- * <p>{@code ValueCodec.wireOfLiteral} was a {@code default} answering empty, and eight of the seventeen
- * registered value types never overrode it: the half nobody is forced to write is the half that rots. There
- * is no default here, so a container that cannot be rebuilt cannot be registered, and
+ * <p>{@code ValueCodec}'s reader was a {@code default} answering empty, and eight of the seventeen
+ * registered value types never overrode it: the half nobody is forced to write is the half that rots. It is
+ * abstract now, for the same reason nothing here has a default — a container that cannot be rebuilt cannot
+ * be registered, and
  * {@code build(parts(v))} equals {@code v} is a law the compiler helps keep.
  *
  * @param <C> the composite's own type, which never crosses to the host except behind a wildcard capture

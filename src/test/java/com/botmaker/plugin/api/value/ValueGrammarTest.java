@@ -45,7 +45,7 @@ class ValueGrammarTest {
         }
 
         @Override
-        public Optional<String> wireOfLiteral(String javaSource) {
+        public Optional<String> valueOfLiteral(String javaSource) {
             String trimmed = javaSource.strip();
             return trimmed.length() >= 2 && trimmed.startsWith("\"") && trimmed.endsWith("\"")
                     ? Optional.of(trimmed.substring(1, trimmed.length() - 1))
@@ -74,15 +74,22 @@ class ValueGrammarTest {
         }
 
         @Override
-        public Optional<String> wireOfLiteral(String javaSource) {
+        public Optional<Integer> valueOfLiteral(String javaSource) {
             String trimmed = javaSource.strip();
             return trimmed.chars().allMatch(Character::isDigit) && !trimmed.isEmpty()
-                    ? Optional.of(trimmed)
+                    ? Optional.of(Integer.valueOf(trimmed))
                     : Optional.empty();
         }
     };
 
-    /** Writes a literal and refuses to read one — eight of the SDK's seventeen types are exactly this. */
+    /**
+     * Writes a literal and reads none back.
+     *
+     * <p>Until 2026-09-20 this was eight of the seventeen registered types, because the reader had a
+     * {@code default} answering empty. It is abstract now, so this codec has to say so explicitly — which is
+     * the point of the change and does not make the state unreachable: declining a <em>particular</em>
+     * source is still the honest answer for an initialiser a plugin never emits.
+     */
     private static final ValueCodec<String> WRITE_ONLY = new ValueCodec<>() {
         @Override
         public String parse(String wire) {
@@ -97,6 +104,11 @@ class ValueGrammarTest {
         @Override
         public String literal(String value) {
             return "Duration.parse(\"" + value + "\")";
+        }
+
+        @Override
+        public Optional<String> valueOfLiteral(String javaSource) {
+            return Optional.empty();
         }
     };
 

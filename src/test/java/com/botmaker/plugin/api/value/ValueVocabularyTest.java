@@ -39,6 +39,14 @@ class ValueVocabularyTest {
         public String literal(String value) {
             return "\"" + value + "\"";
         }
+
+        @Override
+        public java.util.Optional<String> valueOfLiteral(String javaSource) {
+            String trimmed = javaSource == null ? "" : javaSource.strip();
+            return trimmed.length() >= 2 && trimmed.startsWith("\"") && trimmed.endsWith("\"")
+                    ? java.util.Optional.of(trimmed.substring(1, trimmed.length() - 1))
+                    : java.util.Optional.empty();
+        }
     };
 
     private static ValueCatalog catalog() {
