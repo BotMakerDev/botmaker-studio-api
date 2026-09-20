@@ -61,7 +61,19 @@ public interface ValueContainer<C> {
      */
     Class<?> type();
 
-    /** How many type arguments a form supplies: one for {@code List<E>}, two for {@code Map<K, V>}. */
+    /**
+     * How many type arguments a form supplies: one for {@code List<E>}, two for {@code Map<K, V>}.
+     *
+     * <p><b>Zero is legal, and it is how a fixed shape is registered</b> (2026-09-20). A record like the
+     * SDK's {@code Flow(List<Activity>, List<Edge>, String, Limits)} takes no type arguments and still has
+     * parts — four of them, each of a type the container itself knows. {@link #partForms} answers that fixed
+     * list and ignores the (empty) arguments, and everything else works unchanged, because every other
+     * method here already asks {@code partForms} rather than counting arguments.
+     *
+     * <p>A zero-arity container is not the same as {@link ValueForm.Declared}, which is the shape for a
+     * record the <em>bot</em> declares: that one the host reads out of the project's own source, positionally,
+     * and cannot register. This one a plugin registers, with a factory it names and parts it takes apart.
+     */
     int arity();
 
     /** The class the factory is declared on, which is usually the container itself — {@code Map} for an entry. */

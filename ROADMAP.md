@@ -5,6 +5,26 @@ reasoning.
 
 ## Done
 
+### 2026-09-20 — a container may have arity zero, which is how a fixed shape is registered
+
+Phase 4 of `../docs/refactor/33-plugin-java.md` needed one thing of the contract, and this is it.
+
+**`ValueContainer.arity()` had to be at least one.** So a record with named components and no type
+arguments — the SDK's `Flow(List<Activity>, List<Edge>, String, Limits)` — could only be registered as an
+opaque leaf with a codec, which is a string, which is the encoding `ValueForm` exists to leave behind. A
+zero-arity container answers a fixed list from `partForms` and ignores the (empty) arguments, and
+**nothing else changed**, because every other method here already asked `partForms` rather than counting
+arguments. That is the sign the arity check was guarding nothing: it rejected a shape the rest of the
+design already handled.
+
+Two total-ness repairs went with it: `ValueForm.Of.sourceName()` writes `Flow` rather than `Flow<>` when
+there are no arguments, the rule `Declared` already followed, and `Of.last()` answers `null` instead of
+indexing past the end of an empty list.
+
+**It is not the same as `ValueForm.Declared`**, and the line is worth keeping straight. `Declared` is a
+record the *bot* declares, which the host reads out of the project's own source and cannot register.
+A zero-arity container is a record a *plugin* registers, with a factory it names and parts it takes apart.
+
 ### 2026-09-20 — `ManagedValue`: what a plugin owns is an annotation, not a type match
 
 Phase 2 of `../docs/refactor/33-plugin-java.md`, and it deletes `ManagedField` and

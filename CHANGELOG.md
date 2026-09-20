@@ -21,6 +21,14 @@ No source changes since v0.1.4; re-released for updated upstream pins.
 
 ### Added
 
+- **A `ValueContainer` may have arity zero — a fixed shape.** `arity()` had to be at least one, so a record
+  with named components and no type arguments could only be registered as an opaque leaf, which is a string,
+  which is what `ValueForm` exists to leave behind. A zero-arity container answers a fixed list from
+  `partForms` and ignores the (empty) arguments; everything else works unchanged, because every other method
+  already asked `partForms` rather than counting arguments. `ValueForm.Of.sourceName()` writes `Flow` rather
+  than `Flow<>` for one, and `Of.last()` answers `null` instead of throwing. The SDK's `Flow`, `Activity`,
+  `Edge` and `Limits` are the first four.
+
 - **`ManagedValue(String id, String reason)` and `StudioPlugin.managedValues()`** — which of a plugin's
   values the code canvas may not edit, and the sentence to show when it refuses. A plugin declares the ids
   it answers to; the bot's own Java carries them on a `@Managed("id")` method or class

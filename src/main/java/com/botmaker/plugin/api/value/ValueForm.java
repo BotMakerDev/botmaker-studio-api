@@ -53,9 +53,13 @@ public sealed interface ValueForm {
             arguments = fill(container.arity(), arguments);
         }
 
-        /** The element of a {@code List}, or the value of a {@code Map} — the last argument either way. */
+        /**
+         * The element of a {@code List}, or the value of a {@code Map} — the last argument either way, and
+         * {@code null} for a container of {@linkplain ValueContainer#arity() arity zero}, which has no type
+         * argument for a user to type values of.
+         */
         public ValueForm last() {
-            return arguments.get(arguments.size() - 1);
+            return arguments.isEmpty() ? null : arguments.get(arguments.size() - 1);
         }
     }
 
@@ -122,7 +126,9 @@ public sealed interface ValueForm {
     default String sourceName() {
         return switch (this) {
             case Leaf leaf -> leaf.type().sourceName();
-            case Of of -> of.container().sourceName() + arguments(of.arguments());
+            // No brackets for a container of arity zero: a fixed shape is written `Flow`, not `Flow<>`.
+            case Of of -> of.container().sourceName()
+                    + (of.arguments().isEmpty() ? "" : arguments(of.arguments()));
             case Declared declared -> declared.qualifiedName()
                     + (declared.arguments().isEmpty() ? "" : arguments(declared.arguments()));
         };

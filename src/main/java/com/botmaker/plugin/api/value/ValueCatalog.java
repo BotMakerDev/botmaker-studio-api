@@ -708,9 +708,9 @@ public final class ValueCatalog {
          */
         public Builder add(ValueContainer<?> container) {
             Objects.requireNonNull(container, "container");
-            if (container.arity() < 1) {
+            if (container.arity() < 0) {
                 throw new IllegalArgumentException(
-                        "container " + container.id() + " must take at least one type argument");
+                        "container " + container.id() + " cannot take a negative number of type arguments");
             }
             if (containers.containsKey(container.id())) {
                 throw new IllegalArgumentException("container " + container.id() + " is registered twice");
