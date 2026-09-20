@@ -1,6 +1,5 @@
 package com.botmaker.plugin.api;
 
-import com.botmaker.plugin.api.meta.ReplacedBy;
 import javafx.stage.Window;
 
 import java.nio.file.Path;
@@ -38,21 +37,7 @@ public interface Dialogs {
      * construction: an editor that builds its dialog eagerly asks too early. A dialog with no owner still
      * shows, so {@code ownerWindow().orElse(null)} is a correct thing to pass on.
      */
-    default Optional<Window> ownerWindow() {
-        return Optional.ofNullable(owner());
-    }
-
-    /**
-     * The window a plugin's dialog should be owned by, or {@code null} while the editor is not yet attached
-     * to a scene.
-     *
-     * @deprecated by {@link #ownerWindow()}. Behaviour is unchanged and the host still implements this one;
-     *         the {@code Optional} is what says out loud that asking during construction is normal and
-     *         answers nothing.
-     */
-    @Deprecated
-    @ReplacedBy("com.botmaker.plugin.api.Dialogs#ownerWindow")
-    Window owner();
+    Optional<Window> ownerWindow();
 
     /** Lets the user choose an executable, starting in {@code initialDir} when it exists. */
     Choice chooseProgram(Path initialDir);

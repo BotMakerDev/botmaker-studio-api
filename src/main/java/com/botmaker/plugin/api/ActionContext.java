@@ -1,6 +1,5 @@
 package com.botmaker.plugin.api;
 
-import com.botmaker.plugin.api.meta.ReplacedBy;
 
 import java.util.Optional;
 
@@ -29,20 +28,7 @@ public interface ActionContext {
      * <p>Empty is a state a toolbar item really is clicked in: Studio starts with no project open, and the
      * bar is drawn before one is.
      */
-    default Optional<String> openProjectName() {
-        return Optional.ofNullable(projectName());
-    }
-
-    /**
-     * The open project's name, or {@code null} when none is open.
-     *
-     * @deprecated by {@link #openProjectName()}. Studio starts with no project open and the toolbar is drawn
-     *         before one is, so this is {@code null} at the moment a plugin is most likely to be tested by
-     *         hand. Behaviour is unchanged and the host still implements this one.
-     */
-    @Deprecated
-    @ReplacedBy("com.botmaker.plugin.api.ActionContext#openProjectName")
-    String projectName();
+    Optional<String> openProjectName();
 
     /**
      * The version of the calling plugin this project pins, exactly as the pom spells it.

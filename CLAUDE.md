@@ -183,48 +183,45 @@ reach is the one the user has open and half-edited, and it does not parse.
 canonical constructor would take a `NoSuchMethodError` the day a component is added. That is why replacements
 are a `Map<String,String>` and not a `Replacement` record — see `docs/refactor/25-compatibility.md` §2.
 
-**And one more passed it on 2026-09-20: `StudioServices.models()`, returning a `Models`** — a plugin's own
-model as **compiled Java in the bot's source tree** rather than JSON (`docs/refactor/33-plugin-java.md`).
-`write(pluginId, simpleName, List<ModelStatement>)`, `read(pluginId, simpleName)`, `problem(ModelCall)`; all
-total, and **no text crosses in either direction**.
+**And one more passed it on 2026-09-20: `StudioServices.pluginValues()`, returning a `PluginValues`** — a
+plugin's own values as **compiled Java in the bot's own source** rather than JSON
+(`docs/refactor/33-plugin-java.md`). Two methods, `ids()` and `open(String id)`, both total.
 
-**A model is a sequence of calls, and a call is `ValueContainer` one level up.** A plugin declares its calls
-(`StudioPlugin.modelCalls()` → `ModelCall`: owner, method, one `Argument` per parameter) and hands over
-`ModelStatement`s; the host writes `Activities.declare(Collect::body, "Collect", …);` and reads it back. The
-writer and the reader already existed — `ValueCatalog.initializer` writes `java.util.List.of(a, b, c)` and
-`valueOf` reads it back at depth zero, so a statement is that with a semicolon. `factoryOwner`/`owner`,
-`factory`/`method`, `partForms`/`arguments`: it is the same interface, and the host owns all the syntax once.
+**The plugin ships the file; the host rewrites one expression inside it.** `StudioPlugin.pluginSources()`
+hands over a `PluginSource` — a class name and its whole text, with `${package}` where the package line goes
+— and the host copies it into `src/main/java/<bot package>/plugins/<last id segment>/` the first time the
+plugin is added. After that it never touches the class: not to add a method, not to delete one, not to
+reformat it. What it rewrites is the expression a `@Managed("id")` method returns, one `ReturnStatement` at a
+time.
 
-**Why not a record handed over reflectively** — the design tried first and withdrawn the same day. It worked,
-and it had to answer a list of questions a sequence of statements never asks: naming a constant from a name,
-stably and uniquely; choosing between a canonical constructor and a convenience one; a compact constructor
-normalising a component into a duplicate of another inside the user's repository; keeping map order
-deterministic; and Jackson's `"empty": false`, a derived value persisted beside what it was derived from.
-The observation that replaced it: **the bot already stores the hard half as calls**
-(`Activities.define("Collect", ctx -> {…})`), so store the rest the same way.
+**That inversion is the whole design, and it is the fifth attempt.** The four before it — a record handed
+over reflectively, the grammar host-side, an annotation processor, and a sequence of `ModelCall` statements
+(shipped earlier the same day as `2bc1e2f` and withdrawn) — all made the host the **author of a compilation
+unit**, which forces it to own the package, the class name, the imports, the ordering and the whole round
+trip. Handing the file over as text answers all of those at once, because the plugin's author already knows
+them, and it shrinks what the host must parse from *a class* to *one expression* — the domain
+`ValueCatalog.valueOf` already covers and already has tests for.
 
-**The two alternatives that were never on the table** still shape this. A plugin that *emits text* makes
-every plugin a code generator whose output the host cannot check. A plugin that supplies a *write callback*
-supplies one direction and leaves the other to discipline — the measured state of `ValueCodec`, where
-`literal` has seventeen implementations and `wireOfLiteral`, a `default` returning empty, has nine, because
-the reader has exactly one caller. **The half nobody is forced to write is the half that rots.**
+**`open` hands back a `ValueContext`, which is the point.** A slot on the canvas, a row of the Parameters
+window and a `@Managed` value are all edited through one interface, so a plugin's own window reads and writes
+its value with the interface it already knows and **no second way to edit a value exists**. A body the user
+has hand-edited into something that is not a single `return <expression>;` answers empty and is shown
+read-only with the reason — the same rule a computed `@Param` initializer already gets.
 
-**`MethodRef` is the one argument that is not a value.** `Collect::body` has no type of its own — its type is
-whatever functional interface the parameter declares — so no codec could honestly claim it is a literal of
-something. It crosses as two names, and it is why a rename in the bot's Java becomes a *compile error* in the
-generated file rather than a model pointing at nothing.
+**The two alternatives that were never on the table** still shape this. A plugin that *emits text into the
+host* makes every plugin a code generator whose output the host cannot check — which is not what a
+`PluginSource` is, since it is copied once and then belongs to the user rather than being re-emitted. A
+plugin that supplies a *write callback* supplies one direction and leaves the other to discipline: the
+measured state of `ValueCodec`, where `literal` had seventeen implementations and `wireOfLiteral`, a
+`default` returning empty, had nine, because the reader had exactly one caller. **The half nobody is forced
+to write is the half that rots.**
 
-**`problem(ModelCall)` is refusal at registration**: one question per argument, *is this a form the catalog
-can write and read back*, asked at startup and answered with the argument named. It is on the host because
-the catalog it is answered against is the **merged** one, which no plugin can assemble alone.
+**The plugin names its own id** — its `@Managed` ids are its own, and one `StudioServices` instance serves
+every plugin. A plugin already names its own id to reach its own storage (`PluginData`), so nothing about the
+trust model changes.
 
-**The plugin names its own id**, which `33`'s sketch did not. One `StudioServices` instance serves every
-plugin, so the package segment has to arrive with the call; the alternative was a per-plugin services object
-threaded through every place an editor is built. A plugin already names its own id to reach its own storage
-(`PluginData`), so nothing about the trust model changes.
-
-A class, a method name and a `ValueForm` are facts about Java, so *capabilities, never vocabularies* holds —
-compare `Assets`, which had to say the word *picture*.
+A class name, a method body and a `ValueForm` are facts about Java, so *capabilities, never vocabularies*
+holds — compare `Assets`, which had to say the word *picture*.
 
 ## Parameter data (2026-09-10) — the window is the host's, the file behind it is not
 

@@ -21,17 +21,22 @@ No source changes since v0.1.4; re-released for updated upstream pins.
 
 ### Added
 
-- **`Models`, off `StudioServices.models()`, and `com.botmaker.plugin.api.model`** — a plugin's own model,
-  kept as **compiled Java in the bot's source tree** instead of JSON. A model is a *sequence of calls*: a
-  plugin declares them with `StudioPlugin.modelCalls()` (a `ModelCall` is an owner, a method and one
-  `Argument` per parameter) and hands over `ModelStatement`s, and Studio writes
-  `Activities.declare(Collect::body, "Collect", …);` into a locked `.java` file in a package belonging to
-  that plugin — then reads it back. **No text crosses in either direction**, and a plugin writes no emitter,
-  no parser and no template. A `MethodRef` is the one argument that is not a value: it names a method the
-  user wrote, so renaming it in Java becomes a compile error instead of a model pointing at nothing.
-  `problem(ModelCall)` names the argument no codec can write, at startup rather than the first time a user
-  saves. `default`, answering `Models.NONE`, so a host with no source tree behind it — the `botmaker` CLI's
-  validator — is unaffected. Design: `docs/refactor/33-plugin-java.md`.
+- **`PluginValues`, off `StudioServices.pluginValues()`, and `PluginSource`** — a plugin's own values, kept
+  as **compiled Java in the bot's own source** instead of JSON. The plugin ships one file
+  (`StudioPlugin.pluginSources()`), the host copies it into the project once when the plugin is added, and
+  from then on rewrites nothing but the expression a `@Managed` method returns. `ids()` and
+  `open(String id)` are the whole capability: `open` hands back a `ValueContext`, which is the interface a
+  slot on the canvas and a row of the Parameters window are already edited through, so a plugin's own window
+  reads and writes its value with no second way to edit a value existing. A value the user has hand-edited
+  into something that is not a single `return <expression>;` answers empty and is shown read-only with the
+  reason. `default`, answering `PluginValues.NONE`, so a host with no source tree behind it — the `botmaker`
+  CLI's validator — is unaffected. Design: `docs/refactor/33-plugin-java.md`.
+- **`ValueContext.form()`, `source()` and `set(String, String...)`** — a value crosses as the **Java that
+  writes it**, everywhere. A `ValueContext` spoke a `List<String>` wire form until now, which could say a
+  leaf and a flat list of leaves and nothing else, so an editor could never be handed `Map<String,
+  List<Point>>` even though a bot may declare such a field; and it was a second encoding of a value beside
+  the Java one, kept in step by hand. `form()` is the whole `ValueForm` tree, so an editor may claim a
+  composite rather than a leaf.
 - **`ValueForm`** — the type of a value as a tree: a catalogued `Leaf`, an `Of` over a `ValueContainer`, or a
   `Declared` class the bot itself writes. Nested to any depth, so a field declared `Map<String, List<Point>>`
   is something the vocabulary can now say at all. It **replaces `ValueChoice` and `ValueShape`**, which are
@@ -119,6 +124,23 @@ No source changes since v0.1.4; re-released for updated upstream pins.
   `initializer`/`valueOf` — and exist for the one kind of caller that still holds a value as one string per
   item, a plugin whose own JSON file keeps it that way. They are named for the wire so that nothing reaches
   for them by accident, and they go when those files do.
+
+- **`ValueContext.value()` and `set(List<String>)`**, replaced by `source()` and
+  `set(String, String...)` above. With them go **`SlotContext.currentSource()`, `replaceWith`,
+  `enclosingClass()`, `enclosingMethod()` and `enclosingSource()`** — the first two are now what every value
+  answers rather than only a slot, and the last three are the nullable halves of
+  `enclosingClassName()`/`enclosingMethodName()`/`enclosingCall()`, which become abstract.
+  **`SlotContext.asSlot()`, `run()`, `SlotRun.allowed()`, `ActionContext.projectName()` and
+  `Dialogs.owner()`** go the same way: each was a nullable member kept beside the `Optional` sibling that
+  replaced it, and a deprecated member in an unreleased API is a second spelling nobody has yet written
+  against.
+
+- **`Models`, `StudioServices.models()`, `StudioPlugin.modelCalls()` and the whole
+  `com.botmaker.plugin.api.model` package** — `ModelCall`, `ModelStatement`, `MethodRef`. Shipped earlier the
+  same day and **withdrawn before any host implemented it**: a model as a sequence of statements made the
+  host the author of a compilation unit, which forces it to own the package, the class name, the imports and
+  the ordering. `PluginValues` above is the replacement, and the difference is that the plugin writes the
+  file and the host rewrites one expression inside it.
 
   Breaking, like everything above, and taken while no third-party plugin exists.
 

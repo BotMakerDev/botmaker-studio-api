@@ -5,7 +5,48 @@ reasoning.
 
 ## Done
 
-### 2026-09-20 — `Models`: a plugin's model as compiled Java
+### 2026-09-20 — `PluginValues`: the plugin ships the file, the host rewrites one expression
+
+Phase 1 of the rewritten `../docs/refactor/33-plugin-java.md`, and it **withdraws the entry below**, which
+shipped as `2bc1e2f` hours earlier and was never implemented by a host.
+
+**The file is an input, not an output.** `StudioPlugin.pluginSources()` hands over a `PluginSource` — a class
+name and its whole text, with `${package}` where the package line goes — and the host copies it into
+`src/main/java/<bot package>/plugins/<last id segment>/` the first time the plugin is added. From then on it
+is the user's file: the host never adds a method, never deletes one and never reformats it. What it rewrites
+is the expression a `@Managed("id")` method returns, one `ReturnStatement` at a time.
+
+**Five designs, and the first four shared one mistake.** A record handed over reflectively; the grammar
+host-side; an annotation processor; a sequence of `ModelCall` statements written into a generated class. Every
+one made the host the **author of a compilation unit**, which forces it to own the package, the class name,
+the imports, the ordering and the whole round trip. The question that dissolved it was the user's: *why does
+the host write a class at all, when the plugin could hand one over?* Handing it over answers all five at once
+— the plugin's author already knows them — and shrinks the reader's input domain from *a class* to *one
+expression*, which is precisely the domain `ValueCatalog.valueOf` has covered since `32` shipped.
+
+**`PluginValues` is two methods**, `ids()` and `open(String id)`, and `open` hands back a `ValueContext`. That
+is the load-bearing part: a slot on the canvas, a row of the Parameters window and a `@Managed` value are all
+edited through one interface, so a plugin's own window needs no second way to edit a value. A body the user
+has hand-edited into something that is not a single `return <expression>;` answers empty and is shown
+read-only with the reason — the rule a computed `@Param` initializer already gets.
+
+**`ValueContext` stopped speaking the wire form in the same phase**, which is what makes the above possible.
+`List<String> value()` and `set(List<String>)` are replaced by `ValueForm form()`, `String source()` and
+`set(String javaExpression, String... importsNeeded)`. The wire could say a leaf and a flat list of leaves
+and nothing else, so an editor could never be handed `Map<String, List<Point>>` even though a bot may declare
+such a field; and it was a *second encoding of a value beside the Java one*, kept in step by hand, which is
+exactly the shape `ValueCodec.literal`/`wireOfLiteral` had already rotted into. `form()` is what lets an
+editor claim a composite rather than a leaf.
+
+**Every deprecated member in this module was deleted rather than carried.** `SlotContext.currentSource()`,
+`replaceWith`, `enclosingClass()`, `enclosingMethod()`, `enclosingSource()`, `asSlot()`, `run()`;
+`SlotRun.allowed()`; `ActionContext.projectName()`; `Dialogs.owner()`; `ValueContext.asSlot()`. Each was a
+nullable member kept beside the `Optional` sibling that replaced it, and in an API no third party has
+compiled against yet a deprecation is a second spelling nobody has written and everybody must read. The first
+two were not merely deprecated but **redundant**: since a value is Java everywhere, `currentSource()` is
+`source()` and `replaceWith` is `set`.
+
+### 2026-09-20 — `Models`: a plugin's model as compiled Java *(withdrawn the same day — see above)*
 
 Phase K of `../docs/refactor/33-plugin-java.md`, contract half. One capability off `StudioServices`, beside
 `sources()` and by the same test: the host is the only possible source of it.

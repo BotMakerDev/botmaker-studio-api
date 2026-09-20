@@ -1,8 +1,6 @@
 package com.botmaker.plugin.api;
 
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
-import com.botmaker.plugin.api.model.ModelCall;
-import com.botmaker.plugin.api.model.ModelStatement;
 import com.botmaker.plugin.api.value.ValueCatalog;
 import com.botmaker.plugin.api.value.ValueType;
 
@@ -147,24 +145,18 @@ public interface StudioPlugin {
     }
 
     /**
-     * The calls this plugin's model may be written as — one {@link ModelCall} per method the host may emit
-     * into the bot's own Java.
+     * The Java files this plugin gives a bot to hold its values, copied into the project once when the
+     * plugin is added and never regenerated — see {@link PluginSource}.
      *
-     * <p>Declaring a call is how a plugin says <i>this is a line of my model, and these are its
-     * arguments</i>. The host then writes {@code Activities.declare(Collect::body, "Collect", …);} and reads
-     * it back, and the plugin hands over and receives {@link ModelStatement}s — <b>no text in either
-     * direction, and no code generator on the plugin's side</b>. See {@link Models} for why a model is
-     * stored as calls at all.
+     * <p>This is how a plugin stores anything that used to live in its own JSON. It writes the class itself,
+     * once, with working defaults and one {@code @Managed} method per value; the host copies it in, and from
+     * then on rewrites nothing but the expression a {@code @Managed} method returns. So the plugin owns the
+     * shape and the host owns the file, and neither has to describe the other's half.
      *
-     * <p>The call's own {@link ModelCall#id()} is what a statement names, and it is derived from the owner
-     * and the method rather than declared, so there is no second identity to keep in step. A statement
-     * naming a call this plugin did not declare is not written.
-     *
-     * <p>Declared once, at startup, so {@link Models#problem(ModelCall)} can be asked before a user has
-     * saved anything: an argument whose form no codec can write is a plugin's mistake, and the useful moment
-     * to learn about it is the first run rather than the first save.
+     * <p>Read at plugin-add time only. {@code default} for the reason every method here but {@code id()} is:
+     * a plugin that keeps no values of its own contributes none, and a project gains no file.
      */
-    default List<ModelCall> modelCalls() {
+    default List<PluginSource> pluginSources() {
         return List.of();
     }
 

@@ -4,6 +4,8 @@ import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator.ReplaceUnderscores;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -18,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class OverlayContextDefaultsTest {
 
     /** A context implementing only what a toolbar item always needed. */
-    private record Minimal(String projectName, String pinnedVersion) implements ActionContext {
+    private record Minimal(Optional<String> openProjectName, String pinnedVersion) implements ActionContext {
         @Override
         public StudioServices services() {
             return null;
@@ -27,7 +29,7 @@ class OverlayContextDefaultsTest {
 
     @Test
     void a_context_with_no_overlay_answers_empty_rather_than_null() {
-        ActionContext ctx = new Minimal("Demo", "1.2.0");
+        ActionContext ctx = new Minimal(Optional.of("Demo"), "1.2.0");
 
         assertTrue(ctx.overWindowTitle().isEmpty(), "no overlay is open");
         assertTrue(ctx.overBounds().isEmpty(), "no overlay is open");
@@ -35,7 +37,7 @@ class OverlayContextDefaultsTest {
 
     @Test
     void inserting_at_a_cursor_that_does_not_exist_is_a_no_op_rather_than_a_throw() {
-        ActionContext ctx = new Minimal("Demo", "1.2.0");
+        ActionContext ctx = new Minimal(Optional.of("Demo"), "1.2.0");
 
         // A plugin pressing an item with no overlay open must not take the editor down with it.
         ctx.insertAtCursor("Mouse.click(10, 20);");
