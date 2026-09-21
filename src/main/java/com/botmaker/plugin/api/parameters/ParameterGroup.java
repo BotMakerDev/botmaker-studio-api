@@ -1,4 +1,4 @@
-package com.botmaker.plugin.api;
+package com.botmaker.plugin.api.parameters;
 
 import java.util.ArrayList;
 import java.util.List;

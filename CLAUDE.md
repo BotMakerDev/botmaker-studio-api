@@ -10,8 +10,15 @@ Read the umbrella `../CLAUDE.md` first for how the six modules fit together, and
 Interfaces and records. Nothing else. It has no implementation, references no Studio type, and depends on
 one artifact (`javafx-controls`, `provided`).
 
-- `com.botmaker.plugin.api` — `StudioPlugin`, `SlotEditor`, `SlotContext`, `ValueContext`, `TypeRef`,
-  `StudioServices` and the three services it exposes (`Theme`, `Capture`, `Dialogs`) plus `Region`.
+- `com.botmaker.plugin.api` — `StudioPlugin`, `StudioServices` and what it hands back: `Theme`, `Dialogs`,
+  `Runs`, `Sources`. A plugin reads those four as one facility, which is why they stay at the root.
+- **One package per contribution surface** (2026-09-21): `…api.slot` (`SlotEditor`, `SlotContext`,
+  `SlotRun`, `ValueContext`, `TypeRef`), `…api.parameters` (`ParameterGroup`, `ParameterRow`,
+  `ParameterEdit`), `…api.toolbar` (`ToolbarItem`, `ToolbarGroup`, `EnabledWhen`, `ActionContext`),
+  `…api.source` (`PluginSource`, `SourceSeed`, `ManagedValue`, `PluginValues`). Sixteen types moved out of
+  the root, which had become the place every new one landed; nothing was renamed or removed. The break is
+  binary-incompatible and was taken while both implementors are in this repository — see
+  `../docs/refactor/25-compatibility.md` §2, and *japicmp* below for the baseline it pins.
 - `com.botmaker.plugin.api.catalog` — `PaletteCatalog`, `Category`, `FacadeEntry`, `MemberEntry`,
   `MemberId`, and the package-private `SourceOrder`. The *result* type:
   `PaletteCatalog.of(Class<?>...)` builds it by reflection. `CatalogBuilder`, `MemberRef` and the arity
@@ -433,9 +440,14 @@ plugin — source-compatible, binary-incompatible, and until 2026-08-27 carried 
 The SDK's August japicmp gate was deleted because **CI cannot tell an intended break from an accident: it
 cannot see the version.** That is an objection to a *conditional* rule. Here the rule is unconditional —
 only a Studio major release may break a plugin, and that release edits this block — so there is nothing to
-distinguish and the objection does not apply. The module has never been released, so the baseline does not
-resolve yet and `ignoreMissingOldVersion` reports instead of failing; set the baseline to the previous tag in
-every release commit from the first one onward.
+distinguish and the objection does not apply. The baseline is set to the previous tag in every release
+commit, which `Japicmp.bump` does automatically and never moves backwards.
+
+**The baseline is pinned to `v0.1.6` and that tag does not exist yet** (2026-09-21): the package move above
+is binary-incompatible, so comparing this build against `v0.1.5` could only refuse it.
+`ignoreMissingOldVersion` makes an absent baseline report and pass, which is the case it is configured for;
+from the moment `v0.1.6` is cut the gate compares that tag against itself and passes, and `Japicmp.bump`
+takes over from `v0.1.7`. **This pins the release: it must be `--studio-api 0.1.6`.**
 
 ## Style
 

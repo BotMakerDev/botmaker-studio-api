@@ -1,5 +1,6 @@
-package com.botmaker.plugin.api;
+package com.botmaker.plugin.api.slot;
 
+import com.botmaker.plugin.api.StudioServices;
 import com.botmaker.plugin.api.value.ValueForm;
 
 import java.util.Optional;

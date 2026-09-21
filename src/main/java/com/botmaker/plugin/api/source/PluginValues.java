@@ -1,4 +1,6 @@
-package com.botmaker.plugin.api;
+package com.botmaker.plugin.api.source;
+
+import com.botmaker.plugin.api.slot.ValueContext;
 
 import java.util.List;
 import java.util.Optional;

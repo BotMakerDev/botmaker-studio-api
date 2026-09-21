@@ -1,4 +1,4 @@
-package com.botmaker.plugin.api;
+package com.botmaker.plugin.api.slot;
 
 import javafx.scene.Node;
 

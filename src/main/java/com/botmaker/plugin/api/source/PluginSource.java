@@ -1,4 +1,4 @@
-package com.botmaker.plugin.api;
+package com.botmaker.plugin.api.source;
 
 /**
  * A Java file a plugin gives a bot to hold the plugin's own values.

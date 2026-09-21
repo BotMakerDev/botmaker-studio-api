@@ -1,4 +1,4 @@
-package com.botmaker.plugin.api;
+package com.botmaker.plugin.api.slot;
 
 /**
  * The declared type of a value slot, as the host resolved it.

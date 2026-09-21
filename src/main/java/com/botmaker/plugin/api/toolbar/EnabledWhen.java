@@ -1,4 +1,4 @@
-package com.botmaker.plugin.api;
+package com.botmaker.plugin.api.toolbar;
 
 /**
  * When a toolbar item can be pressed — a closed set, and deliberately not a predicate.

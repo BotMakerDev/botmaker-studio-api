@@ -1,4 +1,4 @@
-package com.botmaker.plugin.api;
+package com.botmaker.plugin.api.toolbar;
 
 /**
  * Where on the toolbar an item sits — a closed set the host owns.

@@ -1,4 +1,4 @@
-package com.botmaker.plugin.api;
+package com.botmaker.plugin.api.parameters;
 
 /**
  * A value the user changed in the Parameters window, on its way back to the plugin that owns it.

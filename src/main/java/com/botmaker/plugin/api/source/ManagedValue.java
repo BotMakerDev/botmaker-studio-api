@@ -1,4 +1,4 @@
-package com.botmaker.plugin.api;
+package com.botmaker.plugin.api.source;
 
 /**
  * One value this plugin keeps up to date through its own window, named by the id it is annotated with.

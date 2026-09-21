@@ -1,5 +1,7 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.source.PluginValues;
+
 import java.nio.file.Path;
 
 /**

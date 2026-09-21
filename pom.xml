@@ -47,7 +47,14 @@
              so the automation's never-move-backwards rule would have frozen it there.
              Offline builds that have never fetched the baseline pass -Dbotmaker.japicmp.skip=true, which
              also deactivates the api-gate profile below. -->
-        <botmaker.japicmp.baseline>v0.1.4</botmaker.japicmp.baseline>
+        <!-- v0.1.6, a tag that does not exist yet, and deliberately: the 2026-09-21 package move is a
+             binary-incompatible change, so comparing this build against v0.1.5 can only refuse it.
+             ignoreMissingOldVersion (below, and there since the first release for its own reasons) makes an
+             absent baseline report and pass, so the gate stays loaded and keeps checking everything else
+             until the tag exists; from the moment it does, this compares v0.1.6 against itself and passes;
+             from v0.1.7 Japicmp.bump takes over again, which never moves the baseline backwards. The break
+             itself is recorded in docs/refactor/25-compatibility.md and in CHANGELOG.md. -->
+        <botmaker.japicmp.baseline>v0.1.6</botmaker.japicmp.baseline>
         <botmaker.japicmp.skip>false</botmaker.japicmp.skip>
     </properties>
 

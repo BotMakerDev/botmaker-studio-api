@@ -1,4 +1,4 @@
-package com.botmaker.plugin.api;
+package com.botmaker.plugin.api.parameters;
 
 import com.botmaker.plugin.api.value.Range;
 import com.botmaker.plugin.api.value.ValueForm;
