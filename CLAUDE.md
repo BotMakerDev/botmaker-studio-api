@@ -194,20 +194,40 @@ are a `Map<String,String>` and not a `Replacement` record — see `docs/refactor
 plugin's own values as **compiled Java in the bot's own source** rather than JSON
 (`docs/refactor/33-plugin-java.md`). Two methods, `ids()` and `open(String id)`, both total.
 
-**The plugin ships the file; the host rewrites one expression inside it.** `StudioPlugin.pluginSources()`
-hands over a `PluginSource` — a class name and its whole text, with `${package}` where the package line goes
-— and the host copies it into `src/main/java/<bot package>/plugins/<last id segment>/` the first time the
-plugin is added. After that it never touches the class: not to add a method, not to delete one, not to
-reformat it. What it rewrites is the expression a `@Managed("id")` method returns, one `ReturnStatement` at a
-time.
+**The host rewrites one expression inside a file it did not write.** A bot holds a plugin's values as
+`@Managed("id")` methods in its own `src/main/java/<bot package>/plugins/<last id segment>/`, and the host
+never touches the class around them: not to add a method, not to delete one, not to reformat it. What it
+rewrites is the expression such a method returns, one `ReturnStatement` at a time.
+
+**`StudioPlugin.pluginSources()` and `PluginSource` stood here for one day and are deleted (2026-09-21).**
+A plugin handed over a class's whole text with `${package}` where the package line goes, and the host copied
+it in on the next bind. Everything above survived that deletion unchanged — what went is the belief that the
+*host* had to put the first copy there. Two things retired it:
+
+- **A project gets its file from the template it was created from.** `botmaker-gamebot` carries one;
+  `botmaker-base` carries none and should, since it names no plugin at all. The one case left was *adding a
+  plugin to an existing project*, and a contract surface plus a copy-on-every-bind plus a package rewriter
+  is a great deal of machinery for it. What answers it instead is the plugin's own window offering to write
+  the file — one write, by the thing that wants it, at a user's click.
+- **The skeleton shrank until it was not worth shipping.** It carried an `install()` that the bot's `main`
+  called by hand, one line per plugin. `com.botmaker.sdk.api.bot.Bot.run(anchor, goHome, Sdk.class)` installs
+  every `@Managed` value it is handed (through `botmaker-plugin-basics`' `ManagedValues`), so the file is two
+  `@Managed` methods and nothing else. The bot still **names** each values class — a fact only it has, and one
+  javac checks — but no longer says what to do with them.
+
+**The deletion is only legitimate before `v0.1.6` is cut**, and for exactly the reason the japicmp section
+below gives for the package move: the baseline is the release that *contains* the removal, so the jar the
+gate compares against already lacks the type. After that tag it would need a major.
 
 **That inversion is the whole design, and it is the fifth attempt.** The four before it — a record handed
 over reflectively, the grammar host-side, an annotation processor, and a sequence of `ModelCall` statements
 (shipped earlier the same day as `2bc1e2f` and withdrawn) — all made the host the **author of a compilation
 unit**, which forces it to own the package, the class name, the imports, the ordering and the whole round
-trip. Handing the file over as text answers all of those at once, because the plugin's author already knows
-them, and it shrinks what the host must parse from *a class* to *one expression* — the domain
-`ValueCatalog.valueOf` already covers and already has tests for.
+trip. **Not being the author answers all of those at once**, and shrinks what the host must parse from *a
+class* to *one expression* — the domain `ValueCatalog.valueOf` already covers and already has tests for.
+The fifth attempt had the plugin hand the file over as text; the sixth, a day later, has nobody hand it over
+at all and the host reading whatever Java is there. Both keep the property that matters, and the second is
+the one with no surface.
 
 **`open` hands back a `ValueContext`, which is the point.** A slot on the canvas, a row of the Parameters
 window and a `@Managed` value are all edited through one interface, so a plugin's own window reads and writes

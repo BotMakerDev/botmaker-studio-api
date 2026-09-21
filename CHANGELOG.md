@@ -17,7 +17,19 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
-No source changes since v0.1.6; re-released for updated upstream pins.
+### Removed
+
+- **`StudioPlugin.pluginSources()` and `PluginSource`**, one day after they landed. A plugin handed the host
+  a class's whole text and the host copied it into the project on every bind. What they were *for* survives
+  untouched — a bot holds a plugin's values as `@Managed` methods in its own source, and the host rewrites
+  nothing but the expression one returns — but a project gets that file from the template it was created
+  from, and the skeleton the SDK was shipping shrank to two `@Managed` methods once
+  `Bot.run(anchor, goHome, Sdk.class)` made a hand-written `install()` unnecessary. Two methods is not worth
+  a contract surface, a copy on every `PluginHost.bind` and a `${package}` rewriter.
+  **A plugin that wants to add its file to an existing project writes it from its own window**; nothing in
+  the contract is needed for that, and nothing here replaces the removed pair.
+  **This is a removal, so it must ship in `0.1.6`** — the japicmp baseline is the release that contains it,
+  exactly as for the package move below. After that tag it would need a major.
 
 ### Changed
 

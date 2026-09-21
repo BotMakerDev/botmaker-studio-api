@@ -5,6 +5,28 @@ reasoning.
 
 ## Done
 
+### 2026-09-21 (last) — `PluginSource` is deleted: nobody hands the host a file
+
+`StudioPlugin.pluginSources()` and `com.botmaker.plugin.api.source.PluginSource` are **removed**, one day
+after they landed. Everything they were for survives: a bot still holds a plugin's values as `@Managed`
+methods in its own source, and the host still rewrites nothing but the expression one returns. What went is
+the host putting the first copy of that file into the project.
+
+**Two things retired it.** A project gets its `plugins/<id>/` file from the template it was created from —
+`botmaker-gamebot` carries one — so the only case the surface served was *adding a plugin to an existing
+project*, for which a contract method, a copy on every `PluginHost.bind` and a `${package}` rewriter are a
+great deal of machinery. And the skeleton being shipped shrank: it carried an `install()` that a bot's
+`main` called by hand, one line per plugin, and `Bot.run(anchor, goHome, Sdk.class)` now installs every
+`@Managed` value it is handed through `botmaker-plugin-basics`' new `ManagedValues`. Two `@Managed` methods
+is not worth a surface.
+
+**What it cost, accepted rather than hidden**: adding a plugin to a project with no file for it brings none.
+The answer is the plugin's own window offering to write one at a click — one write, by the thing that wants
+it — and it is not built yet.
+
+**japicmp**: this is a removal, so it is legitimate only because the baseline `v0.1.6` does not exist yet and
+will *contain* it. Same argument as the package move below. **It must ship in `--studio-api 0.1.6`.**
+
 ### 2026-09-21 — `33-plugin-java.md` is implemented, and the contract asked for nothing more
 
 The plan finished on phases 5–7 without another contract change, which is the result worth recording: the

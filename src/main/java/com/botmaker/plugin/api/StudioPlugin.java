@@ -6,7 +6,6 @@ import com.botmaker.plugin.api.parameters.ParameterGroup;
 import com.botmaker.plugin.api.parameters.ParameterRow;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
-import com.botmaker.plugin.api.source.PluginSource;
 import com.botmaker.plugin.api.source.SourceSeed;
 import com.botmaker.plugin.api.toolbar.ToolbarItem;
 import com.botmaker.plugin.api.value.ValueCatalog;
@@ -156,21 +155,20 @@ public interface StudioPlugin {
         return ValueCatalog.empty();
     }
 
-    /**
-     * The Java files this plugin gives a bot to hold its values, copied into the project once when the
-     * plugin is added and never regenerated — see {@link PluginSource}.
-     *
-     * <p>This is how a plugin stores anything that used to live in its own JSON. It writes the class itself,
-     * once, with working defaults and one {@code @Managed} method per value; the host copies it in, and from
-     * then on rewrites nothing but the expression a {@code @Managed} method returns. So the plugin owns the
-     * shape and the host owns the file, and neither has to describe the other's half.
-     *
-     * <p>Read at plugin-add time only. {@code default} for the reason every method here but {@code id()} is:
-     * a plugin that keeps no values of its own contributes none, and a project gains no file.
-     */
-    default List<PluginSource> pluginSources() {
-        return List.of();
-    }
+    // pluginSources() stood here from 2026-09-20 to 2026-09-21, with PluginSource beside it: a plugin handed
+    // over a class's whole text and the host copied it into the project on the next bind. It is deleted, and
+    // the reason is worth keeping because the surface was defended at length the day before.
+    //
+    // What it was for survived intact — a plugin's values ARE compiled Java in the bot's own source, and the
+    // host still rewrites nothing but the expression a @Managed method returns. What went is the belief that
+    // the host had to put the first copy of that file there. A project gets one by being created from a
+    // template, which already carries it; and the skeleton the SDK was shipping shrank to two @Managed
+    // methods the moment Bot.run made install() unnecessary, which is too little to be worth a contract
+    // surface, a copy-on-every-bind and a package rewriter.
+    //
+    // The cost is real and was accepted: adding a plugin to a project that has no file for it brings none.
+    // The fix for that is the plugin's own window offering to write one, at a click — one write, by the
+    // thing that wants it, rather than the host copying files it was handed.
 
     /**
      * The sections this plugin owns in the Parameters window, at the version a project pins.
