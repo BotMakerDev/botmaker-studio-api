@@ -15,6 +15,36 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+No source changes since v0.1.6; re-released for updated upstream pins.
+
+### Changed
+
+- **The contract has a package per contribution surface.** The root package held 22 types while `catalog`,
+  `palette`, `value` and `meta` were tidy, so the root had become the place every new type landed. Sixteen
+  moved; repoint an import with the table below and nothing else changes — no type, method or component was
+  renamed, added or removed.
+
+  | Type | Was | Is |
+  |---|---|---|
+  | `SlotEditor`, `SlotContext`, `SlotRun`, `ValueContext`, `TypeRef` | `com.botmaker.plugin.api` | `com.botmaker.plugin.api.slot` |
+  | `ParameterGroup`, `ParameterRow`, `ParameterEdit` | `com.botmaker.plugin.api` | `com.botmaker.plugin.api.parameters` |
+  | `ToolbarItem`, `ToolbarGroup`, `EnabledWhen`, `ActionContext` | `com.botmaker.plugin.api` | `com.botmaker.plugin.api.toolbar` |
+  | `PluginSource`, `SourceSeed`, `ManagedValue`, `PluginValues` | `com.botmaker.plugin.api` | `com.botmaker.plugin.api.source` |
+
+  `StudioPlugin`, `StudioServices`, `Dialogs`, `Theme`, `Runs` and `Sources` stay at the root: they are what
+  `StudioServices` hands back, which a plugin reads as one facility rather than four surfaces. `catalog`,
+  `palette`, `value` and `meta` are untouched.
+
+- **This is a binary-incompatible break, taken deliberately and once.** A package move is a removal to
+  japicmp and to a classloader alike, so a plugin compiled against v0.1.5 will not load against this one. It
+  was allowed because the only implementors are the SDK and plugin-basics, both in this repository and both
+  recompiled the same day; the window closes the day a third-party plugin exists.
+  `docs/refactor/25-compatibility.md` §2 carries the dated reasoning. The gate was not weakened:
+  `botmaker.japicmp.baseline` is pinned to `v0.1.6`, the tag this is released as, so the comparison resumes
+  from the first build after it.
+
 ## [0.1.6] — 2026-09-21
 
 ### Changed
