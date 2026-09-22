@@ -34,7 +34,7 @@ class ContextDefaultsTest {
             }
             @Override public void set(Object value) {}
             @Override public String source() { return "\"x\""; }
-            @Override public void set(String javaExpression, Class<?>... imports) {}
+            @Override public void setSource(String javaExpression, Class<?>... imports) {}
             @Override public StudioServices services() { return null; }
         };
     }
@@ -46,7 +46,7 @@ class ContextDefaultsTest {
             @Override public <T> Optional<T> value(Class<T> type) { return Optional.empty(); }
             @Override public void set(Object value) {}
             @Override public String source() { return "\"570\""; }
-            @Override public void set(String javaExpression, Class<?>... imports) {}
+            @Override public void setSource(String javaExpression, Class<?>... imports) {}
             @Override public StudioServices services() { return null; }
             @Override public Optional<String> enclosingClassName() { return Optional.of("Game"); }
             @Override public Optional<String> enclosingMethodName() { return Optional.of("launchSteam"); }

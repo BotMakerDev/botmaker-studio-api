@@ -97,8 +97,13 @@ public interface ValueContext {
      * <p>Imports are named as {@code Class} objects rather than as strings, because a nested type is
      * {@code Outer.Inner} in both an expression and an import and {@code Outer$Inner} in neither, and every
      * caller was deriving that by hand. The host reads their canonical names and never loads them.
+     *
+     * <p><b>Its own name rather than a second {@code set}.</b> An overload pair would put
+     * {@code set("Source.current()")} on the value path — a {@code String} argument matches
+     * {@link #set(Object)} before varargs are ever considered — so the expression would be written back as
+     * a quoted string literal, silently, with nothing to catch it. Two verbs for two meanings.
      */
-    void set(String javaExpression, Class<?>... imports);
+    void setSource(String javaExpression, Class<?>... imports);
 
     /** The host services an editor may use: theming, screen capture, dialogs, and the project's location. */
     StudioServices services();

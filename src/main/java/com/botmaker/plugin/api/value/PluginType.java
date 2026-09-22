@@ -45,14 +45,41 @@ public interface PluginType<T> {
      * A freshly created value of this type — what a new parameter, a new slot and a new list item start as.
      *
      * <p>Asked every time a value is seeded and never cached, so it may read the plugin's live state. It
-     * must not throw and must not answer {@code null}: a type that cannot say what a fresh one is cannot be
-     * offered in a type picker, and the host would have nothing to write.
+     * must not throw. It answers {@code null} only for a type whose fresh form is a <em>call</em> rather
+     * than a constant — see {@link #freshSource()}, which such a type answers instead.
      */
     T fresh();
 
     /**
-     * The control a person edits one of these with. Called on the JavaFX application thread, and only after
-     * the host decided this type is the one being edited.
+     * A fresh value written as a <b>live expression</b> instead of a value, or {@code ""} for the ordinary
+     * case where {@link #fresh()} says it.
+     *
+     * <p>For the type whose honest starting value is something the bot <em>evaluates</em>, not something
+     * this plugin can hand over: the SDK's {@code MatchResult} starts as {@code Vision.lastMatch()} — the
+     * last match the bot actually found — and its {@code CaptureSource} starts as {@code Source.current()},
+     * which tracks whatever the project is pointed at when the bot runs. Freezing either into a value is
+     * not a spelling difference, it changes what the declaration means; and calling {@code Vision.lastMatch()}
+     * to obtain one would run the vision stack inside a headless validator.
+     *
+     * <p><b>Fully qualified, always.</b> The host writes a seeded declaration and has no rewriter to add an
+     * import with, so an expression naming {@code Point} compiles only where something else already
+     * imported it.
+     *
+     * <p>Answering this is what makes a type <em>declarable</em> without making it editable. It is the one
+     * thing the deleted {@code SourceSeed} said that {@link #fresh()} cannot, and the reason the deletion
+     * kept it rather than dropping six of the SDK's fourteen declarable types.
+     */
+    default String freshSource() {
+        return "";
+    }
+
+    /**
+     * The control a person edits one of these with, or {@code null} for a type that is declarable but has
+     * nothing to edit — the host then shows the expression as written, read-only, exactly as it does for a
+     * type no plugin declares at all.
+     *
+     * <p>Called on the JavaFX application thread, and only after the host decided this type is the one being
+     * edited.
      *
      * <p>Read the current value with {@link ValueContext#value(Class)} — which answers empty when the
      * expression in the file is one the grammar cannot read, the case that must render read-only rather

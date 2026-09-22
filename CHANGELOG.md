@@ -28,6 +28,22 @@ is allowed to make. Additions arrive as `default` methods.
 - **`ValueContext.value(Class<T>)` and `set(Object)`** — a value crosses as a value. Every plugin used to
   parse the Java source itself, which produced three numeric-literal strippers, two argument splitters and
   one string unescaper across two modules, none of them agreeing.
+- **`PluginType.freshSource()`**, `default ""`, for a type whose fresh form is a *call the bot
+  re-evaluates* rather than a constant. The SDK's `MatchResult` starts as `Vision.lastMatch()` — the last
+  match the bot actually found — and its `CaptureSource` as `Source.current()`, which tracks whatever the
+  project is pointed at when the bot runs. Freezing either into a value changes what the declaration means,
+  and calling `Vision.lastMatch()` to obtain one would run the vision stack inside a headless validator.
+  It is the one thing the deleted `SourceSeed` said that `fresh()` cannot, and answering it is what makes a
+  type declarable without making it editable — `editor(ctx)` may answer `null`, and the host then shows the
+  expression read-only exactly as it does for a type no plugin declares.
+
+### Changed
+
+- **`ValueContext`'s source setter is `setSource(String, Class<?>...)`**, not a second `set`. A `String`
+  argument matches `set(Object)` in the first phase of overload resolution, before varargs are ever
+  considered, so `set("Source.current()")` bound to the *value* path and would have written the expression
+  back as a quoted string literal — silently, with nothing to catch it. Two verbs for two meanings. Three
+  live call sites were already wrong when the rename found them.
 - **`SlotEditor.forType(Class, …)` and `SlotEditor.forCall(Class, int, …, String…)`**, which is the
   toolkit's `CallSites` moved onto the contract: *which slot an editor claims* is contract vocabulary, and
   the helper was predicate construction with no UI in it.
