@@ -3,10 +3,8 @@ package com.botmaker.plugin.api;
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
-import com.botmaker.plugin.api.source.SourceSeed;
 import com.botmaker.plugin.api.toolbar.ToolbarItem;
-import com.botmaker.plugin.api.value.ValueCatalog;
-import com.botmaker.plugin.api.value.ValueType;
+import com.botmaker.plugin.api.value.PluginType;
 
 import java.util.List;
 
@@ -23,18 +21,18 @@ import java.util.List;
  *
  * <h2>The contribution surfaces</h2>
  * <ul>
- *   <li><b>palette</b> — {@link #catalog(String)}: the types and members worth proposing, their groups and
+ *   <li><b>palette</b> — {@link #catalog()}: the types and members worth proposing, their groups and
  *       their order.</li>
- *   <li><b>slot editors</b> — {@link #slotEditors()}: "for a value of type X, show this UI instead of a
- *       text field". They serve both places the host edits a value: a slot in a bot's Java, and a row in
- *       the Parameters window.</li>
- *   <li><b>value types</b> — {@link #valueTypes()}: the types a project variable may hold, and what their
- *       stored text means.</li>
+ *   <li><b>types</b> — {@link #types()}: the types a project value may hold. One {@link PluginType} per
+ *       type says what it is, what a fresh one is and how a person edits one — and, where its Java is a
+ *       call, a {@link com.botmaker.plugin.api.value.ComponentType} beside it says what goes in the
+ *       brackets.</li>
+ *   <li><b>slot editors</b> — {@link #slotEditors()}: the two editors a type cannot choose — one picked by
+ *       the call a slot sits in, and an override of an editor for a type another plugin declared.</li>
  *   <li><b>toolbar</b> &mdash; {@link #toolbarItems()}: buttons, contributed as data. The host owns the
  *       grouping, the order, the packing and the overflow menu; a plugin owns what a press does.</li>
- *   <li><b>source seeds</b> &mdash; {@link #sourceSeeds()}: what a <em>fresh</em> value of one of this
- *       plugin's types looks like, when the host's generic {@code new T()} would not compile. Data, like
- *       the toolbar and for the same reason — see {@link SourceSeed}.</li>
+ *   <li><b>managed values</b> &mdash; {@link #managedValues()}: the values this plugin maintains through
+ *       its own window, which the host shows but does not let its code canvas edit.</li>
  * </ul>
  *
  * <p>{@link #projectOpened(StudioServices)} and {@link #projectClosing()} are not surfaces — they contribute
@@ -69,45 +67,69 @@ public interface StudioPlugin {
     }
 
     /**
-     * What this plugin offers the palette at the version a project actually pins.
+     * What this plugin offers the palette: the facade classes worth proposing, their groups and their
+     * order. A plugin that does not curate returns {@link PaletteCatalog#empty()}, which the host reads as
+     * "offer everything the jar contains" rather than "offer nothing".
      *
-     * <p>The argument is the pinned version <em>as it is written in the project's pom</em> — the plugin
-     * decides what that string means, since only it knows its own versioning. A plugin that recognises no
-     * such version, or that does not curate at all, returns {@link PaletteCatalog#empty()}, which the host
-     * reads as "offer everything the jar contains" rather than "offer nothing".
+     * <p>The class list is the last compile-checked thing in the catalog — javac-checked class literals,
+     * since {@code CatalogBuilder} and {@code MemberRef} were deleted on 2026-08-27 — while the members
+     * themselves are discovered by reflection over {@code @Palette}, {@code @Hidden}, {@code @PaletteLabel}
+     * and {@code @PaletteDefault}.
      *
-     * @param pinnedVersion the version of this plugin the open project depends on; never {@code null}, but
-     *                      may be a snapshot or a spelling this plugin does not recognise
+     * <p><b>It took the project's pinned plugin version until 2026-09-22</b>, so a plugin could curate per
+     * version. Nothing did: the toolkit's base class memoised the answer ignoring the argument, and the one
+     * implementation in existence recorded its per-version curation ending on 2026-08-26. A parameter every
+     * caller has to supply and no implementation reads is a parameter that will be wrong the first time it
+     * matters.
      */
-    default PaletteCatalog catalog(String pinnedVersion) {
+    default PaletteCatalog catalog() {
         return PaletteCatalog.empty();
     }
 
     /**
-     * The editors this plugin offers for value slots, in the order it wants them consulted.
+     * The types this plugin declares — one {@link PluginType} each, in the order a picker should offer
+     * them.
+     *
+     * <p>This is the surface that makes the vocabulary <b>open</b>. It was a closed enum in the SDK until
+     * 2026-08-27, which is right for one plugin and wrong for two: a plugin wanting a {@code Channel} value
+     * would have needed a constant granted in somebody else's enum.
+     *
+     * <p><b>The type is the identity, and it is the Java type the user's file writes.</b> The host indexes
+     * every plugin's declarations by {@link PluginType#type()}'s canonical name and refuses two plugins
+     * <em>owning</em> one type, because a project that opens differently depending on which plugin loaded
+     * first is not a project. Offering an editor for somebody else's type is not owning it — that is
+     * {@link SlotEditor#forType}, and the host asks the user which to use.
+     *
+     * <p>A type whose plugin is absent is not an error: the value keeps the expression the author wrote,
+     * renders read-only and is never rewritten, so uninstalling a plugin costs the user nothing but the
+     * ability to edit.
+     *
+     * <p><b>It replaced three surfaces on 2026-09-22</b> — {@code valueTypes()} with {@code ValueType} and
+     * {@code ValueCodec}, and {@code sourceSeeds()} with {@code SourceSeed}. Those described one type in
+     * four places that nothing checked against each other, two of which were strings: the id in a file and
+     * the fresh value as Java text. Here the compiler asks for all of it at once.
+     */
+    default List<PluginType<?>> types() {
+        return List.of();
+    }
+
+    /**
+     * The editors this plugin offers that a type cannot choose for itself, in the order it wants them
+     * consulted.
+     *
+     * <p>Two kinds, and only two. {@link SlotEditor#forCall} claims a slot by the call around it, for
+     * values the type cannot tell apart — a Steam app id and a window title are both {@code String}.
+     * {@link SlotEditor#forType} <em>overrides</em> the editor for a type <b>another</b> plugin declared,
+     * which is how the SDK offers a colour picker that samples the capture target for the
+     * {@code java.awt.Color} plugin-basics declares.
+     *
+     * <p>An editor for this plugin's <em>own</em> type does not belong here: it is
+     * {@link PluginType#editor}, declared beside the type, so the type is named once.
      *
      * <p>Order matters only within one plugin: the host consults its own editors before any plugin's, so a
      * slot holding a project variable stays a variable no matter what a plugin claims about its type.
      */
     default List<SlotEditor> slotEditors() {
-        return List.of();
-    }
-
-    /**
-     * What a fresh value of one of this plugin's types looks like in source, for the types the host's
-     * generic {@code new T()} cannot fill — an interface, a record with required components, or a type whose
-     * meaning is a named constant.
-     *
-     * <p>Asked <b>every time a slot is seeded</b>, never cached, so a seed may read the project's live state.
-     * The host consults its own seeds for the JDK types first, then every plugin's in load order, and falls
-     * back to {@code new T()}; a seed whose expression will not parse is skipped rather than written.
-     *
-     * <p>{@code default} for the reason every method here but {@code id()} is: an older plugin contributes
-     * none and the host seeds exactly as it did before.
-     *
-     * @see SourceSeed
-     */
-    default List<SourceSeed> sourceSeeds() {
         return List.of();
     }
 
@@ -127,23 +149,20 @@ public interface StudioPlugin {
         return List.of();
     }
 
-    /**
-     * The value types this plugin registers, with the codec that says what each one's stored text means.
-     *
-     * <p>This is the surface that makes the vocabulary <b>open</b>. It was a closed enum in the SDK until
-     * 2026-08-27, which is right for one plugin and wrong for two: a plugin wanting a {@code Channel}
-     * variable would have needed a constant granted in somebody else's enum. Now it declares one.
-     *
-     * <p><b>The id is the identity, and it is what the project file holds.</b> The host merges every
-     * plugin's catalog by {@link ValueType#id()} and refuses two plugins claiming one id, because a project
-     * that opens differently depending on which plugin loaded first is not a project. Prefix an id that is
-     * not obviously yours. A type whose plugin is absent is not an error either — the value keeps its raw
-     * text, renders read-only and declines to emit — so uninstalling a plugin costs the user nothing but
-     * the ability to edit.
-     */
-    default ValueCatalog valueTypes() {
-        return ValueCatalog.empty();
-    }
+    // valueTypes() and sourceSeeds() stood here until 2026-09-22, with ValueType, ValueCodec, ValueCatalog
+    // and SourceSeed behind them. types() replaced both, and the reason is the reason pluginSources() went
+    // below: the half nobody is forced to write is the half that rots.
+    //
+    // A type needed four declarations that nothing checked against each other — a ValueType carrying a
+    // persisted id, a ValueCodec with parse/store/literal/valueOfLiteral, a SourceSeed carrying the fresh
+    // value as Java TEXT, and a SlotEditor predicate naming the type a third time. For Point those sat in
+    // three files. Two of the four were strings the compiler never looked at.
+    //
+    // The parsing half was dead before it was deleted: storage stopped being text when a user parameter
+    // became a @Param field (2026-09-17) and a plugin's values became @Managed methods (2026-09-21), so
+    // parse, store and defaultWire had no caller outside their own plumbing. What was still wired was
+    // wrong — a leaf round-tripped Java through wire text through literal(parse(java)), and a java.awt.Color
+    // parameter opened and closed with no edit came back rewritten.
 
     // pluginSources() stood here from 2026-09-20 to 2026-09-21, with PluginSource beside it: a plugin handed
     // over a class's whole text and the host copied it into the project on the next bind. It is deleted, and

@@ -1,8 +1,6 @@
 package com.botmaker.plugin.api.slot;
 
 import com.botmaker.plugin.api.StudioServices;
-import com.botmaker.plugin.api.value.ValueForm;
-import com.botmaker.plugin.api.value.ValueType;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -22,9 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ContextDefaultsTest {
 
-    private static final ValueForm TEXT =
-            ValueForm.of(ValueType.of("text").source("java.lang.String").build());
-
     private static final TypeRef STRING = new TypeRef() {
         @Override public String simpleName() { return "String"; }
         @Override public String qualifiedName() { return "java.lang.String"; }
@@ -34,9 +29,12 @@ class ContextDefaultsTest {
     private static ValueContext row() {
         return new ValueContext() {
             @Override public TypeRef type() { return STRING; }
-            @Override public ValueForm form() { return TEXT; }
+            @Override public <T> Optional<T> value(Class<T> type) {
+                return type == String.class ? Optional.of(type.cast("x")) : Optional.empty();
+            }
+            @Override public void set(Object value) {}
             @Override public String source() { return "\"x\""; }
-            @Override public void set(String javaExpression, String... importsNeeded) {}
+            @Override public void set(String javaExpression, Class<?>... imports) {}
             @Override public StudioServices services() { return null; }
         };
     }
@@ -45,9 +43,10 @@ class ContextDefaultsTest {
     private static SlotContext slot() {
         return new SlotContext() {
             @Override public TypeRef type() { return STRING; }
-            @Override public ValueForm form() { return TEXT; }
+            @Override public <T> Optional<T> value(Class<T> type) { return Optional.empty(); }
+            @Override public void set(Object value) {}
             @Override public String source() { return "\"570\""; }
-            @Override public void set(String javaExpression, String... importsNeeded) {}
+            @Override public void set(String javaExpression, Class<?>... imports) {}
             @Override public StudioServices services() { return null; }
             @Override public Optional<String> enclosingClassName() { return Optional.of("Game"); }
             @Override public Optional<String> enclosingMethodName() { return Optional.of("launchSteam"); }
@@ -89,10 +88,11 @@ class ContextDefaultsTest {
     }
 
     @Test
-    void aValueCarriesItsWholeFormAndItsSource() {
+    void aValueCarriesItsTypedValueAndTheSourceItWasWrittenAs() {
         ValueContext value = row();
 
-        assertEquals("\"x\"", value.source());
-        assertEquals("text", value.form().leaf().id());
+        assertEquals("x", value.value(String.class).orElseThrow());
+        assertEquals("\"x\"", value.source(), "the escape hatch, for an expression nothing can decode");
+        assertTrue(value.value(Integer.class).isEmpty(), "asking for a type nothing owns is empty, not a throw");
     }
 }

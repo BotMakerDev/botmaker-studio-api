@@ -15,7 +15,9 @@ one artifact (`javafx-controls`, `provided`).
 - **One package per contribution surface** (2026-09-21): `…api.slot` (`SlotEditor`, `SlotContext`,
   `SlotRun`, `ValueContext`, `TypeRef`), `…api.parameters` (`ParameterRow` alone since 2026-09-22 —
   `ParameterGroup` and `ParameterEdit` went with the surface that used them), `…api.toolbar` (`ToolbarItem`, `ToolbarGroup`, `EnabledWhen`, `ActionContext`),
-  `…api.source` (`PluginSource`, `SourceSeed`, `ManagedValue`, `PluginValues`). Sixteen types moved out of
+  `…api.source` (`ManagedValue`, `PluginValues` — `PluginSource` went 2026-09-21, `SourceSeed` 2026-09-22),
+  and, since 2026-09-22, `…api.params` (`@Param`) and `…api.managed` (`@Managed`), the two annotations that
+  sit on a **bot's** own declarations. Sixteen types moved out of
   the root, which had become the place every new one landed; nothing was renamed or removed. The break is
   binary-incompatible and was taken while both implementors are in this repository — see
   `../docs/refactor/25-compatibility.md` §2, and *japicmp* below for the baseline it pins.
@@ -23,20 +25,11 @@ one artifact (`javafx-controls`, `provided`).
   `MemberId`, and the package-private `SourceOrder`. The *result* type:
   `PaletteCatalog.of(Class<?>...)` builds it by reflection. `CatalogBuilder`, `MemberRef` and the arity
   shapes `M0`–`M5` were deleted on 2026-08-27 — see *The catalog* below.
-- `com.botmaker.plugin.api.value` — the **value vocabulary**: `ValueType`, `ValueForm`, `ValueContainer`,
-  `Visibility`, `Range`, `ValueCodec` and `ValueCatalog`. What a bot's *variable* can be, which
-  is a question the contract answers so a plugin can own a type without the SDK granting it one.
-  **`ValueForm` replaced the `ValueShape`/`ValueChoice` pair**, deleted 2026-09-20
-  (`../docs/refactor/32-generic-values.md`): a type is a tree — a catalogued leaf, a `List`/`Map` over other
-  forms, or a class the bot declares — so `Map<String, List<Point>>` is sayable and a shape stops encoding a
-  widget choice inside a type. **Whether a set of choices is declared is asked of the row**
-  (`ParameterRow.options()`), never of the type; `ValueForm.leaf()` is the single type a form's values are
-  typed as, which is what that set and a declared `Range` are asked of. A plugin contributes **leaves**
-  through `ValueCatalog` as
-  before, and now **containers** too: `ValueContainer<C>` is a composite registered beside a type, and the
-  contract seeds only three (`List`, `Map`, `Map.Entry`) with no privilege over a plugin's own. A container
-  takes a value apart and puts it back — **no string function crosses**; the host writes all syntax, once,
-  as `Owner.factory(p₁, …, pₙ)`.
+- `com.botmaker.plugin.api.value` — **three types since 2026-09-22**: `PluginType<T>` (the class, `fresh()`,
+  `editor(ValueContext)`, optional `preview`), `ComponentType<T>` (`componentTypes`, `components`, `build`,
+  optional `factory`/`factoryOwner`), and `Visibility`. What a bot's *value* can be, which is a question the
+  contract answers so a plugin can own a type without the SDK granting it one. See *The value vocabulary*
+  below for what the other seven types were and why none of them is here.
 - `com.botmaker.plugin.api.palette` — **`@Palette`**, **`@Hidden`**, `@PaletteLabel`, `@PaletteDefault`: the
   marks a plugin puts on its own classes, read **at runtime by `PaletteCatalog.of`**. All four are
   `RUNTIME` since 2026-08-27, because the plugin itself reflects on them. Their elements are plain `String`s
@@ -345,48 +338,58 @@ and it is the plugin's own class.)
 the host already did, since fifteen of its nineteen built-in editors handed back source text and let it
 re-parse. Keeping it that way is what stops the host's parser from becoming plugin surface.
 
-## The value vocabulary, and why `ValueType` is not an enum
+## The value vocabulary — one declaration per type, and no plugin parses anything
 
-`ValueType` is a **final class whose identity is its persisted `id()`**, reached through `ValueType.of(id)`
-and registered in a `ValueCatalog`. An enum would have been shorter and is wrong for the same reason the whole
-module exists: a plugin wanting a `Channel` variable would need a constant added to somebody else's enum.
+A plugin declares a type **once**, as a `PluginType<T>`: `type()`, `fresh()`, `editor(ValueContext)`. Where
+its Java is a call rather than a literal, the same class also implements `ComponentType<T>` and says what
+goes in the brackets. **Every method is abstract**, so javac asks for all of it at the one moment the author
+has the type in front of them.
 
-- **Compare by `id()`, never by object identity.** Two plugin classloaders each hold their own copy of a
-  class; the id is what a project file holds and the only comparison that is true across them.
-- **`ValueType.unknown(id)` is a supported state, not an error path.** A type nothing registered keeps its raw
-  `List<String>`, renders read-only and declines to emit. That is what a project opened without one of its
-  plugins looks like, and refusing the file or coercing the value would destroy a user's data because a jar is
-  missing. An **absent** id is different and reads as text — a field older than the vocabulary.
-- **`ValueCodec<T>` is per item.** A composite is composed above it by `ValueCatalog.initializer`, so a codec
-  is written once and serves every shape. `T` never crosses to the host — it is held behind a wildcard
-  capture and a value read back is an `Object` the host only ever hands to the same codec — which is what
-  keeps rule 2 above true for values.
-- **The pair is `literal` and `valueOfLiteral`, and both are abstract** (2026-09-20). `wireOfLiteral`, which
-  answered the *stored text* a literal came from, is deleted: it was a `default` returning empty, and eight
-  of the seventeen registered types never overrode it, so those eight were written into a user's Java by an
-  editor that then refused to edit them. **The half nobody is forced to write is the half that rots**, which
-  is the rule `ValueContainer` was designed under and the reason this one has no default. Declining a
-  *particular* source stays an ordinary answer — the host shows it read-only — and is different from a type
-  that can never read one.
-- **A type is asked for by the Java class it is, not by its id** (2026-09-09). `ValueCatalog.forJava(Class<?>)`
-  indexes the registrations on `ValueType.javaName()` — the import when there is one, the source spelling
-  otherwise — so a plugin author writes `Duration.class` and never writes `DURATION`. It does not weaken rule
-  2 above: the class is **read, never loaded**, only its names are taken off the object the caller already
-  holds, and nothing here compares `Class` objects. A wrapper resolves to its primitive, which is what makes
-  a list of them askable the same way a single one is. **The index is a function only because the builder
-  makes it one** — `add` throws when a second type claims a Java name, the same refusal one id registered
-  twice already got. Across two plugins it is a report (`javaClashesWith`) and not a throw, because both ids
-  are real, both projects are valid, and dropping the loser would retype a user's stored variable.
-- **`ValueCatalog.merge` is left-biased and never throws.** Deliberately unlike a generation collision, which
-  is a hard error: refusing to merge would break every project that has a plugin installed.
-- **No Jackson here, and none is coming.** The vocabulary declares the wire *form* — an id out, a total
-  factory back — and whoever owns the file supplies the parser (the SDK's `internal/authoring/ValueJson`).
-  Adding a JSON library to this module would impose it on every plugin and tie the contract to its
-  compatibility rate.
-- **`ValueType` and `ValueCatalog.Entry` are classes with builders, not records**, for trap #2 of
-  `../docs/refactor/25-compatibility.md`: adding a component to a public record changes its canonical
-  constructor descriptor, which is `NoSuchMethodError` in every already-compiled plugin. `Range` and
-  `ValueForm`'s three cases *are* records and are therefore **frozen** — their components may not grow.
+- **A fresh value is a `T`, not a string.** `fresh()` returns `new Point(0, 0)`, not `"new Point(0, 0)"`.
+  The old `SourceSeed` carried it as Java text javac never looked at, so a renamed class or a removed
+  constructor produced a seed the host wrote into somebody's file and could not compile. The two weaker
+  alternatives were both rejected on this point: an annotation is not enforced (an author may simply not
+  write it), and a base class cannot work at all — Java has no `static abstract`, and a JDK type like
+  `java.awt.Color` cannot be made to extend anything.
+- **Nothing parses.** There is no `parse(String)` and no `valueOfLiteral(String)`. The host owns every
+  character of syntax in both directions, which is what lets one grammar serve every plugin and what stopped
+  a `java.awt.Color` parameter being rewritten the moment it was opened.
+- **The identity is the Java class, not an id.** The host indexes declarations by `type()`'s canonical name.
+  The class is **read, never loaded** — only its names are taken off the object the plugin already holds,
+  and nothing compares `Class` objects — so rule 2 holds. Two plugins may not *own* one type; offering an
+  editor for somebody else's is `SlotEditor.forType`, and the host asks the user which to use.
+- **A type no loaded plugin declares is a supported state, not an error path.** The value keeps the
+  expression its author wrote, renders read-only and is never rewritten. Refusing the file or coercing the
+  value would destroy a user's data because a jar is missing.
+- **`build(components(v))` equals `v` is the law**, and both halves are abstract for the reason
+  `ValueCodec`'s reader pair taught: the half nobody is forced to write is the half that rots.
+  `botmaker plugin validate` checks it against `fresh()`.
+- **`ComponentType.factory()` is the one string left**, because Java cannot name a method without binding
+  its arity — settled when `MemberRef` and `M0`–`M5` were deleted on 2026-08-27.
+- **No Jackson here, and none is coming.** Adding a serialisation library to this module would impose it on
+  every plugin and tie the contract to its compatibility rate.
+
+### What was here until 2026-09-22
+
+`ValueType` (a persisted id and its spellings), `ValueCodec` (`parse`/`store`/`literal`/`valueOfLiteral`),
+`ValueCatalog` (the registry and its merge), `ValueForm`/`ValueContainer`/`HostContainers`/`SourceSplit`
+(the grammar), and `Range`. Three things killed them, and each is worth keeping:
+
+- **The codec half was already dead.** Storage stopped being text when a user parameter became a `@Param`
+  field (2026-09-17) and a plugin's values became `@Managed` methods (2026-09-21). `parse`, `store` and
+  `defaultWire` had no caller outside their own plumbing; `Codecs.ofEnum`, `or` and `seeded` had none at
+  all. What was *still* wired was wrong: a leaf round-tripped Java through wire text through
+  `literal(parse(java))`.
+- **The grammar was never a plugin's to read.** A `ValueForm` is how the host walks
+  `Map<String, List<Point>>` while writing it out and reading it back. Nothing outside the host ever walked
+  one, and now that a value crosses as a *value* nothing outside the host can want to. It lives in
+  `botmaker-studio`'s `com.botmaker.studio.plugin.grammar` now — with `ValueContainer` merged into
+  `ComponentType`, since a composite a plugin registers and a composite the host seeds are the same thing.
+- **Four declarations described one type.** For `Point`: a `ValueType`, a `ValueCodec`, a `SourceSeed` and a
+  `SlotEditor` predicate, in three files, two of them strings, with nothing checking they agreed.
+
+The removals are only legitimate before `v0.1.6` is cut — see *japicmp* below, same window as the
+`PluginSource` and `ParameterGroup` removals already in flight.
 
 ## The catalog, and why it is reflection
 
@@ -502,7 +505,8 @@ takes over from `v0.1.7`. **This pins the release: it must be `--studio-api 0.1.
 ## Building
 
 ```bash
-mvn test        # PaletteCatalogTest (10) + ValueVocabularyTest (12) — the module's only behaviour
+mvn test        # PaletteCatalogTest, PluginTypeTest, SlotEditorTest, ParameterDataTest, the two defaults
+                # tests — 40, and the module's only behaviour
 mvn verify      # the above plus japicmp against botmaker.japicmp.baseline (see above)
 mvn install     # com.github.LiQiyeDev:botmaker-studio-api:0.0.0-SNAPSHOT
 ```

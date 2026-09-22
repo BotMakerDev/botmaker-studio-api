@@ -17,7 +17,49 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
+### Added
+
+- **`PluginType<T>` and `ComponentType<T>`** (`com.botmaker.plugin.api.value`), replacing four declarations
+  per type with one class whose every method is abstract. `PluginType` is the class a plugin owns, a
+  `fresh()` that returns a real `T` rather than a Java expression as text, and the editor for it;
+  `ComponentType` sits beside it for a type whose Java is a call, and says what goes in the brackets as
+  *values*. `build(components(v))` equals `v` is the law, and `botmaker plugin validate` checks it.
+- **`StudioPlugin.types()`**, the one surface that replaces `valueTypes()` and `sourceSeeds()`.
+- **`ValueContext.value(Class<T>)` and `set(Object)`** — a value crosses as a value. Every plugin used to
+  parse the Java source itself, which produced three numeric-literal strippers, two argument splitters and
+  one string unescaper across two modules, none of them agreeing.
+- **`SlotEditor.forType(Class, …)` and `SlotEditor.forCall(Class, int, …, String…)`**, which is the
+  toolkit's `CallSites` moved onto the contract: *which slot an editor claims* is contract vocabulary, and
+  the helper was predicate construction with no UI in it.
+- **`@Param` (`…api.params`) and `@Managed` (`…api.managed`)**, moved from `botmaker-plugin-basics`. They
+  sit on a **bot's** own declarations and were kept out only because this module was `provided` on the SDK
+  and so absent from a bot's classpath; that scope is `compile` now. `PluginLoader` stays parent-first for
+  `com.botmaker.plugin.api.**`, so a plugin still links against the host's copy.
+
+### Changed
+
+- **`@Param`'s `min` and `max` are `double`**, defaulting to negative and positive infinity. They were
+  strings so a duration bound could be written `"30s"` and a codec would parse it — and no plugin parses
+  anything now. `ParameterRow.bounds()` becomes `min()`/`max()`/`isBounded()` for the same reason.
+- **`ParameterRow` carries the type as written** (`typeName()`), not a `ValueForm`. A form is how the host
+  walks `Map<String, List<Point>>`; nothing outside the host ever walked one. A row's consumers use the
+  spelling.
+- **`StudioPlugin.catalog(String pinnedVersion)` → `catalog()`.** No implementation ever read the argument:
+  the toolkit's base class memoised the answer ignoring it, and the one plugin in existence recorded its
+  per-version curation ending on 2026-08-26.
+- **`ValueContext.set(String, String…)` → `set(String, Class<?>…)`.** Callers were already holding the
+  `Class` and converting it by hand, which is where `Outer$Inner` gets written into an import.
+
 ### Removed
+
+- **`ValueCodec`, `ValueType`, `ValueCatalog`, `ValueForm`, `ValueContainer`, `HostContainers`, `Range`,
+  `SourceSeed`, `StudioPlugin.valueTypes()`, `StudioPlugin.sourceSeeds()` and `ValueContext.form()`** — the
+  whole codec and grammar layer. The codec half was dead: storage stopped being text when a parameter
+  became a `@Param` field and a plugin's values became `@Managed` methods, so `parse`, `store` and
+  `defaultWire` had no caller outside their own plumbing. What was still wired was wrong — a leaf
+  round-tripped Java through wire text through `literal(parse(java))`, and a `java.awt.Color` parameter
+  opened and closed with no edit came back rewritten. The grammar was never a plugin's to read and is
+  `botmaker-studio`'s `com.botmaker.studio.plugin.grammar` now.
 
 - **`StudioPlugin.pluginSources()` and `PluginSource`**, one day after they landed. A plugin handed the host
   a class's whole text and the host copied it into the project on every bind. What they were *for* survives

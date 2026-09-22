@@ -1,44 +1,46 @@
 /**
- * The vocabulary a project's variables are written in — and, since it lives here rather than in the SDK, one
- * any plugin may extend.
+ * The types a project's values may be — and, since this lives here rather than in the SDK, a set any plugin
+ * may extend.
  *
- * <h2>What moved, and why it moved here</h2>
- *
- * <p>These types were an enum and a pair of {@code switch} statements in {@code botmaker-sdk}, plus a
- * near-duplicate set in the editor: two answers to the question "what does this stored text mean?", in two
- * repositories, kept in step by hand and occasionally not. They are in the contract now because the SDK is
- * <em>plugin #1</em> and gets no back door — a vocabulary only the SDK could add to would make every other
- * plugin a second-class citizen with no way to have a variable of its own type.
- *
- * <h2>The shape of it</h2>
+ * <h2>Three declarations, and that is the whole package</h2>
  *
  * <ul>
- *   <li>{@link com.botmaker.plugin.api.value.ValueType} — one kind of value. No longer an enum; identity is
- *       its persisted {@code id}, never object identity, which two plugin classloaders would make useless.</li>
- *   <li>{@link com.botmaker.plugin.api.value.ValueForm} — the type as a variable declares it, as a tree: a
- *       leaf, a container over other forms, or a class the bot itself declares.</li>
- *   <li>{@link com.botmaker.plugin.api.value.ValueContainer} — one composite, registered beside a type. The
- *       contract seeds {@code List}, {@code Map} and {@code Map.Entry} with no privilege over a plugin's
- *       own.</li>
- *   <li>{@link com.botmaker.plugin.api.value.ValueCodec} — what one type's text means, in the plugin's own
- *       terms. Its {@code T} never crosses to the host.</li>
- *   <li>{@link com.botmaker.plugin.api.value.ValueCatalog} — the registry, and the merge that assembles one
- *       vocabulary out of several plugins'.</li>
- *   <li>{@link com.botmaker.plugin.api.value.Visibility}, {@link com.botmaker.plugin.api.value.Range} — the
- *       two declared facts about a variable that are neither its type nor its value.</li>
+ *   <li>{@link com.botmaker.plugin.api.value.PluginType} — a type this plugin owns: the class it is, what a
+ *       fresh one is, and how a person edits one. Every method abstract.</li>
+ *   <li>{@link com.botmaker.plugin.api.value.ComponentType} — beside it, for a type whose Java is a call:
+ *       the components that go in the brackets, as values.</li>
+ *   <li>{@link com.botmaker.plugin.api.value.Visibility} — whether whoever runs the bot is offered a
+ *       value. Not about the type at all; about the declaration.</li>
  * </ul>
  *
- * <h2>Storage is text, and stays text</h2>
+ * <h2>What was here until 2026-09-22, and why none of it is</h2>
  *
- * <p>Every value is a list of strings on disk whatever its type — one entry for an ordinary variable, one per
- * item for a list-shaped one. That is what lets a value survive being retyped, hand-edited, and read by an
- * editor whose plugin for that type is not installed. The cost is that a duration reads as {@code ["90s"]} in
- * a file nobody is expected to open by hand, and it is worth it.
+ * <p>Seven types: {@code ValueType} (a persisted id and its spellings), {@code ValueCodec} (four string
+ * methods per type), {@code ValueCatalog} (the registry and its merge), {@code ValueForm} /
+ * {@code ValueContainer} / {@code HostContainers} / {@code SourceSplit} (the grammar), and {@code Range}.
+ *
+ * <p><b>The codec half was dead.</b> Storage stopped being text when a user parameter became a
+ * {@code @Param} field (2026-09-17) and a plugin's values became {@code @Managed} methods (2026-09-21), so
+ * {@code parse}, {@code store} and {@code defaultWire} had no caller outside their own plumbing. What was
+ * still wired was wrong: a leaf cell round-tripped Java through wire text through
+ * {@code literal(parse(java))}, and a {@code java.awt.Color} parameter opened and closed with no edit came
+ * back rewritten.
+ *
+ * <p><b>The grammar was never a plugin's to read.</b> A {@code ValueForm} is how the host walks
+ * {@code Map<String, List<Point>>} while writing it out and reading it back; nothing outside the host ever
+ * walked one, and now that a value crosses as a <em>value</em>
+ * ({@link com.botmaker.plugin.api.slot.ValueContext#value}) nothing outside the host can want to. It is
+ * {@code com.botmaker.studio.plugin.grammar} now.
+ *
+ * <p><b>And four declarations described one type.</b> For a {@code Point} an author wrote a
+ * {@code ValueType} with an id, a {@code ValueCodec}, a {@code SourceSeed} carrying the fresh value as Java
+ * <em>text</em>, and a {@code SlotEditor} predicate naming the type a third time — in three files, with
+ * nothing checking that they agreed. Two of the four were strings the compiler never looked at. One
+ * {@link com.botmaker.plugin.api.value.PluginType} is all of it, and javac asks for every method.
  *
  * <h2>No JSON library</h2>
  *
- * <p>Nothing here carries a Jackson annotation. The contract declares the wire <em>form</em> — an id out, a
- * total factory back — and leaves the choice of parser to whoever owns the file. Putting Jackson in the
- * contract would pin every plugin, forever, to the host's serialisation library.
+ * <p>Nothing here carries a Jackson annotation, and none is coming. Putting a serialisation library in the
+ * contract would pin every plugin to the host's, forever.
  */
 package com.botmaker.plugin.api.value;

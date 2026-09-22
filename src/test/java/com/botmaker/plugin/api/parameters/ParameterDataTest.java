@@ -1,10 +1,6 @@
 package com.botmaker.plugin.api.parameters;
 
 import com.botmaker.plugin.api.StudioPlugin;
-import com.botmaker.plugin.api.value.Range;
-import com.botmaker.plugin.api.value.ValueCatalog;
-import com.botmaker.plugin.api.value.ValueForm;
-import com.botmaker.plugin.api.value.ValueType;
 import com.botmaker.plugin.api.value.Visibility;
 import org.junit.jupiter.api.Test;
 
@@ -27,13 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ParameterDataTest {
 
-    private static final ValueType TEXT = ValueType.of(ValueCatalog.TEXT_ID).label("Text").source("String")
-            .build();
-    private static final ValueType WHOLE = ValueType.of("WHOLE_NUMBER").label("Whole number").source("int")
-            .boxed("Integer").primitive().bounded().build();
-
     private static ParameterRow.Builder row(String name) {
-        return ParameterRow.named(name, ValueForm.of(TEXT));
+        return ParameterRow.named(name, "String");
     }
 
     // ---- a plugin that has never heard of this surface -------------------------------------------------
@@ -49,6 +40,7 @@ class ParameterDataTest {
 
         assertEquals(List.of(), older.slotEditors());
         assertEquals(List.of(), older.toolbarItems());
+        assertEquals(List.of(), older.types());
         // The lifecycle half is a default too, and both ends of it: a host that tells every plugin which
         // project it has must not need to know which of them have heard of the idea.
         older.projectOpened(null);
@@ -59,8 +51,8 @@ class ParameterDataTest {
 
     @Test
     void aRowNeedsAName() {
-        assertThrows(IllegalArgumentException.class, () -> ParameterRow.named("  ", ValueForm.of(TEXT)));
-        assertThrows(IllegalArgumentException.class, () -> ParameterRow.named(null, ValueForm.of(TEXT)));
+        assertThrows(IllegalArgumentException.class, () -> ParameterRow.named("  ", "String"));
+        assertThrows(IllegalArgumentException.class, () -> ParameterRow.named(null, "String"));
     }
 
     /** Every default is the reading that keeps a project open: a value, a visibility and a range all absent. */
@@ -76,46 +68,57 @@ class ParameterDataTest {
         assertEquals(Visibility.PUBLIC, bare.visibility());
         assertTrue(bare.isPublic());
         assertEquals(List.of(), bare.options());
-        assertEquals(Range.NONE, bare.bounds());
+        assertFalse(bare.isBounded());
+        assertEquals(Double.NEGATIVE_INFINITY, bare.min());
+        assertEquals(Double.POSITIVE_INFINITY, bare.max());
     }
 
-    /** A row with no type at all is an unknown type rather than a {@code null} the host would trip over. */
+    /** A row with no type at all is blank rather than a {@code null} the host would trip over. */
     @Test
-    void aRowWithNoTypeHoldsAnUnknownOne() {
+    void aRowWithNoTypeHoldsABlankOne() {
         ParameterRow untyped = ParameterRow.named("legacy", null).value("kept").build();
 
-        assertFalse(untyped.form().known());
+        assertEquals("", untyped.typeName());
         assertEquals("kept", untyped.value());
     }
 
-    /** A row carries its whole type tree, including the ones the deleted choice pair could not say. */
+    /**
+     * A row carries the type exactly as the field writes it, including the ones the deleted choice pair
+     * could not say at all.
+     */
     @Test
-    void aRowCarriesItsWholeForm() {
-        ParameterRow listed = ParameterRow.named("keys", ValueForm.listOf(ValueForm.of(TEXT))).build();
+    void aRowCarriesItsTypeAsWritten() {
+        assertEquals("java.util.List<String>", ParameterRow.named("keys", "java.util.List<String>")
+                .build().typeName());
+        assertEquals("Map<String, List<Point>>", ParameterRow.named("retries", "Map<String, List<Point>>")
+                .build().typeName());
+    }
 
-        assertEquals(ValueForm.listOf(ValueForm.of(TEXT)), listed.form());
-        assertEquals(TEXT, listed.form().leaf(), "the leaf a declared set and a range are asked of");
+    /** One end of a range is a sentence a person says, and both ends are independent. */
+    @Test
+    void oneEndOfARangeIsEnough() {
+        ParameterRow atMost = row("attempts").bounds(Double.NEGATIVE_INFINITY, 10).build();
 
-        ParameterRow mapped = ParameterRow.named("retries",
-                ValueForm.mapOf(ValueForm.of(TEXT), ValueForm.of(WHOLE))).build();
-
-        assertEquals("java.util.Map<String, Integer>", mapped.form().sourceName());
-        assertTrue(mapped.form().known(), "and it is readable, where a choice had to call it unknown");
+        assertTrue(atMost.isBounded());
+        assertEquals(10, atMost.max());
+        assertEquals(Double.NEGATIVE_INFINITY, atMost.min());
     }
 
     @Test
     void withValueKeepsEverythingElseAndEqualityIsByComponent() {
-        ParameterRow declared = row("rest")
-                .value("3s").description("How long to wait").category("Timing")
-                .visibility(Visibility.EDITOR_ONLY).options(List.of("3s", "5s")).bounds(new Range("1s", "9s"))
+        ParameterRow declared = ParameterRow.named("rest", "java.time.Duration")
+                .value("java.time.Duration.ofSeconds(3)").description("How long to wait").category("Timing")
+                .visibility(Visibility.EDITOR_ONLY)
+                .options(List.of("java.time.Duration.ofSeconds(3)", "java.time.Duration.ofSeconds(5)"))
+                .bounds(1000, 9000)
                 .build();
 
-        ParameterRow edited = declared.withValue("5s");
+        ParameterRow edited = declared.withValue("java.time.Duration.ofSeconds(5)");
 
-        assertEquals("5s", edited.value());
+        assertEquals("java.time.Duration.ofSeconds(5)", edited.value());
         assertNotEquals(declared, edited);
-        assertEquals(declared, edited.withValue("3s"));
-        assertEquals(declared.hashCode(), edited.withValue("3s").hashCode());
+        assertEquals(declared, edited.withValue("java.time.Duration.ofSeconds(3)"));
+        assertEquals(declared.hashCode(), edited.withValue("java.time.Duration.ofSeconds(3)").hashCode());
         assertEquals(declared, declared.toBuilder().build());
         assertEquals("How long to wait", edited.displayLabel());
         assertEquals("Timing", edited.categoryOrGeneral());
@@ -136,10 +139,9 @@ class ParameterDataTest {
      */
     @Test
     void aCompositeValueCrossesAsOneInitializer() {
-        ParameterRow keys = ParameterRow.named("hotkeys", ValueForm.listOf(ValueForm.of(TEXT)))
+        ParameterRow keys = ParameterRow.named("hotkeys", "java.util.List<String>")
                 .value("java.util.List.of(\"F1\", \"F2\")").build();
 
-        assertEquals("java.util.List<String>", keys.form().sourceName());
         assertEquals("java.util.List.of(\"F1\", \"F2\", \"F3\")",
                 keys.withValue("java.util.List.of(\"F1\", \"F2\", \"F3\")").value());
     }
@@ -150,4 +152,9 @@ class ParameterDataTest {
     // was the only one and it declared no rows — so what the host read back was a pre-2026-09-17 project's
     // JSON and nothing else. A parameter is a @Param field in the bot's own Java, read and written off the
     // syntax tree. ParameterRow stays because it is still the window's row shape.
+    //
+    // ValueForm and Range went the same day, out of the row and out of the contract. A form is how the host
+    // walks Map<String, List<Point>> while writing and reading it, and nothing outside the host ever walked
+    // one; a row's consumers use the spelling, which is typeName(). A Range was two strings so a codec could
+    // parse "30s", and no plugin parses anything now.
 }
