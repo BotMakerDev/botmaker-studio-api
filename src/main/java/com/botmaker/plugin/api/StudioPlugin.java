@@ -1,9 +1,6 @@
 package com.botmaker.plugin.api;
 
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
-import com.botmaker.plugin.api.parameters.ParameterEdit;
-import com.botmaker.plugin.api.parameters.ParameterGroup;
-import com.botmaker.plugin.api.parameters.ParameterRow;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
 import com.botmaker.plugin.api.source.SourceSeed;
@@ -12,7 +9,6 @@ import com.botmaker.plugin.api.value.ValueCatalog;
 import com.botmaker.plugin.api.value.ValueType;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * What a BotMaker Studio plugin is, from the host's side: an id and a set of contributions.
@@ -34,11 +30,6 @@ import java.util.Optional;
  *       the Parameters window.</li>
  *   <li><b>value types</b> — {@link #valueTypes()}: the types a project variable may hold, and what their
  *       stored text means.</li>
- *   <li><b>parameters</b> — {@link #parameters(String)}: the sections of the Parameters window this plugin
- *       owns, and the generated class each one's values become fields of.</li>
- *   <li><b>parameter data</b> — {@link #parameterRows(String)} and
- *       {@link #parameterEdited(ParameterEdit)}: the rows currently declared in one of those sections, and
- *       where a changed value goes. The window is the host's; the file behind it is not.</li>
  *   <li><b>toolbar</b> &mdash; {@link #toolbarItems()}: buttons, contributed as data. The host owns the
  *       grouping, the order, the packing and the overflow menu; a plugin owns what a press does.</li>
  *   <li><b>source seeds</b> &mdash; {@link #sourceSeeds()}: what a <em>fresh</em> value of one of this
@@ -48,9 +39,8 @@ import java.util.Optional;
  *
  * <p>{@link #projectOpened(StudioServices)} and {@link #projectClosing()} are not surfaces — they contribute
  * nothing. They are the two things a plugin cannot find out for itself: which project it is now serving, and
- * that the project it opened an operating-system resource for is gone. The first is what lets a plugin
- * answer {@link #parameterRows(String)} out of that project's own files, since a data surface takes no
- * services argument.
+ * that the project it opened an operating-system resource for is gone. The first is what lets a plugin read
+ * that project's own files at all, since no contribution surface takes a services argument.
  *
  * <p><b>Panels are deliberately not a surface.</b> A plugin contributes to the editor; it does not
  * contribute editors. The Activity Canvas and every other whole view stays the host's.
@@ -170,85 +160,29 @@ public interface StudioPlugin {
     // The fix for that is the plugin's own window offering to write one, at a click — one write, by the
     // thing that wants it, rather than the host copying files it was handed.
 
-    /**
-     * The sections this plugin owns in the Parameters window, at the version a project pins.
-     *
-     * <p>A plugin declares the <em>sections</em>; the user declares the values in them. Each group names a
-     * heading, a key the project file files a variable under, and the generated class those variables become
-     * fields of — see {@link ParameterGroup}. Returning nothing, the default, means this plugin has no
-     * parameters of its own, which is the ordinary case for a plugin that only contributes a palette.
-     *
-     * <p>The argument is read exactly as {@link #catalog(String)}'s is: the pinned version as the project's
-     * pom spells it, interpreted by the plugin alone. A plugin whose parameters class was introduced in a
-     * later version may answer nothing for an older pin, and the host will then show that project no section
-     * for it — which is the truth, since the jar the bot compiles against has no such class.
-     *
-     * @param pinnedVersion the version of this plugin the open project depends on; never {@code null}
-     */
-    default List<ParameterGroup> parameters(String pinnedVersion) {
-        return List.of();
-    }
-
-    /**
-     * The rows currently declared in one of this plugin's {@linkplain #parameters(String) sections}.
-     *
-     * <p><b>This is the surface that stops the host owning a project's parameter file.</b> The Parameters
-     * window is the host's — one window, one section per group, so a user configuring a bot configures one
-     * thing — but what the rows <em>are</em> is project data belonging to whoever stores it. Before this
-     * existed, the host parsed that file itself, which meant the host knew one plugin's storage format and
-     * no second plugin could have had one.
-     *
-     * <p><b>Asked, never pushed.</b> The host calls this when it draws the section and again after an edit;
-     * a plugin does not notify. There is no listener here because a listener is a capability with a
-     * lifecycle — a registration, a thread, an unsubscribe — and the one thing it would buy (a plugin's own
-     * dialog changing a value behind the window's back) is worth revisiting when a plugin has such a dialog,
-     * not before. Everything the window itself changes comes back through
-     * {@link #parameterEdited(ParameterEdit)}, whose answer is the new row.
-     *
-     * <p>An id this plugin does not own answers nothing, which is the ordinary state rather than an error:
-     * the host asks each plugin for each section it declared, and a plugin that has since stopped declaring
-     * one is simply not asked again.
-     *
-     * @param groupId the {@link ParameterGroup#id()} whose rows are wanted; never {@code null}, and
-     *                {@link ParameterGroup#DEFAULT_ID} for the default section
-     * @return the rows, in the order the window should list them within their categories
-     */
-    default List<ParameterRow> parameterRows(String groupId) {
-        return List.of();
-    }
-
-    /**
-     * A value the user changed — store it, and answer with the row as stored.
-     *
-     * <p>The answer is what the window then renders, so a plugin that clamps a number to its
-     * {@link com.botmaker.plugin.api.value.Range}, prunes a list to the options still on offer or spells a
-     * duration back out canonically reports all of it by answering a row that differs from the edit. A
-     * plugin that <b>refuses</b> the edit answers the row it still holds, and the control snaps back; a
-     * plugin that does not own the row, or the group, answers {@link Optional#empty()} and the host leaves
-     * the screen alone.
-     *
-     * <p><b>Persisting is the plugin's, and so is when.</b> The host has already told the user their edit
-     * landed by the time this returns, so writing a file on every keystroke is the plugin's problem to batch
-     * — nothing here promises a save point, and {@link #projectClosing()} is the one moment a plugin is told
-     * the project is going away.
-     *
-     * <p>Throwing is contained and reported, and the row on screen is then left as it was: an edit that
-     * cannot be stored must not be able to take the window down with it.
-     *
-     * @param edit the group, the name and the new stored text — see {@link ParameterEdit}
-     * @return the row as it now stands, or empty when this plugin does not own it
-     */
-    default Optional<ParameterRow> parameterEdited(ParameterEdit edit) {
-        return Optional.empty();
-    }
+    // parameters(String), parameterRows(String) and parameterEdited(ParameterEdit) stood here from
+    // 2026-09-10 to 2026-09-22, with ParameterGroup and ParameterEdit beside ParameterRow. They are deleted,
+    // and the reason is the one this file already applies to pluginSources() above: the half nobody writes is
+    // the half that rots.
+    //
+    // A plugin declared a section and the host asked it for that section's rows. Nothing ever declared one.
+    // The SDK's group was the only implementation in existence, it declared no rows, and basics'
+    // ParameterStore.declare — the call that would have put a row in a plugin's file — had no caller
+    // anywhere. So parameterRows answered out of a pre-2026-09-17 project's JSON and empty for every project
+    // created since: a second reader of a format nothing writes, which is the thing the umbrella CLAUDE.md
+    // forbids by name.
+    //
+    // What replaced it had already replaced it. A user's parameter is a @Param static field in the bot's own
+    // Java (2026-09-17), read and written off the syntax tree; a plugin that wants a row of its own puts a
+    // @Param field in the file it ships, and the host's ordinary walk of the bot's sources finds it with no
+    // surface at all. ParameterRow stays: it is still the shape one row crosses in, and the window still
+    // draws its value with the slot editor the canvas uses.
 
     // parameterDeclared(ParameterDeclaration) stood here from 2026-09-10 to 2026-09-17: the declaration half
-    // of the parameters window, one call carrying the row as wanted rather than a verb. It is gone with the
-    // record it took, because a *user* parameter is no longer a row a plugin stores — it is a @Param field in
-    // the bot's own Java, and the host declares it by editing the syntax tree. What a plugin still owns is
-    // its own rows (an activity's enable flag, a capture target), and those it declares in its own code,
-    // where a wire form for "here is the row I want" buys nothing. The host reads them through
-    // parameterRows(String) and changes a value through parameterEdited(ParameterEdit), which are unchanged.
+    // of the parameters window, one call carrying the row as wanted rather than a verb. It went first, with
+    // the record it took; the reading half above went five days later, for the reason written there. The rule
+    // both were instances of still stands: state the desired end value and let the owner reconcile it, rather
+    // than adding a verb.
 
     /**
      * The toolbar buttons this plugin contributes.

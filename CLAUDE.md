@@ -13,8 +13,8 @@ one artifact (`javafx-controls`, `provided`).
 - `com.botmaker.plugin.api` — `StudioPlugin`, `StudioServices` and what it hands back: `Theme`, `Dialogs`,
   `Runs`, `Sources`. A plugin reads those four as one facility, which is why they stay at the root.
 - **One package per contribution surface** (2026-09-21): `…api.slot` (`SlotEditor`, `SlotContext`,
-  `SlotRun`, `ValueContext`, `TypeRef`), `…api.parameters` (`ParameterGroup`, `ParameterRow`,
-  `ParameterEdit`), `…api.toolbar` (`ToolbarItem`, `ToolbarGroup`, `EnabledWhen`, `ActionContext`),
+  `SlotRun`, `ValueContext`, `TypeRef`), `…api.parameters` (`ParameterRow` alone since 2026-09-22 —
+  `ParameterGroup` and `ParameterEdit` went with the surface that used them), `…api.toolbar` (`ToolbarItem`, `ToolbarGroup`, `EnabledWhen`, `ActionContext`),
   `…api.source` (`PluginSource`, `SourceSeed`, `ManagedValue`, `PluginValues`). Sixteen types moved out of
   the root, which had become the place every new one landed; nothing was renamed or removed. The break is
   binary-incompatible and was taken while both implementors are in this repository — see
@@ -250,7 +250,25 @@ trust model changes.
 A class name, a method body and a `ValueForm` are facts about Java, so *capabilities, never vocabularies*
 holds — compare `Assets`, which had to say the word *picture*.
 
-## Parameter data (2026-09-10) — the window is the host's, the file behind it is not
+## Parameter data (2026-09-10 – 2026-09-22) — deleted, and why it is worth reading anyway
+
+**`ParameterGroup`, `ParameterEdit`, `StudioPlugin.parameters(String)`, `parameterRows(String)` and
+`parameterEdited(ParameterEdit)` are gone. `ParameterRow` stays.** A parameter is a `@Param` static field in
+the bot's own Java, read and written by the host off the syntax tree, and a plugin that wants a row of its
+own puts a `@Param` field in the file it ships — the host's ordinary walk of the bot's sources finds it with
+no surface at all.
+
+**What killed it is the one measurement this file keeps making.** *Nothing ever declared a group.* The SDK's
+was the only implementation in existence and it declared no rows; `botmaker-plugin-basics`'
+`ParameterStore.declare`, the call that would have put a row in a plugin's file, had no caller anywhere. So
+`parameterRows` answered out of a pre-2026-09-17 project's JSON and empty for every project created since —
+a second reader of a format nothing writes, which the umbrella `CLAUDE.md` forbids by name. **The half
+nobody is forced to write is the half that rots**, and here the half nobody wrote was the writing half.
+
+The rest of this section is kept as it was written, because the cut it describes is a good one and the
+reasoning will be needed again — for a surface that does have two live ends.
+
+---
 
 `StudioPlugin.parameterRows(String groupId)` and `parameterEdited(ParameterEdit)`, with `ParameterRow` and
 `ParameterEdit` beside `ParameterGroup`. The seventh surface, and the first one where a plugin hands over

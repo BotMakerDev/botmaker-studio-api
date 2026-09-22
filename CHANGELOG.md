@@ -31,6 +31,22 @@ is allowed to make. Additions arrive as `default` methods.
   **This is a removal, so it must ship in `0.1.6`** — the japicmp baseline is the release that contains it,
   exactly as for the package move below. After that tag it would need a major.
 
+- **The whole parameter-data surface: `ParameterGroup`, `ParameterEdit`, `StudioPlugin.parameters(String)`,
+  `parameterRows(String)` and `parameterEdited(ParameterEdit)`.** A plugin declared a section and the host
+  asked it for that section's rows. **Nothing ever declared one** — the SDK's group was the only
+  implementation in existence and it declared no rows, and `botmaker-plugin-basics`' `ParameterStore.declare`
+  had no caller anywhere — so `parameterRows` answered out of a pre-2026-09-17 project's JSON and empty for
+  every project created since. A second reader of a format nothing writes is the thing the umbrella
+  `CLAUDE.md` forbids by name.
+  What replaced it had already replaced it: a parameter is a `@Param` static field in the bot's own Java
+  (2026-09-17), read and written off the syntax tree. **A plugin that wants a row of its own puts a `@Param`
+  field in the file it ships**, and the host's ordinary walk of the bot's sources finds it — so the surface
+  is not replaced by a smaller one, it is not needed.
+  **`ParameterRow` stays**: it is still the shape one row crosses in, and the window still draws its value
+  with the slot editor the canvas uses. It no longer refers to a group, and its category is documented as the
+  free text it always was.
+  **A removal, so it ships in `0.1.6` with the one above.**
+
 ### Changed
 
 - **The contract has a package per contribution surface.** The root package held 22 types while `catalog`,

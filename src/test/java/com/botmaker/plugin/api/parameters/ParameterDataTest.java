@@ -9,7 +9,6 @@ import com.botmaker.plugin.api.value.Visibility;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -41,48 +40,19 @@ class ParameterDataTest {
 
     /**
      * The versioning rule of the whole platform, in one assertion: a plugin compiled against an earlier
-     * contract implements neither method, and the host reads "nothing to contribute" rather than catching an
-     * {@code AbstractMethodError}.
+     * contract implements nothing but its id, and the host reads "nothing to contribute" rather than
+     * catching an {@code AbstractMethodError}.
      */
     @Test
-    void aPluginThatImplementsOnlyItsIdContributesNoParameterData() {
+    void aPluginThatImplementsOnlyItsIdContributesNothing() {
         StudioPlugin older = () -> "com.example.older";
 
-        assertEquals(List.of(), older.parameterRows(ParameterGroup.DEFAULT_ID));
-        assertEquals(List.of(), older.parameterRows("com.example.older/settings"));
-        assertEquals(Optional.empty(), older.parameterEdited(ParameterEdit.of("", "rest", "3s")));
+        assertEquals(List.of(), older.slotEditors());
+        assertEquals(List.of(), older.toolbarItems());
         // The lifecycle half is a default too, and both ends of it: a host that tells every plugin which
         // project it has must not need to know which of them have heard of the idea.
         older.projectOpened(null);
         older.projectClosing();
-    }
-
-    /** A plugin serving rows answers the edit with the row it stored — the shape the window renders back. */
-    @Test
-    void theAnswerToAnEditIsTheRowAsStored() {
-        StudioPlugin plugin = new StudioPlugin() {
-            @Override
-            public String id() {
-                return "com.example.clamping";
-            }
-
-            @Override
-            public List<ParameterRow> parameterRows(String groupId) {
-                return List.of(ParameterRow.named("retries", ValueForm.of(WHOLE))
-                        .value("2").bounds(new Range("1", "5")).build());
-            }
-
-            @Override
-            public Optional<ParameterRow> parameterEdited(ParameterEdit edit) {
-                if (!"retries".equals(edit.name())) return Optional.empty();
-                // The clamp is the owning plugin's, and reporting it is what the answer is for.
-                return Optional.of(parameterRows(edit.groupId()).getFirst().withValue("5"));
-            }
-        };
-
-        Optional<ParameterRow> stored = plugin.parameterEdited(ParameterEdit.of("", "retries", "900"));
-        assertEquals("5", stored.orElseThrow().value());
-        assertEquals(Optional.empty(), plugin.parameterEdited(ParameterEdit.of("", "unknown", "x")));
     }
 
     // ---- ParameterRow ---------------------------------------------------------------------------------
@@ -151,37 +121,13 @@ class ParameterDataTest {
         assertEquals("Timing", edited.categoryOrGeneral());
     }
 
-    /** A row's category is one of the owning group's, compared the way the group compares it. */
+    /** A category is free text the window files a row under — trimmed, and never a vocabulary. */
     @Test
-    void aCategoryIsOneTheOwningGroupDeclares() {
-        ParameterGroup group = ParameterGroup.of("", "Parameters", List.of("Timing", "Vision"));
-        ParameterRow filed = row("rest").category("  timing ").build();
+    void aCategoryIsFreeTextTheWindowFilesARowUnder() {
+        ParameterRow filed = row("rest").category("  Timing ").build();
 
-        assertEquals("timing", filed.category());
-        assertTrue(group.declares(filed.category()));
-        assertFalse(group.declares(row("rest").build().category()));
-    }
-
-    // ---- ParameterEdit --------------------------------------------------------------------------------
-
-    @Test
-    void anEditNamesARowAndCarriesSource() {
-        ParameterEdit edit = new ParameterEdit(null, "  rest ", null);
-
-        assertEquals(ParameterGroup.DEFAULT_ID, edit.groupId());
-        assertEquals("rest", edit.name());
-        assertEquals("", edit.value());
-        assertThrows(IllegalArgumentException.class, () -> ParameterEdit.of("", " ", "x"));
-    }
-
-    @Test
-    void anEditKnowsWhetherItChangesTheRowItNames() {
-        ParameterRow held = row("rest").value("3s").build();
-
-        assertTrue(ParameterEdit.of("", "rest", "5s").changes(held));
-        assertFalse(ParameterEdit.of("", "rest", "3s").changes(held));
-        assertFalse(ParameterEdit.of("", "other", "5s").changes(held));
-        assertFalse(ParameterEdit.of("", "rest", "5s").changes(null));
+        assertEquals("Timing", filed.category());
+        assertEquals(ParameterRow.GENERAL, row("rest").build().categoryOrGeneral());
     }
 
     /**
@@ -192,15 +138,16 @@ class ParameterDataTest {
     void aCompositeValueCrossesAsOneInitializer() {
         ParameterRow keys = ParameterRow.named("hotkeys", ValueForm.listOf(ValueForm.of(TEXT)))
                 .value("java.util.List.of(\"F1\", \"F2\")").build();
-        ParameterEdit edit = new ParameterEdit("", "hotkeys", "java.util.List.of(\"F1\", \"F2\", \"F3\")");
 
         assertEquals("java.util.List<String>", keys.form().sourceName());
-        assertTrue(edit.changes(keys));
-        assertEquals("java.util.List.of(\"F1\", \"F2\", \"F3\")", keys.withValue(edit.value()).value());
+        assertEquals("java.util.List.of(\"F1\", \"F2\", \"F3\")",
+                keys.withValue("java.util.List.of(\"F1\", \"F2\", \"F3\")").value());
     }
 
     // The declaration half stood here until 2026-09-17: ParameterDeclaration, and the three shapes it came
-    // in. A user parameter is a @Param field in the bot's own Java now and the host edits it off the syntax
-    // tree, so the only declaration left is the plugin's own — made in the plugin's own code, where it needs
-    // no wire form. What crosses is still a row and still a value edit; what no longer crosses is a verb.
+    // in. The storage half followed it on 2026-09-22: ParameterGroup, ParameterEdit, parameters(String),
+    // parameterRows(String) and parameterEdited(ParameterEdit). Nothing ever declared a group — the SDK's
+    // was the only one and it declared no rows — so what the host read back was a pre-2026-09-17 project's
+    // JSON and nothing else. A parameter is a @Param field in the bot's own Java, read and written off the
+    // syntax tree. ParameterRow stays because it is still the window's row shape.
 }

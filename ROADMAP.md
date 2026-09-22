@@ -5,7 +5,35 @@ reasoning.
 
 ## Done
 
-### 2026-09-21 (last) — `PluginSource` is deleted: nobody hands the host a file
+### 2026-09-22 (last) — the parameter-data surface is deleted: `@Param` is the only source of a row
+
+`ParameterGroup`, `ParameterEdit`, `StudioPlugin.parameters(String)`, `parameterRows(String)` and
+`parameterEdited(ParameterEdit)` are **removed**. `ParameterRow` stays.
+
+**The measurement that settled it.** A plugin declared a section and the host asked it for that section's
+rows. Nothing ever declared one: the SDK's group was the only implementation in existence and it declared no
+rows, and `botmaker-plugin-basics`' `ParameterStore.declare` — the call that would have written a row into a
+plugin's file — had **no caller anywhere**. So `parameterRows` returned whatever sat in a pre-2026-09-17
+project's JSON and empty for every project created since. A second reader of a format nothing writes is what
+the umbrella `CLAUDE.md` forbids by name, and it is the same failure shape as `ValueCodec.wireOfLiteral`:
+**the half nobody is forced to write is the half that rots.** Here the rotted half was the writing half, so
+the reading half had nothing to read.
+
+**What replaced it had already replaced it.** A user's parameter became a `@Param` static field in the bot's
+own Java on 2026-09-17, read and written off the syntax tree. The case the surface was kept for — *a plugin's
+own row, an activity's enable flag, a capture target* — has a better answer on the same terms: **the plugin
+puts a `@Param` field in the file it ships**, and the host's ordinary walk of the bot's sources finds it.
+One mechanism, one file format (Java), one editor, and the row a plugin owns is a row its user can read.
+
+**`ParameterRow` survives on its own merits.** It is the shape one row crosses in — a name, a `ValueForm`,
+the value as Java source, a `Visibility`, a declared option set, a `Range`, a free-text category — and the
+window still draws its value with the slot editor the canvas uses. It no longer refers to a group, and its
+category is now documented as the free text it always was.
+
+**japicmp**: a removal, legitimate for the same reason as the two below — the baseline `v0.1.6` does not
+exist yet and will *contain* it. **It ships in `--studio-api 0.1.6`.**
+
+### 2026-09-21 — `PluginSource` is deleted: nobody hands the host a file
 
 `StudioPlugin.pluginSources()` and `com.botmaker.plugin.api.source.PluginSource` are **removed**, one day
 after they landed. Everything they were for survives: a bot still holds a plugin's values as `@Managed`

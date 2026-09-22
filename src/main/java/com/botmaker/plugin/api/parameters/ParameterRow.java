@@ -9,19 +9,18 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * One row of the Parameters window, as the plugin that owns the data hands it over.
+ * One row of the Parameters window — one parameter, as everything that draws or edits one reads it.
  *
- * <p>{@link ParameterGroup} declares the <em>section</em>; this is a value declared inside it. The two
- * surfaces are deliberately different shapes, because they answer different questions: a group is what the
- * plugin decided at build time, and a row is what the project currently holds. A plugin that declares a
- * group and no rows has a heading and an empty section, which is the truthful rendering of a project whose
- * user has declared nothing yet.
+ * <p><b>What a row comes from is the bot's own Java.</b> A parameter is a {@code @Param} static field the
+ * host reads off the syntax tree, and the section it is listed under is the class that declares it. A
+ * plugin that wants a row of its own puts a {@code @Param} field in the file it ships, and the same walk
+ * finds it — which is why no contribution surface in this package remains.
  *
  * <h2>Every component is already contract vocabulary</h2>
  *
  * <p>A name, a {@link ValueForm}, the value's Java source, a {@link Visibility}, a declared option set, a
- * {@link Range}, a category out of {@link ParameterGroup#categories()}. Nothing plugin-specific crosses and
- * nothing here is a {@link Class} the host would have to load.
+ * {@link Range}, and a free-text category. Nothing plugin-specific crosses and nothing here is a
+ * {@link Class} the host would have to load.
  *
  * <h2>The value is one source string, because a composite has no other canonical form</h2>
  *
@@ -36,23 +35,18 @@ import java.util.Objects;
  * model is compiled code. The source is the artifact, and a value's canonical form is the source that
  * produces it.
  *
- * <h2>Built, never constructed — and the asymmetry with {@link ParameterEdit} is the rule, not an accident</h2>
+ * <h2>Built, never constructed</h2>
  *
- * <p>A plugin <b>builds</b> a row and the host <b>reads</b> it, so this is a final class with a builder: a
- * record's canonical constructor is part of its binary signature, and a component added later would throw
- * {@code NoSuchMethodError} in every plugin already compiled against it. {@link ParameterEdit} is the
- * mirror image — the host builds it and a plugin only reads it — so that one <em>is</em> a record and may
- * grow a component safely. Compatibility trap #2 in {@code docs/refactor/25-compatibility.md}, applied in
- * both directions rather than as one blanket ban on records.
+ * <p>A plugin may <b>build</b> a row, so this is a final class with a builder: a record's canonical
+ * constructor is part of its binary signature, and a component added later would throw
+ * {@code NoSuchMethodError} in every plugin already compiled against it. Compatibility trap #2 in
+ * {@code docs/refactor/25-compatibility.md}.
  *
- * <h2>No group id here, deliberately</h2>
+ * <h2>No section here, deliberately</h2>
  *
- * <p>Rows are asked for one group at a time ({@link StudioPlugin#parameterRows(String)}), so a row carrying
- * its own group could only ever agree with the question or contradict it. The group is on
- * {@link ParameterEdit}, where it is the host that has to say which section an edit came from.
- *
- * @see StudioPlugin#parameterRows(String)
- * @see ParameterEdit
+ * <p>A row does not carry the class it was read out of. Nothing that holds a row holds it alone — the host
+ * pairs it with the field it came from, which knows the file, the class and whether the value may be
+ * rewritten — so a section component here could only ever repeat that or contradict it.
  */
 public final class ParameterRow {
 
@@ -115,9 +109,8 @@ public final class ParameterRow {
     }
 
     /**
-     * The category inside the section this row is filed under — one of the owning
-     * {@link ParameterGroup#categories()}, compared the way {@link ParameterGroup#declares(String)} compares
-     * it. Blank means uncategorised, which is the ordinary case.
+     * The category this row is filed under — free text, written by whoever declared the parameter and
+     * compared case-insensitively by the window's rail. Blank means uncategorised, the ordinary case.
      */
     public String category() {
         return category;
