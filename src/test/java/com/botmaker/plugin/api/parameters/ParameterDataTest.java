@@ -41,6 +41,7 @@ class ParameterDataTest {
         assertEquals(List.of(), older.slotEditors());
         assertEquals(List.of(), older.toolbarItems());
         assertEquals(List.of(), older.types());
+        assertEquals(List.of(), older.componentTypes());
         // The lifecycle half is a default too, and both ends of it: a host that tells every plugin which
         // project it has must not need to know which of them have heard of the idea.
         older.projectOpened(null);

@@ -4,6 +4,7 @@ import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
 import com.botmaker.plugin.api.toolbar.ToolbarItem;
+import com.botmaker.plugin.api.value.ComponentType;
 import com.botmaker.plugin.api.value.PluginType;
 
 import java.util.List;
@@ -110,6 +111,24 @@ public interface StudioPlugin {
      * the fresh value as Java text. Here the compiler asks for all of it at once.
      */
     default List<PluginType<?>> types() {
+        return List.of();
+    }
+
+    /**
+     * The composites this plugin takes apart and puts back that are <em>not</em> among {@link #types()} —
+     * the parts of a value, never picked on their own.
+     *
+     * <p>The SDK's {@code Flow} is the case: its {@code Activity}, {@code Edge}, {@code Preset} and
+     * {@code Limits} are written as calls inside the one call that writes a flow, so the host has to read
+     * each of them back, and none of them is a type anybody declares a parameter of. A
+     * {@link ComponentType} that is also a {@link PluginType} need not be listed here — the host finds it
+     * among {@link #types()} — though listing it twice is harmless.
+     *
+     * <p><b>Added on 2026-09-23, because {@link ComponentType} was independent of {@link PluginType} with no
+     * way to reach the host on its own.</b> The five flow declarations existed and nothing registered them,
+     * so a {@code @Managed} flow could never be decoded.
+     */
+    default List<ComponentType<?>> componentTypes() {
         return List.of();
     }
 

@@ -25,6 +25,10 @@ is allowed to make. Additions arrive as `default` methods.
   `ComponentType` sits beside it for a type whose Java is a call, and says what goes in the brackets as
   *values*. `build(components(v))` equals `v` is the law, and `botmaker plugin validate` checks it.
 - **`StudioPlugin.types()`**, the one surface that replaces `valueTypes()` and `sourceSeeds()`.
+- **`StudioPlugin.componentTypes()`**, for a `ComponentType` that is not also a `PluginType` — the parts of
+  a value, never picked on their own. The SDK's `Flow` is written as calls to `Flow.activity`, `Flow.edge`,
+  `Flow.preset` and `Flow.limits` inside `Flow.of`, and those four declarations had no way to reach the
+  host, so a flow could not be decoded at all.
 - **`ValueContext.value(Class<T>)` and `set(Object)`** — a value crosses as a value. Every plugin used to
   parse the Java source itself, which produced three numeric-literal strippers, two argument splitters and
   one string unescaper across two modules, none of them agreeing.
