@@ -208,16 +208,17 @@ it in on the next bind. Everything above survived that deletion unchanged — wh
   `@Managed` methods and nothing else. The bot still **names** each values class — a fact only it has, and one
   javac checks — but no longer says what to do with them.
 
-**The deletion is only legitimate before `v0.1.6` is cut**, and for exactly the reason the japicmp section
-below gives for the package move: the baseline is the release that *contains* the removal, so the jar the
-gate compares against already lacks the type. After that tag it would need a major.
+**The deletion was reasoned as legitimate before `v0.1.6` is cut — and `v0.1.6` had already been cut**
+(2026-09-21, pushed; it contains `PluginSource`). So it is a break against the baseline, and the release
+that carries it is a major. See *japicmp* below.
 
 **That inversion is the whole design, and it is the fifth attempt.** The four before it — a record handed
 over reflectively, the grammar host-side, an annotation processor, and a sequence of `ModelCall` statements
 (shipped earlier the same day as `2bc1e2f` and withdrawn) — all made the host the **author of a compilation
 unit**, which forces it to own the package, the class name, the imports, the ordering and the whole round
 trip. **Not being the author answers all of those at once**, and shrinks what the host must parse from *a
-class* to *one expression* — the domain `ValueCatalog.valueOf` already covers and already has tests for.
+class* to *one expression* — the domain `ValueCatalog.valueOf` already covered and already had tests for
+(the host's `ValueGrammar.valueOf` since 2026-09-22).
 The fifth attempt had the plugin hand the file over as text; the sixth, a day later, has nobody hand it over
 at all and the host reading whatever Java is there. Both keep the property that matters, and the second is
 the one with no surface.
@@ -388,8 +389,8 @@ has the type in front of them.
 - **Four declarations described one type.** For `Point`: a `ValueType`, a `ValueCodec`, a `SourceSeed` and a
   `SlotEditor` predicate, in three files, two of them strings, with nothing checking they agreed.
 
-The removals are only legitimate before `v0.1.6` is cut — see *japicmp* below, same window as the
-`PluginSource` and `ParameterGroup` removals already in flight.
+The removals were planned for a `v0.1.6` that turned out to be already cut, so like the `PluginSource` and
+`ParameterGroup` removals they are breaks against the baseline — see *japicmp* below.
 
 ## The catalog, and why it is reflection
 
@@ -484,11 +485,12 @@ only a Studio major release may break a plugin, and that release edits this bloc
 distinguish and the objection does not apply. The baseline is set to the previous tag in every release
 commit, which `Japicmp.bump` does automatically and never moves backwards.
 
-**The baseline is pinned to `v0.1.6` and that tag does not exist yet** (2026-09-21): the package move above
-is binary-incompatible, so comparing this build against `v0.1.5` could only refuse it.
-`ignoreMissingOldVersion` makes an absent baseline report and pass, which is the case it is configured for;
-from the moment `v0.1.6` is cut the gate compares that tag against itself and passes, and `Japicmp.bump`
-takes over from `v0.1.7`. **This pins the release: it must be `--studio-api 0.1.6`.**
+**The baseline is pinned to `v0.1.6`**, set on 2026-09-21 while that tag did not exist yet, so the package
+move could ship in it (`ignoreMissingOldVersion` let the absent baseline pass). **`v0.1.6` was cut and
+pushed the same day.** Everything removed since — `PluginSource`, the parameter-data surface and the whole
+value vocabulary (2026-09-21/22) — is therefore a break against a published baseline, and the next
+`mvn verify` that can resolve it refuses the build. By the rule above that release is a major and edits
+this block; which version it is has not been decided (2026-09-23).
 
 ## Style
 

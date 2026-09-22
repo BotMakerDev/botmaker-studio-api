@@ -17,6 +17,12 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
+**Not releasable as a minor, and the version is undecided.** Everything under *Removed* below came after
+`v0.1.6`, which was cut and pushed on 2026-09-21 and is `botmaker.japicmp.baseline`. That tag still holds
+`ValueCodec`, `ValueType`, `ValueCatalog`, `SourceSeed`, `PluginSource` and `ParameterGroup`, so
+`mvn verify` refuses this build the moment it can resolve the baseline. By this module's own rule above
+the release that carries these removals is a major, and it edits the baseline in the same commit.
+
 ### Added
 
 - **`PluginType<T>` and `ComponentType<T>`** (`com.botmaker.plugin.api.value`), replacing four declarations
@@ -90,8 +96,8 @@ is allowed to make. Additions arrive as `default` methods.
   a contract surface, a copy on every `PluginHost.bind` and a `${package}` rewriter.
   **A plugin that wants to add its file to an existing project writes it from its own window**; nothing in
   the contract is needed for that, and nothing here replaces the removed pair.
-  **This is a removal, so it must ship in `0.1.6`** — the japicmp baseline is the release that contains it,
-  exactly as for the package move below. After that tag it would need a major.
+  **A removal after `v0.1.6`**, which was cut and pushed on 2026-09-21 and still contains `PluginSource` —
+  see the note on japicmp at the top of this section.
 
 - **The whole parameter-data surface: `ParameterGroup`, `ParameterEdit`, `StudioPlugin.parameters(String)`,
   `parameterRows(String)` and `parameterEdited(ParameterEdit)`.** A plugin declared a section and the host
@@ -107,33 +113,7 @@ is allowed to make. Additions arrive as `default` methods.
   **`ParameterRow` stays**: it is still the shape one row crosses in, and the window still draws its value
   with the slot editor the canvas uses. It no longer refers to a group, and its category is documented as the
   free text it always was.
-  **A removal, so it ships in `0.1.6` with the one above.**
-
-### Changed
-
-- **The contract has a package per contribution surface.** The root package held 22 types while `catalog`,
-  `palette`, `value` and `meta` were tidy, so the root had become the place every new type landed. Sixteen
-  moved; repoint an import with the table below and nothing else changes — no type, method or component was
-  renamed, added or removed.
-
-  | Type | Was | Is |
-  |---|---|---|
-  | `SlotEditor`, `SlotContext`, `SlotRun`, `ValueContext`, `TypeRef` | `com.botmaker.plugin.api` | `com.botmaker.plugin.api.slot` |
-  | `ParameterGroup`, `ParameterRow`, `ParameterEdit` | `com.botmaker.plugin.api` | `com.botmaker.plugin.api.parameters` |
-  | `ToolbarItem`, `ToolbarGroup`, `EnabledWhen`, `ActionContext` | `com.botmaker.plugin.api` | `com.botmaker.plugin.api.toolbar` |
-  | `PluginSource`, `SourceSeed`, `ManagedValue`, `PluginValues` | `com.botmaker.plugin.api` | `com.botmaker.plugin.api.source` |
-
-  `StudioPlugin`, `StudioServices`, `Dialogs`, `Theme`, `Runs` and `Sources` stay at the root: they are what
-  `StudioServices` hands back, which a plugin reads as one facility rather than four surfaces. `catalog`,
-  `palette`, `value` and `meta` are untouched.
-
-- **This is a binary-incompatible break, taken deliberately and once.** A package move is a removal to
-  japicmp and to a classloader alike, so a plugin compiled against v0.1.5 will not load against this one. It
-  was allowed because the only implementors are the SDK and plugin-basics, both in this repository and both
-  recompiled the same day; the window closes the day a third-party plugin exists.
-  `docs/refactor/25-compatibility.md` §2 carries the dated reasoning. The gate was not weakened:
-  `botmaker.japicmp.baseline` is pinned to `v0.1.6`, the tag this is released as, so the comparison resumes
-  from the first build after it.
+  **A removal after `v0.1.6`**, like the one above.
 
 ## [0.1.6] — 2026-09-21
 

@@ -23,50 +23,53 @@ public final class MyPlugin implements StudioPlugin {
     }
 
     @Override
-    public PaletteCatalog catalog(String pinnedVersion) {
-        return PaletteCatalog.builder()
-                .facade(Sound.class, Category.of("audio"))
-                    .add(Sound::beep)
-                    .<String>add(Sound::play)
-                .build();
+    public PaletteCatalog catalog() {
+        return PaletteCatalog.of(Sound.class);          // members are read off @Palette / @Hidden
     }
 
     @Override
-    public List<SlotEditor> slotEditors() {
-        return List.of(SlotEditor.of(
-                ctx -> ctx.slotType().is(Volume.class),
-                ctx -> new VolumeSlider(ctx)));
+    public List<PluginType<?>> types() {
+        return List.of(new VolumeType());               // one declaration per type this plugin owns
+    }
+
+    @Override
+    public List<SlotEditor> slotEditors() {             // only where the *call* decides the editor
+        return List.of(SlotEditor.forCall(Sound.class, 0, ctx -> new ChannelPicker(ctx), "play"));
     }
 }
-```
 
-Two surfaces, and a third that is not declared here:
+final class VolumeType implements PluginType<Volume>, ComponentType<Volume> {
+    public Class<Volume> type()                  { return Volume.class; }
+    public Volume fresh()                        { return new Volume(50); }
+    public Node editor(ValueContext ctx)         { return VolumeSlider.of(ctx); }
+
+    public List<Class<?>> componentTypes()       { return List.of(int.class); }
+    public List<Object> components(Volume v)     { return List.of(v.percent()); }
+    public Volume build(List<Object> parts)      { return new Volume((int) parts.get(0)); }
+}
+```
 
 | surface | what it is |
 |---|---|
 | **palette** | which types and members are worth proposing, in which groups and in which order |
-| **slot editors** | "for a value of type X, show this UI instead of a text field" |
-| **generation** | a plugin that writes project files owns *whole files*, keyed by project-relative path, through its own authoring entry point |
+| **types** | a type this plugin owns: what a new one is, how a user edits one, and — when its Java is a call — the parts the host writes it as |
+| **slot editors** | an editor chosen by the call around a value, or one offered for a type another plugin owns |
+| **managed values, toolbar items** | a value the plugin keeps in the bot's own Java, and a button in the host's toolbar |
 
 **Panels are deliberately not a surface.** A plugin contributes to the editor; it does not contribute
 editors.
 
 ## Two things worth knowing before you write one
 
-**A catalog entry is a method reference.** `.add(Mouse::moveTo)` rather than `"moveTo"`. `MemberId` reads
-the declaring class, the member name and the JVM descriptor out of the reference's `SerializedLambda`, which
-means a catalog naming a member you renamed *fails your build*, and an overload set resolves exactly — with
-a type witness where the name is ambiguous:
+**A catalog is a list of classes.** `PaletteCatalog.of(Mouse.class, Keyboard.class)`: class literals javac
+checks, and members discovered by reflection. Every public method of a `@Palette` class is offered unless
+it is `@Hidden`, so a member you rename is renamed in the palette with nothing to keep in step.
 
-```java
-.add(Mouse::moveTo)          // one member of that name — the reference is exact
-.<Point>add(Mouse::click)    // an overload set — the witness is also the documentation
-.<Rect>add(Mouse::click)
-```
-
-**A slot editor writes back source text.** `SlotContext.replaceWith("new Rect(12, 40, 300, 80)", …)`. No
-syntax tree crosses the boundary in either direction, which is why this module depends on nothing but
-JavaFX.
+**No plugin reads or writes Java.** An editor is handed the value (`ctx.value(Volume.class)`) and hands one
+back (`ctx.set(new Volume(80))`); the host writes `new Volume(80)` and reads it back through the plugin's
+own `components` and `build`. A value nobody can decode — a variable, a call — is still readable as
+`ctx.source()` and is shown read-only. No syntax tree crosses the boundary in either direction, which is why
+this module depends on nothing but JavaFX.
 
 ## Compatibility
 
@@ -78,7 +81,7 @@ against an older release keeps working until a Studio **major** release explicit
 ## Building
 
 ```bash
-mvn test        # 13 tests, all on the catalog
+mvn test        # the catalog, PluginType/ComponentType, SlotEditor and the context defaults
 mvn install     # lands at com.github.LiQiyeDev:botmaker-studio-api:0.0.0-SNAPSHOT
 ```
 
