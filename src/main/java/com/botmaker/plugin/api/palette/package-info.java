@@ -1,7 +1,8 @@
 /**
  * Curation written on the thing it curates.
  *
- * <p>A plugin annotates its palette classes, and everything is read off them:
+ * <p>A plugin annotates its palette classes, the host finds them in the plugin's jar, and everything else is
+ * read off them:
  *
  * <pre>{@code
  * @Palette(category = "vision", categoryLabel = "Vision", icon = "🔍", order = 20)
@@ -16,8 +17,6 @@
  *     public static MatchResult findAny(ImageTemplate... t) { … }
  * }
  *
- * // in the plugin, which finds every @Palette class in its own jar:
- * PaletteCatalog.scan(MyPlugin.class);
  * }</pre>
  *
  * <p><b>Opt-out, not opt-in, and that is the whole point.</b> Under a hand-written catalog a new public

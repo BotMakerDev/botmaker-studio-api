@@ -6,15 +6,8 @@ import com.botmaker.plugin.api.palette.PaletteDefault;
 import com.botmaker.plugin.api.palette.PaletteLabel;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarOutputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -171,53 +164,6 @@ class PaletteCatalogTest {
         assertTrue(catalog.facade(TwoLeads.class).orElseThrow().offers("go"));
         assertEquals(1, catalog.problems().size());
         assertTrue(catalog.problems().getFirst().contains("@PaletteDefault"), catalog.problems().toString());
-    }
-
-    /** From a class directory: every annotated class beside the anchor, and nothing unannotated. */
-    @Test
-    void scanFindsEveryAnnotatedClassInTheAnchorsDirectory() {
-        PaletteCatalog catalog = PaletteCatalog.scan(PaletteCatalogTest.class);
-        assertTrue(catalog.offers(Widget.class) && catalog.offers(Coordinate.class)
-                && catalog.offers(Disagrees.class) && catalog.offers(TwoLeads.class), catalog.toString());
-        assertFalse(catalog.offers(Unmarked.class));
-        assertFalse(catalog.offers(PaletteCatalogTest.class));
-    }
-
-    /**
-     * From a jar, the way a host loads a plugin: only that jar is read, so the contract classes beside it on
-     * the same loader contribute nothing.
-     */
-    @Test
-    void scanReadsTheAnchorsJarAndNothingElse(@TempDir Path dir) throws Exception {
-        Path jar = dir.resolve("plugin.jar");
-        Path classes = Path.of(Widget.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-        try (JarOutputStream out = new JarOutputStream(Files.newOutputStream(jar))) {
-            for (Class<?> type : List.of(PaletteCatalogTest.class, Widget.class, Unmarked.class)) {
-                String entry = type.getName().replace('.', '/') + ".class";
-                out.putNextEntry(new JarEntry(entry));
-                out.write(Files.readAllBytes(classes.resolve(entry)));
-                out.closeEntry();
-            }
-        }
-        // The contract comes from the parent, as PluginLoader arranges it; the test's own classes do not.
-        String tests = PaletteCatalogTest.class.getName();
-        ClassLoader contractOnly = new ClassLoader(ClassLoader.getPlatformClassLoader()) {
-            @Override
-            protected Class<?> findClass(String name) throws ClassNotFoundException {
-                if (name.startsWith("com.botmaker.plugin.api.") && !name.startsWith(tests)) {
-                    return PaletteCatalogTest.class.getClassLoader().loadClass(name);
-                }
-                throw new ClassNotFoundException(name);
-            }
-        };
-        try (URLClassLoader loader = new URLClassLoader(new URL[]{jar.toUri().toURL()}, contractOnly)) {
-            PaletteCatalog catalog = PaletteCatalog.scan(loader.loadClass(Unmarked.class.getName()));
-            assertEquals(List.of(), catalog.problems());
-            assertEquals(List.of(Widget.class.getName()), catalog.facades().stream()
-                    .map(FacadeEntry::qualifiedName).toList());
-            assertEquals(List.of("zoom", "apply", "click", "findAny"), catalog.facades().getFirst().members()
-                    .stream().map(m -> m.id().name()).distinct().toList());
-        }
     }
 
     @Test

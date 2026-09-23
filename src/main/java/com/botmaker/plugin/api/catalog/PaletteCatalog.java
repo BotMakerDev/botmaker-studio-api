@@ -23,19 +23,18 @@ import java.util.Set;
  *
  * <h2>How one is built</h2>
  *
- * <p>{@link #scan(Class)} — every class carrying {@link Palette} in the jar the plugin was loaded from:
+ * <p>{@link #of(Class[])} catalogues classes annotated {@link Palette}. The host calls it with every such
+ * class it finds in a plugin's jar, so a plugin names none of them:
  *
  * <pre>{@code
- * PaletteCatalog.scan(MyPlugin.class);
+ * PaletteCatalog.of(Mouse.class, Keyboard.class, ImageFinder.class, Point.class);
  * }</pre>
  *
  * <p>Everything else is read off those classes. Every public method a class declares is offered; the
  * exceptions carry {@link Hidden}, the lead overload of a name carries {@link PaletteDefault} when parameter
  * count does not decide it, and a menu name that should not be the member's own carries
  * {@link PaletteLabel}. <b>Classes and members are discovered, never named</b>, so nothing in a catalog can
- * go stale against a rename, and an annotated class cannot be left out of it.
- *
- * <p>{@link #of(Class[])} catalogues a given list instead, for a host or a test that builds one by hand.
+ * go stale against a rename.
  *
  * <h2>What a catalog does not answer</h2>
  *
@@ -50,8 +49,7 @@ import java.util.Set;
  *
  * <h2>A malformed catalog degrades; it never throws</h2>
  *
- * <p>{@link #scan(Class)} and {@link #of(Class[])} collect what they cannot make sense of into
- * {@link #problems()} and build
+ * <p>{@link #of(Class[])} collects what it cannot make sense of into {@link #problems()} and builds
  * everything else. That is the same rule {@code ValueCatalog.merge} follows and for the same reason: this
  * runs while a project is opening, and a menu missing an entry is recoverable where a project that will not
  * open is not. A host should log {@code problems()} once; a test should assert it is empty.
@@ -82,24 +80,6 @@ public record PaletteCatalog(List<FacadeEntry> facades, List<String> problems) {
     }
 
     // ---------------------------------------------------------------- construction
-
-    /**
-     * Catalogues every {@link Palette} class in the jar or class directory {@code anchor} was loaded from —
-     * normally the plugin's own class, so the palette is exactly what the plugin's sources annotate.
-     *
-     * <p>Only that one location is read, never the rest of the class path: a class another jar annotates is
-     * that jar's plugin's to offer. Class files are searched for the annotation before anything is loaded,
-     * and nothing is initialised, so a scan never links a dependency the plugin keeps {@code optional}.
-     *
-     * <p>A location that cannot be read, and a class that cannot be loaded, are reported in
-     * {@link #problems()}; what could be read is still catalogued.
-     */
-    public static PaletteCatalog scan(Class<?> anchor) {
-        List<String> problems = new ArrayList<>();
-        PaletteCatalog found = of(PaletteScan.classes(anchor, problems).toArray(Class<?>[]::new));
-        problems.addAll(found.problems());
-        return new PaletteCatalog(found.facades(), problems);
-    }
 
     /**
      * Catalogues these classes, reading {@link Palette} and the member annotations off each.

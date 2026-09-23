@@ -25,10 +25,6 @@ the gate reports the missing tag and passes until it exists — the same move `v
 
 ### Added
 
-- **`PaletteCatalog.scan(Class<?> anchor)`**: catalogues every `@Palette` class in the jar or class
-  directory `anchor` was loaded from, so a plugin no longer lists its palette classes by hand. Class files
-  are searched for the annotation before anything is loaded and nothing is initialised, so a scan never
-  links an `optional` dependency. What cannot be read goes to `problems()`.
 - **`PluginType<T>` and `ComponentType<T>`** (`com.botmaker.plugin.api.value`), replacing four declarations
   per type with one class whose every method is abstract. `PluginType` is the class a plugin owns, a
   `fresh()` that returns a real `T` rather than a Java expression as text, and the editor for it;
@@ -53,6 +49,9 @@ the gate reports the missing tag and passes until it exists — the same move `v
 
 ### Changed
 
+- **An empty `StudioPlugin.catalog()` means "the host discovers the palette"**: the host catalogues every
+  `@Palette` class in the plugin's own jar. A plugin no longer lists its palette classes; overriding
+  `catalog()` remains the way to build one by hand.
 - **`ValueContext`'s source setter is `setSource(String, Class<?>...)`**, not a second `set`. A `String`
   argument matches `set(Object)` in the first phase of overload resolution, before varargs are ever
   considered, so `set("Source.current()")` bound to the *value* path and would have written the expression

@@ -7,13 +7,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Declares a class as part of this plugin's palette: {@link
- * com.botmaker.plugin.api.catalog.PaletteCatalog#scan(Class) PaletteCatalog.scan} finds it in the plugin's
- * jar and catalogues it, offering every public method it declares except the ones marked {@link Hidden}.
+ * Declares a class as part of this plugin's palette. The host finds every class carrying it in the plugin's
+ * jar and catalogues it ({@link com.botmaker.plugin.api.catalog.PaletteCatalog#of(Class[])
+ * PaletteCatalog.of}), offering every public method it declares except the ones marked {@link Hidden}.
  *
- * <p>The retention is {@code RUNTIME} because the catalog is read off live {@code Class} objects. This
- * annotation is the whole declaration: no list of classes is written anywhere else, so a class cannot carry
- * it and be missing from the palette.
+ * <p>This annotation is the whole declaration: no list of classes is written anywhere else. The retention is
+ * {@code RUNTIME} because the catalog is read off live {@code Class} objects.
  *
  * <h2>Catalogued, and offered or not</h2>
  *

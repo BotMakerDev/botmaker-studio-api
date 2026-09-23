@@ -5,19 +5,12 @@ reasoning.
 
 ## Done
 
-### 2026-09-23 — `PaletteCatalog.scan`: the palette is discovered
+### 2026-09-23 — an empty `catalog()` means the host discovers the palette
 
-`PaletteCatalog.scan(Class<?> anchor)` catalogues every `@Palette` class in the jar or class directory the
-anchor came from (package-private `PaletteScan`). It replaces the last hand-written part of a catalog, the
-class list: the SDK's list of 54 literals had missed two annotated facades.
-
-- **Only the anchor's own location is read**, never the rest of the class path, so a plugin cannot offer a
-  class another jar annotates.
-- **Nothing is linked by a scan.** Each class file is searched for the `@Palette` descriptor first, and only
-  a hit is loaded, with `initialize = false`. A plugin's JavaFX half stays unlinked on a headless host.
-- **It degrades like `of`**: an unreadable location or an unloadable class is a line in `problems()`.
-- Tested from a class directory and from a jar on a `URLClassLoader` whose parent supplies the contract, as
-  `PluginLoader` arranges it.
+A plugin's palette is the `@Palette` classes in its jar, found by the host (`botmaker-plugin-host`'s
+`Palettes`), not listed by the plugin. **`PaletteCatalog.scan` stood here for one commit and is withdrawn**:
+it put a class-file scanner in a module of interfaces and records, and made every plugin run the discovery
+the host is placed to run once. Nothing in this module changed but javadoc and the meaning of the default.
 
 ### 2026-09-22 (last) — the parameter-data surface is deleted: `@Param` is the only source of a row
 

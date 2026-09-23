@@ -68,19 +68,12 @@ public interface StudioPlugin {
     }
 
     /**
-     * What this plugin offers the palette: the facade classes worth proposing, their groups and their
-     * order. A plugin that does not curate returns {@link PaletteCatalog#empty()}, which the host reads as
-     * "offer everything the jar contains" rather than "offer nothing".
+     * A palette this plugin builds by hand, overriding the one the host discovers.
      *
-     * <p>{@link PaletteCatalog#scan(Class)} builds one from the plugin's own jar: the classes are the ones
-     * carrying {@code @Palette}, and the members are read off {@code @Hidden}, {@code @PaletteLabel} and
-     * {@code @PaletteDefault}.
-     *
-     * <p><b>It took the project's pinned plugin version until 2026-09-22</b>, so a plugin could curate per
-     * version. Nothing did: the toolkit's base class memoised the answer ignoring the argument, and the one
-     * implementation in existence recorded its per-version curation ending on 2026-08-26. A parameter every
-     * caller has to supply and no implementation reads is a parameter that will be wrong the first time it
-     * matters.
+     * <p><b>Most plugins leave this alone.</b> The host finds every class carrying {@code @Palette} in the
+     * plugin's own jar and catalogues it, reading members off {@code @Hidden}, {@code @PaletteLabel} and
+     * {@code @PaletteDefault}. The annotations are the declaration; no plugin lists its classes. The
+     * default, {@link PaletteCatalog#empty()}, means "discover it".
      */
     default PaletteCatalog catalog() {
         return PaletteCatalog.empty();
