@@ -73,6 +73,11 @@ the gate reports the missing tag and passes until it exists — the same move `v
 
 ### Changed
 
+- **`ComponentType.factory()` is an `Executable`**: a constructor (the default, found from
+  `componentTypes()`), a public static method, or an instance method on part 0 — a chain such as
+  `Precision.TIGHT.minArea(400)`, which the host reads and never writes. `factoryOwner()` is removed; it is
+  the executable's declaring class. The last string naming Java in the value vocabulary is gone, so a
+  renamed factory fails where the plugin builds its declaration rather than in a bot's file.
 - **`@Param`'s `min` and `max` are `double`**, defaulting to negative and positive infinity. They were
   strings so a duration bound could be written `"30s"` and a codec would parse it — and no plugin parses
   anything now. `ParameterRow.bounds()` becomes `min()`/`max()`/`isBounded()` for the same reason.

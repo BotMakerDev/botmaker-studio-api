@@ -27,7 +27,7 @@ one artifact (`javafx-controls`, `provided`).
   shapes `M0`–`M5` were deleted on 2026-08-27 — see *The catalog* below.
 - `com.botmaker.plugin.api.value` — **three types since 2026-09-22**: `PluginType<T>` (the class, `fresh()`,
   `editor(ValueContext)`, optional `preview`), `ComponentType<T>` (`componentTypes`, `components`, `build`,
-  optional `factory`/`factoryOwner`), and `Visibility`. What a bot's *value* can be, which is a question the
+  optional `factory`, an `Executable`), and `Visibility`. What a bot's *value* can be, which is a question the
   contract answers so a plugin can own a type without the SDK granting it one. See *The value vocabulary*
   below for what the other seven types were and why none of them is here.
 - `com.botmaker.plugin.api.palette` — **`@Palette`**, **`@Hidden`**, `@PaletteLabel`, `@PaletteDefault`: the
@@ -355,8 +355,11 @@ has the type in front of them.
 - **`build(components(v))` equals `v` is the law**, and both halves are abstract for the reason
   `ValueCodec`'s reader pair taught: the half nobody is forced to write is the half that rots.
   `botmaker plugin validate` checks it against `fresh()`.
-- **`ComponentType.factory()` is the one string left**, because Java cannot name a method without binding
-  its arity — settled when `MemberRef` and `M0`–`M5` were deleted on 2026-08-27.
+- **`ComponentType.factory()` is an `Executable` (2026-09-23)**, not the name it was: a constructor by
+  default, a public static method, or an instance method on part 0 that the host reads and never writes
+  (`Precision.TIGHT.minArea(400)`). A plugin looks it up once, with the parameter types, so a rename fails in
+  the plugin's own tests; the host reads only its shape. `factoryOwner()` went with the string
+  (`../docs/refactor/35-typed-value-reader.md`).
 - **No Jackson here, and none is coming.** Adding a serialisation library to this module would impose it on
   every plugin and tie the contract to its compatibility rate.
 

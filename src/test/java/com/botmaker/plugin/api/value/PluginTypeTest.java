@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -74,11 +74,23 @@ class PluginTypeTest {
         assertEquals(List.of(3, 4), held.componentsOf(value));
     }
 
-    /** A constructor is the default spelling; a factory says its name and nothing else. */
+    /** A constructor is the default factory: the one taking componentTypes(), in order. */
     @Test
-    void aConstructorIsTheDefaultSpelling() {
-        assertEquals("", POINT.factory());
-        assertSame(Point.class, POINT.factoryOwner());
+    void aConstructorIsTheDefaultFactory() throws NoSuchMethodException {
+        assertEquals(Point.class.getDeclaredConstructor(int.class, int.class), POINT.factory());
+    }
+
+    /** A type with no such constructor says so when asked, naming the override it needs. */
+    @Test
+    void aMissingConstructorIsNamed() {
+        ComponentType<Point> wrong = new ComponentType<>() {
+            @Override public Class<Point> type() { return Point.class; }
+            @Override public List<Class<?>> componentTypes() { return List.of(String.class); }
+            @Override public List<Object> components(Point p) { return List.of(""); }
+            @Override public Point build(List<Object> parts) { return new Point(0, 0); }
+        };
+        IllegalStateException thrown = assertThrows(IllegalStateException.class, wrong::factory);
+        assertTrue(thrown.getMessage().contains("override factory()"), thrown.getMessage());
     }
 
     /** A type that is picked but whose Java needs no taking apart declares one interface, not two. */

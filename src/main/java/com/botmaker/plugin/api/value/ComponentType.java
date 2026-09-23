@@ -1,5 +1,6 @@
 package com.botmaker.plugin.api.value;
 
+import java.lang.reflect.Executable;
 import java.util.List;
 
 /**
@@ -15,7 +16,7 @@ import java.util.List;
  * <p>A component type takes a value apart into typed parts and puts it back together from typed parts. It
  * never sees Java source and never produces any. <b>The host owns every character of syntax</b>, written
  * once for every plugin as {@code Owner.factory(p₁, …, pₙ)} — or {@code new Owner(p₁, …, pₙ)} — and read
- * back by matching that prefix and splitting at depth zero.
+ * back off the parsed expression.
  *
  * <p>That is deliberate and it is the second attempt. The first gave a container {@code write(List<String>)}
  * and {@code read(String)}, which put a wire encoding back across the contract. Source text is the host's
@@ -66,21 +67,39 @@ public interface ComponentType<T> {
     T build(List<Object> parts);
 
     /**
-     * The static factory's name — {@code "of"}, {@code "ofMillis"}, {@code "entry"} — or {@code ""} for a
-     * constructor, which is the default.
+     * What writes this value: a constructor, a {@code public static} method, or — read only — an instance
+     * method called on part 0.
      *
-     * <p>A name rather than a method handle because it is what the host writes into a file and matches when
-     * reading one back, and because a handle would be behaviour crossing the contract when only a spelling
-     * needs to. Java cannot name a method without binding its arity, which is why this is the one string
-     * left in the design; {@code botmaker plugin validate} checks that the class declares it.
+     * <ul>
+     *   <li><b>A constructor</b>, the default: the one taking {@link #componentTypes()} in order, written
+     *       {@code new Owner(p₁, …)}.</li>
+     *   <li><b>A static method</b>, written {@code Owner.method(p₁, …)} — {@code Duration.ofMillis},
+     *       {@code Map.entry}. It may be declared on another class and may return a supertype of
+     *       {@link #type()}: {@code Source.current()} returns a {@code CaptureSource}.</li>
+     *   <li><b>An instance method</b>, whose receiver is part 0: {@code part₀.method(p₁, …)}. That is a chain
+     *       a person writes by hand — {@code Precision.TIGHT.minArea(400)},
+     *       {@code CaptureSource.window("Game").region(r)}. The host reads it and <b>never writes it</b>: an
+     *       edited value is written through the declaration that owns the class name. So such a type is
+     *       listed in {@code StudioPlugin.componentTypes()} beside that declaration and never claims the
+     *       class.</li>
+     * </ul>
+     *
+     * <p>An {@link Executable} rather than a name, so a rename fails where the plugin builds this, not in a
+     * bot's file. The host only reads its shape — declaring class, name, parameters, modifiers — and never
+     * invokes it. {@code botmaker plugin validate} checks that it is public, that its parameters match
+     * {@link #componentTypes()} (the receiver excluded, a varargs tail allowed), and that {@link #type()} is
+     * assignable to what it returns.
+     *
+     * @throws IllegalStateException when the default finds no such constructor
      */
-    default String factory() {
-        return "";
-    }
-
-    /** The class the factory is declared on, which is usually this type itself — {@code Map} for an entry. */
-    default Class<?> factoryOwner() {
-        return type();
+    default Executable factory() {
+        List<Class<?>> parts = componentTypes();
+        try {
+            return type().getDeclaredConstructor(parts.toArray(new Class<?>[0]));
+        } catch (NoSuchMethodException e) {
+            throw new IllegalStateException(type().getName() + " has no constructor taking " + parts
+                    + "; override factory()", e);
+        }
     }
 
     /**
