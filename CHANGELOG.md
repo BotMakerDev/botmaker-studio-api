@@ -58,11 +58,10 @@ the gate reports the missing tag and passes until it exists — the same move `v
 - **An empty `StudioPlugin.catalog()` means "the host discovers the palette"**: the host catalogues every
   `@Palette` class in the plugin's own jar. A plugin no longer lists its palette classes; overriding
   `catalog()` remains the way to build one by hand.
-- **`ValueContext`'s source setter is `setSource(String, Class<?>...)`**, not a second `set`. A `String`
-  argument matches `set(Object)` in the first phase of overload resolution, before varargs are ever
-  considered, so `set("Source.current()")` bound to the *value* path and would have written the expression
-  back as a quoted string literal — silently, with nothing to catch it. Two verbs for two meanings. Three
-  live call sites were already wrong when the rename found them.
+- **`SlotRun` crosses values.** `elements()` answers `SlotRun.Element(value, source)` — the value the host
+  read, `null` when it could not, and the source for display — `allowed()` answers values, and
+  `replace(List<?>)` takes values, or an `Element` to keep as written. Every element was Java text the plugin
+  split and wrote itself.
 - **`SlotEditor.forType(Class, …)` and `SlotEditor.forCall(Class, int, …, String…)`**, which is the
   toolkit's `CallSites` moved onto the contract: *which slot an editor claims* is contract vocabulary, and
   the helper was predicate construction with no UI in it.
@@ -82,13 +81,17 @@ the gate reports the missing tag and passes until it exists — the same move `v
 - **`StudioPlugin.catalog(String pinnedVersion)` → `catalog()`.** No implementation ever read the argument:
   the toolkit's base class memoised the answer ignoring it, and the one plugin in existence recorded its
   per-version curation ending on 2026-08-26.
-- **`ValueContext.set(String, String…)` → `set(String, Class<?>…)`.** Callers were already holding the
-  `Class` and converting it by hand, which is where `Outer$Inner` gets written into an import.
 
 ### Removed
 
-- **`ActionContext.insertAtCursor(String...)`** — the last surface that carried Java as text. Its one caller
-  was the SDK's recorder, and recording is the host's now: the host writes the call from a `@Records` method.
+- **`ValueContext.setSource(String, Class<?>...)`, `SlotContext.enclosingCall()` and
+  `SlotContext.replaceEnclosingCall(String, String...)`** — a plugin writing Java text, and reading the call
+  around a slot as text to split. A value is written with `set(Object)`. The one user of the pair was the
+  SDK's duration picker turning `Wait.time(x)` into `Wait.between(a, b)`, and that toggle went with them.
+  What still crosses as text is `ValueContext.source()`, for showing what the host could not read, and
+  `PluginType.freshSource()`.
+- **`ActionContext.insertAtCursor(String...)`** — Java as text from a plugin's recorder. Its one caller was
+  the SDK's recorder, and recording is the host's now: the host writes the call from a `@Records` method.
 - **`ValueCodec`, `ValueType`, `ValueCatalog`, `ValueForm`, `ValueContainer`, `HostContainers`, `Range`,
   `SourceSeed`, `StudioPlugin.valueTypes()`, `StudioPlugin.sourceSeeds()` and `ValueContext.form()`** — the
   whole codec and grammar layer. The codec half was dead: storage stopped being text when a parameter

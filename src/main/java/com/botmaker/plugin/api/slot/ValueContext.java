@@ -87,23 +87,8 @@ public interface ValueContext {
      */
     String source();
 
-    /**
-     * Replaces the value with a raw Java expression, adding {@code imports}.
-     *
-     * <p>For the editor that does not write a value of its own type but rewrites the shape of the call —
-     * the SDK's duration picker turning {@code Wait.time(x)} into {@code Wait.between(min, max)}. Prefer
-     * {@link #set(Object)} everywhere else: this one is text the compiler never looked at.
-     *
-     * <p>Imports are named as {@code Class} objects rather than as strings, because a nested type is
-     * {@code Outer.Inner} in both an expression and an import and {@code Outer$Inner} in neither, and every
-     * caller was deriving that by hand. The host reads their canonical names and never loads them.
-     *
-     * <p><b>Its own name rather than a second {@code set}.</b> An overload pair would put
-     * {@code set("Source.current()")} on the value path — a {@code String} argument matches
-     * {@link #set(Object)} before varargs are ever considered — so the expression would be written back as
-     * a quoted string literal, silently, with nothing to catch it. Two verbs for two meanings.
-     */
-    void setSource(String javaExpression, Class<?>... imports);
+    // setSource(String, Class<?>...) was deleted on 2026-09-23: it was a plugin writing Java text the compiler
+    // never looked at. A value is written with set(Object) and nothing else.
 
     /** The host services an editor may use: theming, screen capture, dialogs, and the project's location. */
     StudioServices services();

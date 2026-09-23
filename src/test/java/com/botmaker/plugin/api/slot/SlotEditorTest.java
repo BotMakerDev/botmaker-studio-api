@@ -33,7 +33,6 @@ class SlotEditorTest {
             @Override public <T> Optional<T> value(Class<T> type) { return Optional.empty(); }
             @Override public void set(Object value) {}
             @Override public String source() { return "\"570\""; }
-            @Override public void setSource(String javaExpression, Class<?>... imports) {}
             @Override public StudioServices services() { return null; }
         };
     }
@@ -45,12 +44,10 @@ class SlotEditorTest {
             @Override public <T> Optional<T> value(Class<T> type) { return Optional.empty(); }
             @Override public void set(Object value) {}
             @Override public String source() { return "\"570\""; }
-            @Override public void setSource(String javaExpression, Class<?>... imports) {}
             @Override public StudioServices services() { return null; }
             @Override public Optional<String> enclosingClassName() { return Optional.of(enclosingClass); }
             @Override public Optional<String> enclosingMethodName() { return Optional.of(method); }
             @Override public int argIndex() { return index; }
-            @Override public Optional<String> enclosingCall() { return Optional.empty(); }
         };
     }
 

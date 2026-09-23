@@ -9,8 +9,9 @@
  * {@link com.botmaker.plugin.api.slot.TypeRef} is the declared type, as the host resolved it.
  *
  * <h2>What is deliberately not here</h2>
- * A syntax tree. An editor is given the value as the bot's Java writes it — text — and writes text back;
- * it never sees an AST node, a project model or a host window. That is what lets the same editor draw in
+ * A syntax tree, and Java text to write. An editor is given the value and hands a value back; the source
+ * it is written as is there only to show, read-only, what the host could not read. It never sees an AST
+ * node, a project model or a host window. That is what lets the same editor draw in
  * Studio, in a headless {@code botmaker plugin validate} run and in whatever host comes next.
  */
 package com.botmaker.plugin.api.slot;

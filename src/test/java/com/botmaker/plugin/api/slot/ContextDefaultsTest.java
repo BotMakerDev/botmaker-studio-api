@@ -34,7 +34,6 @@ class ContextDefaultsTest {
             }
             @Override public void set(Object value) {}
             @Override public String source() { return "\"x\""; }
-            @Override public void setSource(String javaExpression, Class<?>... imports) {}
             @Override public StudioServices services() { return null; }
         };
     }
@@ -46,12 +45,10 @@ class ContextDefaultsTest {
             @Override public <T> Optional<T> value(Class<T> type) { return Optional.empty(); }
             @Override public void set(Object value) {}
             @Override public String source() { return "\"570\""; }
-            @Override public void setSource(String javaExpression, Class<?>... imports) {}
             @Override public StudioServices services() { return null; }
             @Override public Optional<String> enclosingClassName() { return Optional.of("Game"); }
             @Override public Optional<String> enclosingMethodName() { return Optional.of("launchSteam"); }
             @Override public int argIndex() { return 0; }
-            @Override public Optional<String> enclosingCall() { return Optional.empty(); }
         };
     }
 
@@ -73,18 +70,24 @@ class ContextDefaultsTest {
     }
 
     @Test
-    void replacingAnEnclosingCallThereIsNoneOfDoesNothing() {
-        slot().replaceEnclosingCall("Wait.between(a, b)", "com.botmaker.sdk.api.interaction.Wait");
+    void anUnrestrictedRunAnswersEmptyRatherThanEveryElement() {
+        SlotRun bare = new SlotRun() {
+            @Override public List<Element> elements() { return List.of(new Element(null, "Pictures.ORE")); }
+            @Override public void replace(List<?> elements) {}
+        };
+
+        assertTrue(bare.allowed().isEmpty(), "empty is anything goes, not nothing allowed");
     }
 
     @Test
-    void anUnrestrictedRunAnswersEmptyRatherThanEveryElement() {
-        SlotRun bare = new SlotRun() {
-            @Override public List<String> elements() { return List.of("Pictures.ORE"); }
-            @Override public void replace(List<String> javaExpressions, String... importsNeeded) {}
-        };
+    void anElementAnswersItsValueOnlyAsItsOwnType() {
+        SlotRun.Element read = new SlotRun.Element("x", "\"x\"");
+        SlotRun.Element unread = new SlotRun.Element(null, null);
 
-        assertTrue(bare.allowedSources().isEmpty(), "empty is anything goes, not nothing allowed");
+        assertEquals("x", read.value(String.class).orElseThrow());
+        assertTrue(read.value(Integer.class).isEmpty());
+        assertTrue(unread.value(String.class).isEmpty(), "an element the host cannot read has no value");
+        assertEquals("", unread.source(), "never null");
     }
 
     @Test

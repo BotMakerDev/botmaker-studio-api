@@ -13,29 +13,41 @@ import java.util.Optional;
  * element and can never add or remove one. Such an editor has to hand back the whole run at once, which is
  * what {@link #replace} is for.
  *
- * <p><b>Everything here is opaque source text, and that is the point.</b> The elements are Java
- * expressions exactly as they stand in the file; nothing in this interface names a type, a picture, a key
- * or any other concept belonging to one plugin. What the host contributes is the thing only the host has —
- * knowing that these arguments are one list, and what the surrounding code will still accept — and what
- * the plugin contributes is knowing what the strings mean. That is the same division
- * {@link SlotContext#replaceEnclosingCall} is built on.
+ * <p><b>Elements cross as values, like every other value.</b> The host reads each argument through the
+ * grammar it reads a slot with — a constant of a {@code @Managed} type included — and writes each value
+ * back the same way. What the host contributes is what only the host has: that these arguments are one
+ * list, and what the surrounding code will still accept. Until 2026-09-23 every element was Java text the
+ * plugin split and wrote itself.
  *
- * <p>Reached through {@link SlotContext#run()}, which is {@code null} for a slot that stands alone. An
- * editor that does not care simply never asks, and keeps working exactly as before.
+ * <p>Reached through {@link SlotContext#siblingRun()}, which is empty for a slot that stands alone. An editor
+ * that does not care simply never asks.
  */
 public interface SlotRun {
 
     /**
-     * Each element's Java source, in the order they appear — {@code ["new ImageTemplate(\"gold.png\")",
-     * "new ImageTemplate(\"ore.png\")"]}. Never null; empty is a legal state (a call written with no
-     * arguments yet).
+     * One argument of the run: its value, or {@code null} when the host cannot read it, and what the file
+     * writes, for showing an element that has no value.
      *
-     * <p>Parsing an element is the editor's own job, and failing to is normal: any of them may be a
-     * variable, a field or a call rather than the literal shape the editor writes. An element it cannot
-     * read must be left alone rather than overwritten — {@link #replace} takes the whole run, so an editor
-     * that cannot represent an element cannot safely rewrite the run at all.
+     * <p>Handing one back to {@link #replace} keeps that argument exactly as written. That is how an editor
+     * rewrites the run around a variable or a call it cannot read without deleting it.
+     *
+     * @param value  the element as a value, or {@code null} when the grammar cannot read it
+     * @param source the element as the file writes it, for display only
      */
-    List<String> elements();
+    record Element(Object value, String source) {
+
+        public Element {
+            source = source == null ? "" : source;
+        }
+
+        /** The value as a {@code T}, or empty when it is unreadable or another type. */
+        public <T> Optional<T> value(Class<T> type) {
+            return type != null && type.isInstance(value) ? Optional.of(type.cast(value)) : Optional.empty();
+        }
+    }
+
+    /** Each argument, in the order they appear. Never null; empty is a legal state. */
+    List<Element> elements();
 
     /**
      * How few elements the surrounding code will still compile with, or {@code 0} when the run may be
@@ -50,34 +62,23 @@ public interface SlotRun {
     }
 
     /**
-     * The only element sources the surrounding code can still use, or empty when anything goes.
+     * The only values the surrounding code can still use, or empty when anything goes.
      *
-     * <p>Java source again, never decoded values — the host computes this by looking at the code around the
-     * run (the elements of the list a branch is narrowing against, say), which it can do without knowing
-     * what any of them mean. An editor offers exactly these and nothing else; an empty {@code Optional} is
-     * the ordinary case and means "the whole library".
-     *
-     * <p><b>It is an {@link Optional} because the two absences here are opposite and the dangerous one is
-     * the common case.</b> Empty means <em>anything goes</em> and {@code List.of()} means <em>nothing is
-     * allowed</em>, so a plain {@code List} return would have had {@code null} for the first: then
-     * {@code for (String s : run.allowed())}, which is what an author writes without thinking, throws
-     * {@link NullPointerException} on nearly every slot, and the one shape that does not throw is the shape
-     * that must offer nothing. An {@code Optional} cannot be iterated by accident.
+     * <p>The host computes this from the code around the run (the elements of the list a branch narrows
+     * against, say). Empty means <em>anything goes</em> and {@code List.of()} means <em>nothing is
+     * allowed</em>; an {@link Optional} cannot be iterated by accident, which a nullable list could.
      */
-    default Optional<List<String>> allowedSources() {
+    default Optional<List<Object>> allowed() {
         return Optional.empty();
     }
 
     /**
-     * Replaces the whole run with {@code javaExpressions}, adding any imports they need.
+     * Replaces the whole run.
      *
-     * <p>Same rules as {@link ValueContext#set}: source text the host re-parses, fully-qualified
-     * names are always safe, on the JavaFX application thread, and repeatable. Passing fewer expressions
-     * than {@link #minimum()} is refused by the host and leaves the source alone, so an editor gets the
-     * honest outcome rather than code that will not compile.
-     *
-     * @param javaExpressions one Java expression per element, never statements and never blank
-     * @param importsNeeded   fully-qualified type names the expressions refer to by simple name
+     * <p>Each item is a value the host writes, as {@link ValueContext#set} would, or an {@link Element} from
+     * {@link #elements()}, kept exactly as written. The host refuses the whole list, leaving the source
+     * alone, when it has fewer items than {@link #minimum()} or an item it cannot write. Call it on the
+     * JavaFX application thread.
      */
-    void replace(List<String> javaExpressions, String... importsNeeded);
+    void replace(List<?> elements);
 }

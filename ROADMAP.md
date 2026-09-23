@@ -5,6 +5,22 @@ reasoning.
 
 ## Done
 
+### 2026-09-23 — no member carries Java for a plugin to parse or write
+
+`ValueContext.setSource`, `SlotContext.enclosingCall` and `SlotContext.replaceEnclosingCall` are deleted, and
+`SlotRun` crosses values: `elements()` is `SlotRun.Element(value, source)`, `allowed()` is values, and
+`replace(List<?>)` takes values or an `Element` to keep as written. The host reads each element with the same
+grammar it reads a slot with, a bot's `@Managed` constant included.
+
+- **What it cost.** The SDK's duration editor offered *Random range*, which rewrote `Wait.time(x)` into
+  `Wait.between(a, b)` through the enclosing call as text. There is no value form of "rewrite the call", and
+  growing one for a single toggle fails the capability test, so the toggle went; `Wait.between` is in the
+  palette. The Precision editor's preview lost the colour it read out of the call's `new Color(…)` argument;
+  it starts with none until one is sampled.
+- **What still crosses as text:** `ValueContext.source()`, to show what the host could not read, and
+  `PluginType.freshSource()`, the four SDK vision results whose fresh value is a call the bot re-evaluates.
+  The capture source and the picture group stopped needing it: each is a value the host reads now.
+
 ### 2026-09-23 — recording is the host's; a plugin annotates (`api.record`)
 
 `Gesture` (what the host recognises), `@Records(Gesture, rank)` on a plugin's public static method (which

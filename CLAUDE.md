@@ -117,36 +117,25 @@ sets for anything similar is that **only a resource the OS counts justifies a li
 garbage collection can reclaim needs no implementation. The instance is reused across projects, so it means
 *this project is over*, never *you are being discarded*.
 
-**One member has passed that test on `StudioServices` itself, and it is the worked example of what a
-capability looks like there.**
-Phase 12c (2026-08-28) added `SlotContext.enclosingSource()` and `replaceEnclosingCall(String, String...)`,
-because a duration editor cannot otherwise offer "wait a random amount": the SDK's humanized wait is
-`Wait.between(min, max)` where the fixed one is `Wait.time(x)`, so ticking that box is a change to the
-**call**, not to the value in the slot. It passes on both halves of the rule — the bot's syntax tree is
-something only the host has, and the signature takes and returns Java source text exactly as `replaceWith`
-does, naming no type of anyone's. Compare it with `Capture.SourceChoice`, which also arrived because a real
-editor needed it and which named `CaptureSource`'s concept: *a real editor needed it* is not the test, and
-never was.
+**No member carries Java text for a plugin to parse or write (2026-09-23).** `SlotContext.enclosingSource()`
+/ `enclosingCall()` and `replaceEnclosingCall(String, String...)` (phase 12c, 2026-08-28) handed a plugin the
+call around a slot as text and let it write a new one; their one user, the duration editor's "wait a random
+amount" toggle turning `Wait.time(x)` into `Wait.between(a, b)`, went with them. `ValueContext.setSource`
+went the same day. A slot tells an editor the **names** of its call site and nothing else, and a value is
+written with `set(Object)`. What still crosses as text is `ValueContext.source()`, to *show* what the host
+could not read, and `PluginType.freshSource()`, a call the bot re-evaluates.
 
-**Two more passed it on 2026-08-31, and both were forced by one editor the port could not carry** — the
-image-template *group* picker, whose chip row turned out not to be a slot editor at all.
-
-**`SlotContext.run()` and `SlotRun`** — several sibling slots edited as one. A `SlotContext` is one argument
-of one call, which is right for almost everything and wrong for a value the author writes as a **run** of
-arguments: three pictures to match any of, four keys to try in order. An editor confined to a single
-argument can change one element and can never add or remove one, so it has to hand back the whole run —
-`replace(List<String>, String...)`. It passes on both halves. **Everything in it is opaque Java source**:
-`elements()` are the expressions as they stand, and even the narrowing is expressed that way. And what the
-host contributes is what only the host has — that these arguments *are* one list, plus two facts about the
-code around them: `minimum()`, how few elements the surrounding source still compiles with (a guarded branch
-needs one), and `allowed()`, the only element sources it will still accept.
-
-**`allowed()` returning source rather than decoded values is the load-bearing detail.** Studio's own version
-of this narrowing decoded the enclosing group into template *paths* — which meant the host reading a
-plugin's vocabulary out of a plugin's expressions. Element sources are a purely syntactic answer: the host
-lists the arguments of the list a branch is narrowing against without knowing what any of them mean, and the
-plugin, which does know, compares or parses them itself. **When the host must describe a plugin's values,
-describe them as the text they are written as.**
+**`SlotContext.siblingRun()` and `SlotRun`** (2026-08-31) — several sibling slots edited as one. A
+`SlotContext` is one argument of one call, which is right for almost everything and wrong for a value the
+author writes as a **run** of arguments: three pictures to match any of. An editor confined to a single
+argument can change one element and never add or remove one, so it hands back the whole run with
+`replace(List<?>)`. What the host contributes is what only the host has: that these arguments *are* one
+list, `minimum()` (how few elements the surrounding source still compiles with), and `allowed()` (the only
+values it still accepts). **Since 2026-09-23 the elements are values**: `SlotRun.Element(value, source)`,
+read by the host's grammar and the bot's `@Managed` constants, `null` when unreadable; an `Element` handed
+back is kept exactly as written. The earlier version said *when the host must describe a plugin's values,
+describe them as the text they are written as* — that was right while no one but the plugin could read the
+text, and stopped being right when the host's grammar became the one reader.
 
 **`SlotEditor.preview(ValueContext)`** — a small, non-interactive picture of one value, `default null`. The
 host shows a value in one more place than it edits one: beside a **declared choice**, in the list an author
@@ -521,7 +510,7 @@ means nothing was compared.
 
 ```bash
 mvn test        # PaletteCatalogTest, PluginTypeTest, SlotEditorTest, ParameterDataTest, the two defaults
-                # tests — 40, and the module's only behaviour
+                # tests — 39, and the module's only behaviour
 mvn verify      # the above plus japicmp against botmaker.japicmp.baseline (see above)
 mvn install     # com.github.LiQiyeDev:botmaker-studio-api:0.0.0-SNAPSHOT
 ```
