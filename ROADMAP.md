@@ -5,6 +5,20 @@ reasoning.
 
 ## Done
 
+### 2026-09-23 — recording is the host's; a plugin annotates (`api.record`)
+
+`Gesture` (what the host recognises), `@Records(Gesture, rank)` on a plugin's public static method (which
+call writes that gesture down), `RecordedValue<T>` plus `StudioPlugin.recordedValues()` (a parameter type only
+the plugin can read off the screen). `ActionContext.insertAtCursor(String...)` is deleted: it was the last
+member carrying Java as text, and its only caller was the SDK's recorder, which is gone.
+
+- **Why an annotation.** The same lesson as `@Palette`: the declaration sits on the member it describes, is
+  discovered by the host, and cannot drift from a list. No strings, no lambdas, no per-arity wrappers.
+- **Why the host fills parameters by type.** A gesture carries values in a fixed order; the host hands them
+  to the method's parameters left to right by a rule `Records` documents (numbers, numeric component types,
+  text, key enums, fresh values). Only a type the host cannot build from those needs a `RecordedValue`.
+- **Unreleased**: part of `0.2.0`.
+
 ### 2026-09-23 — an empty `catalog()` means the host discovers the palette
 
 A plugin's palette is the `@Palette` classes in its jar, found by the host (`botmaker-plugin-host`'s

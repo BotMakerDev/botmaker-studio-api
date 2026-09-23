@@ -25,6 +25,12 @@ the gate reports the missing tag and passes until it exists — the same move `v
 
 ### Added
 
+- **Recording is the host's, and a plugin annotates** (`com.botmaker.plugin.api.record`). `Gesture` is what
+  the host recognises — clicks, a drag, the wheel, typing, a key, a combo, a pause, and a pause that ends on
+  something nameable. `@Records(Gesture, rank)` on a public static method says that method writes the gesture
+  down; the host finds it on the plugin's `@Palette` classes and fills its parameters by type.
+  `RecordedValue<T>` answers a parameter type only the plugin understands (a picture under the pointer), and
+  `StudioPlugin.recordedValues()` lists them.
 - **`PluginType<T>` and `ComponentType<T>`** (`com.botmaker.plugin.api.value`), replacing four declarations
   per type with one class whose every method is abstract. `PluginType` is the class a plugin owns, a
   `fresh()` that returns a real `T` rather than a Java expression as text, and the editor for it;
@@ -81,6 +87,8 @@ the gate reports the missing tag and passes until it exists — the same move `v
 
 ### Removed
 
+- **`ActionContext.insertAtCursor(String...)`** — the last surface that carried Java as text. Its one caller
+  was the SDK's recorder, and recording is the host's now: the host writes the call from a `@Records` method.
 - **`ValueCodec`, `ValueType`, `ValueCatalog`, `ValueForm`, `ValueContainer`, `HostContainers`, `Range`,
   `SourceSeed`, `StudioPlugin.valueTypes()`, `StudioPlugin.sourceSeeds()` and `ValueContext.form()`** — the
   whole codec and grammar layer. The codec half was dead: storage stopped being text when a parameter

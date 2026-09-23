@@ -71,19 +71,7 @@ public interface ActionContext {
         return Optional.empty();
     }
 
-    /**
-     * Append Java source at the overlay editor's insertion cursor.
-     *
-     * <p>A no-op when no overlay is open, which is the same shape as every member above: an item pressed
-     * where its subject does not exist does nothing rather than throwing.
-     *
-     * <p>Java source text crosses and no type is named, exactly as {@link Sources#replace} and
-     * {@code SlotContext.replaceEnclosingCall} already do. The cursor itself is host state by construction —
-     * it is a position in the file the editor has open.
-     *
-     * @param statements whole statements, each ending in its own semicolon; the host places them in order at
-     *                   the cursor and leaves the cursor after the last one
-     */
-    default void insertAtCursor(String... statements) {
-    }
+    // insertAtCursor(String...) stood here from 2026-09-12 to 2026-09-23: a plugin's recorder handed the host
+    // Java statements as text. Recording is the host's now (com.botmaker.plugin.api.record), and the host writes
+    // the call, so no Java text crosses this interface.
 }

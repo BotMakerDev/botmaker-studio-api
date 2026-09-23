@@ -37,14 +37,6 @@ class OverlayContextDefaultsTest {
     }
 
     @Test
-    void inserting_at_a_cursor_that_does_not_exist_is_a_no_op_rather_than_a_throw() {
-        ActionContext ctx = new Minimal(Optional.of("Demo"), "1.2.0");
-
-        // A plugin pressing an item with no overlay open must not take the editor down with it.
-        ctx.insertAtCursor("Mouse.click(10, 20);");
-    }
-
-    @Test
     void an_area_is_four_ints_and_nothing_else() {
         ActionContext.Area area = new ActionContext.Area(10, 20, 640, 480);
 
