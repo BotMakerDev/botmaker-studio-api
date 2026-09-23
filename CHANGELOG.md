@@ -15,7 +15,7 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
-## [Unreleased]
+## [0.1.7] — 2026-09-23
 
 **Release this as `0.2.0`.** Everything under *Removed* below came after `v0.1.6`, which was cut and
 pushed on 2026-09-21 and still holds `ValueCodec`, `ValueType`, `ValueCatalog`, `SourceSeed`,
