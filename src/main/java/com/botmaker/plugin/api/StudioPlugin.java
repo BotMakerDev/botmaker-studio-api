@@ -72,10 +72,9 @@ public interface StudioPlugin {
      * order. A plugin that does not curate returns {@link PaletteCatalog#empty()}, which the host reads as
      * "offer everything the jar contains" rather than "offer nothing".
      *
-     * <p>The class list is the last compile-checked thing in the catalog — javac-checked class literals,
-     * since {@code CatalogBuilder} and {@code MemberRef} were deleted on 2026-08-27 — while the members
-     * themselves are discovered by reflection over {@code @Palette}, {@code @Hidden}, {@code @PaletteLabel}
-     * and {@code @PaletteDefault}.
+     * <p>{@link PaletteCatalog#scan(Class)} builds one from the plugin's own jar: the classes are the ones
+     * carrying {@code @Palette}, and the members are read off {@code @Hidden}, {@code @PaletteLabel} and
+     * {@code @PaletteDefault}.
      *
      * <p><b>It took the project's pinned plugin version until 2026-09-22</b>, so a plugin could curate per
      * version. Nothing did: the toolkit's base class memoised the answer ignoring the argument, and the one

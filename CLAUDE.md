@@ -22,7 +22,8 @@ one artifact (`javafx-controls`, `provided`).
   binary-incompatible and was taken while both implementors are in this repository — see
   `../docs/refactor/25-compatibility.md` §2, and *japicmp* below for the baseline it pins.
 - `com.botmaker.plugin.api.catalog` — `PaletteCatalog`, `Category`, `FacadeEntry`, `MemberEntry`,
-  `MemberId`, and the package-private `SourceOrder`. The *result* type:
+  `MemberId`, and the package-private `SourceOrder` and `PaletteScan`. The *result* type:
+  `PaletteCatalog.scan(anchor)` finds the `@Palette` classes in the plugin's own jar and
   `PaletteCatalog.of(Class<?>...)` builds it by reflection. `CatalogBuilder`, `MemberRef` and the arity
   shapes `M0`–`M5` were deleted on 2026-08-27 — see *The catalog* below.
 - `com.botmaker.plugin.api.value` — **three types since 2026-09-22**: `PluginType<T>` (the class, `fresh()`,
@@ -31,7 +32,7 @@ one artifact (`javafx-controls`, `provided`).
   contract answers so a plugin can own a type without the SDK granting it one. See *The value vocabulary*
   below for what the other seven types were and why none of them is here.
 - `com.botmaker.plugin.api.palette` — **`@Palette`**, **`@Hidden`**, `@PaletteLabel`, `@PaletteDefault`: the
-  marks a plugin puts on its own classes, read **at runtime by `PaletteCatalog.of`**. All four are
+  marks a plugin puts on its own classes, read **at runtime by `PaletteCatalog.scan`/`of`**. All four are
   `RUNTIME` since 2026-08-27, because the plugin itself reflects on them. Their elements are plain `String`s
   on purpose — an annotation element's type must be visible from the module *declaring* the annotation, so a
   contract annotation can never take a plugin-defined enum constant.
@@ -394,8 +395,12 @@ The removals were planned for a `v0.1.6` that turned out to be already cut, so l
 
 ## The catalog, and why it is reflection
 
-`PaletteCatalog.of(Mouse.class, Keyboard.class, …)` — one class literal per facade, and **members are
-discovered, never named**. Every public declared method of a `@Palette` class is offered unless something on
+`PaletteCatalog.scan(MyPlugin.class)` — **classes and members are discovered, never named** (2026-09-23;
+until then a plugin listed its classes as literals in `PaletteCatalog.of(Mouse.class, …)`, and the SDK's
+list had already missed two annotated facades, `Activities` and `Flows`). The scan reads only the jar or
+class directory the anchor came from, searches each class file for the `@Palette` descriptor before loading
+it, and loads without initialising, so it never links an `optional` dependency. The toolkit's
+`AbstractStudioPlugin.buildCatalog()` calls it by default. Every public declared method of a `@Palette` class is offered unless something on
 it says otherwise, grouped by name, lead shape chosen by `@PaletteDefault` or else fewest parameters, labels
 from `@PaletteLabel`, whole name dropped if any overload is `@Hidden`.
 
@@ -403,8 +408,7 @@ from `@PaletteLabel`, whole name dropped if any overload is `@Hidden`.
 `SerializedLambda`, built by `CatalogBuilder` with one arity shape `M0`–`M5` per parameter count. All of that
 was deleted on 2026-08-27 along with `botmaker-plugin-processor`, and the property it was defended on does
 not need saving: *a catalog naming a renamed member does not compile* was answering a problem that only
-exists when something names members. Nothing does now. What stays javac-checked is the **class list**,
-because it is written as class literals.
+exists when something names members. Nothing does now, and since the scan nothing names classes either.
 
 The processor also cost something a plugin author outside this repository could not pay: a pom that omitted
 `<annotationProcessorPaths>` got no catalog, and nothing said why. Reflection needs no build configuration.

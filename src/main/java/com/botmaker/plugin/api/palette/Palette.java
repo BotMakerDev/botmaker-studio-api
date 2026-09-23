@@ -8,16 +8,12 @@ import java.lang.annotation.Target;
 
 /**
  * Declares a class as part of this plugin's palette: {@link
- * com.botmaker.plugin.api.catalog.PaletteCatalog#of(Class[]) PaletteCatalog.of} catalogues it, offering every
- * public method it declares except the ones marked {@link Hidden}.
+ * com.botmaker.plugin.api.catalog.PaletteCatalog#scan(Class) PaletteCatalog.scan} finds it in the plugin's
+ * jar and catalogues it, offering every public method it declares except the ones marked {@link Hidden}.
  *
- * <p>It was called {@code @Facade} until 2026-08-27 and read by an annotation processor at compile time. The
- * processor is gone and the catalog is built by reflection, which is why the retention is now
- * {@code RUNTIME}: the plugin reads this off its own live {@code Class} objects.
- *
- * <p>That change removed the one thing a name could restate: with reflection, members are <em>discovered</em>
- * rather than named, so nothing in a catalog can go stale against a rename. What stays compiler-checked is
- * the class list, because {@code PaletteCatalog.of(Mouse.class, …)} is written with class literals.
+ * <p>The retention is {@code RUNTIME} because the catalog is read off live {@code Class} objects. This
+ * annotation is the whole declaration: no list of classes is written anywhere else, so a class cannot carry
+ * it and be missing from the palette.
  *
  * <h2>Catalogued, and offered or not</h2>
  *
