@@ -15,6 +15,128 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+No source changes since v0.1.7; re-released for updated upstream pins.
+
+**Release this as `0.2.0`.** Everything under *Removed* below came after `v0.1.6`, which was cut and
+pushed on 2026-09-21 and still holds `ValueCodec`, `ValueType`, `ValueCatalog`, `SourceSeed`,
+`PluginSource` and `ParameterGroup`. By this module's own rule above that is a breaking release, and in
+`0.x` the minor digit is the breaking one. `botmaker.japicmp.baseline` is pinned to `v0.2.0` already, so
+the gate reports the missing tag and passes until it exists — the same move `v0.1.6` used.
+
+### Added
+
+- **Recording is the host's, and a plugin annotates** (`com.botmaker.plugin.api.record`). `Gesture` is what
+  the host recognises — clicks, a drag, the wheel, typing, a key, a combo, a pause, and a pause that ends on
+  something nameable. `@Records(Gesture, rank)` on a public static method says that method writes the gesture
+  down; the host finds it on the plugin's `@Palette` classes and fills its parameters by type.
+  `RecordedValue<T>` answers a parameter type only the plugin understands (a picture under the pointer), and
+  `StudioPlugin.recordedValues()` lists them.
+- **`PluginType<T>` and `ComponentType<T>`** (`com.botmaker.plugin.api.value`), replacing four declarations
+  per type with one class whose every method is abstract. `PluginType` is the class a plugin owns, a
+  `fresh()` that returns a real `T` rather than a Java expression as text, and the editor for it;
+  `ComponentType` sits beside it for a type whose Java is a call, and says what goes in the brackets as
+  *values*. `build(components(v))` equals `v` is the law, and `botmaker plugin validate` checks it.
+- **`StudioPlugin.types()`**, the one surface that replaces `valueTypes()` and `sourceSeeds()`.
+- **`StudioPlugin.componentTypes()`**, for a `ComponentType` that is not also a `PluginType` — the parts of
+  a value, never picked on their own. The SDK's `Flow` is written as calls to `Flow.activity`, `Flow.edge`,
+  `Flow.preset` and `Flow.limits` inside `Flow.of`, and those four declarations had no way to reach the
+  host, so a flow could not be decoded at all.
+- **`ValueContext.value(Class<T>)` and `set(Object)`** — a value crosses as a value. Every plugin used to
+  parse the Java source itself, which produced three numeric-literal strippers, two argument splitters and
+  one string unescaper across two modules, none of them agreeing.
+- **`PluginType.freshCall()`**, `default null`, for a type whose fresh form is a *call the bot
+  re-evaluates* rather than a constant. The SDK's `MatchResult` starts as `Vision.lastMatch()` — the last
+  match the bot actually found. Freezing it into a value changes what the declaration means, and calling
+  `Vision.lastMatch()` to obtain one would run the vision stack inside a headless validator. It answers a
+  `java.lang.reflect.Method` — public, static, no parameters, returning `type()` — and the host writes the
+  call and its import, so no Java text crosses; `botmaker plugin validate` checks the shape.
+  It is the one thing the deleted `SourceSeed` said that `fresh()` cannot, and answering it is what makes a
+  type declarable without making it editable — `editor(ctx)` may answer `null`, and the host then shows the
+  expression read-only exactly as it does for a type no plugin declares.
+
+### Changed
+
+- **An empty `StudioPlugin.catalog()` means "the host discovers the palette"**: the host catalogues every
+  `@Palette` class in the plugin's own jar. A plugin no longer lists its palette classes; overriding
+  `catalog()` remains the way to build one by hand.
+- **`SlotRun` crosses values.** `elements()` answers `SlotRun.Element(value, source)` — the value the host
+  read, `null` when it could not, and the source for display — `allowed()` answers values, and
+  `replace(List<?>)` takes values, or an `Element` to keep as written. Every element was Java text the plugin
+  split and wrote itself.
+- **`SlotEditor.forType(Class, …)` and `SlotEditor.forCall(Class, int, …, String…)`**, which is the
+  toolkit's `CallSites` moved onto the contract: *which slot an editor claims* is contract vocabulary, and
+  the helper was predicate construction with no UI in it.
+- **`@Param` (`…api.params`) and `@Managed` (`…api.managed`)**, moved from `botmaker-plugin-basics`. They
+  sit on a **bot's** own declarations and were kept out only because this module was `provided` on the SDK
+  and so absent from a bot's classpath; that scope is `compile` now. `PluginLoader` stays parent-first for
+  `com.botmaker.plugin.api.**`, so a plugin still links against the host's copy.
+
+### Changed
+
+- **`ComponentType.factory()` is an `Executable`**: a constructor (the default, found from
+  `componentTypes()`), a public static method, or an instance method on part 0 — a chain such as
+  `Precision.TIGHT.minArea(400)`, which the host reads and never writes. `factoryOwner()` is removed; it is
+  the executable's declaring class. The last string naming Java in the value vocabulary is gone, so a
+  renamed factory fails where the plugin builds its declaration rather than in a bot's file.
+- **`@Param`'s `min` and `max` are `double`**, defaulting to negative and positive infinity. They were
+  strings so a duration bound could be written `"30s"` and a codec would parse it — and no plugin parses
+  anything now. `ParameterRow.bounds()` becomes `min()`/`max()`/`isBounded()` for the same reason.
+- **`ParameterRow` carries the type as written** (`typeName()`), not a `ValueForm`. A form is how the host
+  walks `Map<String, List<Point>>`; nothing outside the host ever walked one. A row's consumers use the
+  spelling.
+- **`StudioPlugin.catalog(String pinnedVersion)` → `catalog()`.** No implementation ever read the argument:
+  the toolkit's base class memoised the answer ignoring it, and the one plugin in existence recorded its
+  per-version curation ending on 2026-08-26.
+
+### Removed
+
+- **`ValueContext.setSource(String, Class<?>...)`, `SlotContext.enclosingCall()` and
+  `SlotContext.replaceEnclosingCall(String, String...)`** — a plugin writing Java text, and reading the call
+  around a slot as text to split. A value is written with `set(Object)`. The one user of the pair was the
+  SDK's duration picker turning `Wait.time(x)` into `Wait.between(a, b)`, and that toggle went with them.
+  What still crosses as text is `ValueContext.source()`, for showing what the host could not read, and
+  nothing else: a fresh call is a `Method` (`PluginType.freshCall()`).
+- **`ActionContext.insertAtCursor(String...)`** — Java as text from a plugin's recorder. Its one caller was
+  the SDK's recorder, and recording is the host's now: the host writes the call from a `@Records` method.
+- **`ValueCodec`, `ValueType`, `ValueCatalog`, `ValueForm`, `ValueContainer`, `HostContainers`, `Range`,
+  `SourceSeed`, `StudioPlugin.valueTypes()`, `StudioPlugin.sourceSeeds()` and `ValueContext.form()`** — the
+  whole codec and grammar layer. The codec half was dead: storage stopped being text when a parameter
+  became a `@Param` field and a plugin's values became `@Managed` methods, so `parse`, `store` and
+  `defaultWire` had no caller outside their own plumbing. What was still wired was wrong — a leaf
+  round-tripped Java through wire text through `literal(parse(java))`, and a `java.awt.Color` parameter
+  opened and closed with no edit came back rewritten. The grammar was never a plugin's to read and is
+  `botmaker-studio`'s `com.botmaker.studio.plugin.grammar` now.
+
+- **`StudioPlugin.pluginSources()` and `PluginSource`**, one day after they landed. A plugin handed the host
+  a class's whole text and the host copied it into the project on every bind. What they were *for* survives
+  untouched — a bot holds a plugin's values as `@Managed` methods in its own source, and the host rewrites
+  nothing but the expression one returns — but a project gets that file from the template it was created
+  from, and the skeleton the SDK was shipping shrank to two `@Managed` methods once
+  `Bot.run(anchor, goHome, Sdk.class)` made a hand-written `install()` unnecessary. Two methods is not worth
+  a contract surface, a copy on every `PluginHost.bind` and a `${package}` rewriter.
+  **A plugin that wants to add its file to an existing project writes it from its own window**; nothing in
+  the contract is needed for that, and nothing here replaces the removed pair.
+  **A removal after `v0.1.6`**, which was cut and pushed on 2026-09-21 and still contains `PluginSource` —
+  see the note on japicmp at the top of this section.
+
+- **The whole parameter-data surface: `ParameterGroup`, `ParameterEdit`, `StudioPlugin.parameters(String)`,
+  `parameterRows(String)` and `parameterEdited(ParameterEdit)`.** A plugin declared a section and the host
+  asked it for that section's rows. **Nothing ever declared one** — the SDK's group was the only
+  implementation in existence and it declared no rows, and `botmaker-plugin-basics`' `ParameterStore.declare`
+  had no caller anywhere — so `parameterRows` answered out of a pre-2026-09-17 project's JSON and empty for
+  every project created since. A second reader of a format nothing writes is the thing the umbrella
+  `CLAUDE.md` forbids by name.
+  What replaced it had already replaced it: a parameter is a `@Param` static field in the bot's own Java
+  (2026-09-17), read and written off the syntax tree. **A plugin that wants a row of its own puts a `@Param`
+  field in the file it ships**, and the host's ordinary walk of the bot's sources finds it — so the surface
+  is not replaced by a smaller one, it is not needed.
+  **`ParameterRow` stays**: it is still the shape one row crosses in, and the window still draws its value
+  with the slot editor the canvas uses. It no longer refers to a group, and its category is documented as the
+  free text it always was.
+  **A removal after `v0.1.6`**, like the one above.
+
 ## [0.1.7] — 2026-09-23
 
 **Release this as `0.2.0`.** Everything under *Removed* below came after `v0.1.6`, which was cut and
