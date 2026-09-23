@@ -489,8 +489,18 @@ commit, which `Japicmp.bump` does automatically and never moves backwards.
 move could ship in it (`ignoreMissingOldVersion` let the absent baseline pass). **`v0.1.6` was cut and
 pushed the same day.** Everything removed since — `PluginSource`, the parameter-data surface and the whole
 value vocabulary (2026-09-21/22) — is therefore a break against a published baseline, and the next
-`mvn verify` that can resolve it refuses the build. By the rule above that release is a major and edits
-this block; which version it is has not been decided (2026-09-23).
+`mvn verify` that could resolve it would refuse the build. **Decided 2026-09-23: that release is
+`0.2.0`**, the breaking digit in `0.x`, and the baseline is pinned to `v0.2.0` now — absent, so it reports
+and passes exactly as `v0.1.6` did, and `Japicmp.bump` never moves it back. **This pins the release: it
+must be `--studio-api 0.2.0`.**
+
+**Until 2026-09-23 this gate compared nothing.** The `api-gate` profile named no repository, so the
+baseline was only looked for on Maven Central, where no tag of this module exists, and
+`ignoreMissingOldVersion` passed every build. The profile carries JitPack now. Checked both ways:
+`-Dbotmaker.japicmp.baseline=v0.1.6` downloads that jar and fails, listing every removal above,
+subpackages included; the default `v0.2.0` reports the missing tag and passes. **When a baseline
+"passes", look at the first line of `target/japicmp/japicmp.diff`**: `against` followed by nothing
+means nothing was compared.
 
 ## Style
 

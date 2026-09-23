@@ -17,11 +17,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
-**Not releasable as a minor, and the version is undecided.** Everything under *Removed* below came after
-`v0.1.6`, which was cut and pushed on 2026-09-21 and is `botmaker.japicmp.baseline`. That tag still holds
-`ValueCodec`, `ValueType`, `ValueCatalog`, `SourceSeed`, `PluginSource` and `ParameterGroup`, so
-`mvn verify` refuses this build the moment it can resolve the baseline. By this module's own rule above
-the release that carries these removals is a major, and it edits the baseline in the same commit.
+**Release this as `0.2.0`.** Everything under *Removed* below came after `v0.1.6`, which was cut and
+pushed on 2026-09-21 and still holds `ValueCodec`, `ValueType`, `ValueCatalog`, `SourceSeed`,
+`PluginSource` and `ParameterGroup`. By this module's own rule above that is a breaking release, and in
+`0.x` the minor digit is the breaking one. `botmaker.japicmp.baseline` is pinned to `v0.2.0` already, so
+the gate reports the missing tag and passes until it exists — the same move `v0.1.6` used.
 
 ### Added
 
