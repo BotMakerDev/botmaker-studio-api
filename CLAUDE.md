@@ -123,7 +123,8 @@ call around a slot as text and let it write a new one; their one user, the durat
 amount" toggle turning `Wait.time(x)` into `Wait.between(a, b)`, went with them. `ValueContext.setSource`
 went the same day. A slot tells an editor the **names** of its call site and nothing else, and a value is
 written with `set(Object)`. What still crosses as text is `ValueContext.source()`, to *show* what the host
-could not read, and `PluginType.freshSource()`, a call the bot re-evaluates.
+could not read. A fresh value the bot re-evaluates is `PluginType.freshCall()`, a `Method` the host writes
+as `Owner.method()` with its import (`String freshSource()` until 2026-09-23).
 
 **`SlotContext.siblingRun()` and `SlotRun`** (2026-08-31) — several sibling slots edited as one. A
 `SlotContext` is one argument of one call, which is right for almost everything and wrong for a value the

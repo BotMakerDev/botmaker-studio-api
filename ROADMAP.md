@@ -18,8 +18,9 @@ grammar it reads a slot with, a bot's `@Managed` constant included.
   palette. The Precision editor's preview lost the colour it read out of the call's `new Color(…)` argument;
   it starts with none until one is sampled.
 - **What still crosses as text:** `ValueContext.source()`, to show what the host could not read, and
-  `PluginType.freshSource()`, the four SDK vision results whose fresh value is a call the bot re-evaluates.
-  The capture source and the picture group stopped needing it: each is a value the host reads now.
+  nothing else. `PluginType.freshSource()` became `freshCall()` the same day: the four SDK vision results
+  hand over the `Method` (`Vision.lastMatch`) and the host writes the call with its import. The capture
+  source and the picture group stopped needing either: each is a value the host reads now.
 
 ### 2026-09-23 — recording is the host's; a plugin annotates (`api.record`)
 

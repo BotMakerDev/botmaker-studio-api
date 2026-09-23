@@ -44,11 +44,12 @@ the gate reports the missing tag and passes until it exists — the same move `v
 - **`ValueContext.value(Class<T>)` and `set(Object)`** — a value crosses as a value. Every plugin used to
   parse the Java source itself, which produced three numeric-literal strippers, two argument splitters and
   one string unescaper across two modules, none of them agreeing.
-- **`PluginType.freshSource()`**, `default ""`, for a type whose fresh form is a *call the bot
+- **`PluginType.freshCall()`**, `default null`, for a type whose fresh form is a *call the bot
   re-evaluates* rather than a constant. The SDK's `MatchResult` starts as `Vision.lastMatch()` — the last
-  match the bot actually found — and its `CaptureSource` as `Source.current()`, which tracks whatever the
-  project is pointed at when the bot runs. Freezing either into a value changes what the declaration means,
-  and calling `Vision.lastMatch()` to obtain one would run the vision stack inside a headless validator.
+  match the bot actually found. Freezing it into a value changes what the declaration means, and calling
+  `Vision.lastMatch()` to obtain one would run the vision stack inside a headless validator. It answers a
+  `java.lang.reflect.Method` — public, static, no parameters, returning `type()` — and the host writes the
+  call and its import, so no Java text crosses; `botmaker plugin validate` checks the shape.
   It is the one thing the deleted `SourceSeed` said that `fresh()` cannot, and answering it is what makes a
   type declarable without making it editable — `editor(ctx)` may answer `null`, and the host then shows the
   expression read-only exactly as it does for a type no plugin declares.
@@ -89,7 +90,7 @@ the gate reports the missing tag and passes until it exists — the same move `v
   around a slot as text to split. A value is written with `set(Object)`. The one user of the pair was the
   SDK's duration picker turning `Wait.time(x)` into `Wait.between(a, b)`, and that toggle went with them.
   What still crosses as text is `ValueContext.source()`, for showing what the host could not read, and
-  `PluginType.freshSource()`.
+  nothing else: a fresh call is a `Method` (`PluginType.freshCall()`).
 - **`ActionContext.insertAtCursor(String...)`** — Java as text from a plugin's recorder. Its one caller was
   the SDK's recorder, and recording is the host's now: the host writes the call from a `@Records` method.
 - **`ValueCodec`, `ValueType`, `ValueCatalog`, `ValueForm`, `ValueContainer`, `HostContainers`, `Range`,
