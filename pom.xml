@@ -88,13 +88,9 @@
         </dependency>
     </dependencies>
 
-    <!-- There is deliberately no Jackson here, and adding one is the thing to refuse.
-         The authoring records in com.botmaker.plugin.api.authoring describe a wire form; they do not parse
-         it. A JSON annotation on one of them needs jackson-annotations on this pom, and this pom is
-         resolved by every plugin that ever compiles against the contract — so the library would be imposed
-         on all of them to serve one reader. Whoever owns a file supplies its parser: the SDK binds these
-         records in com.botmaker.sdk.internal.authoring.AuthoringMixins, from outside, with mix-ins.
-         Nine days in August 2026 aside, the rule has held since the vocabulary opened. -->
+    <!-- There is deliberately no Jackson here, and adding one is the thing to refuse: this pom is resolved
+         by every plugin that ever compiles against the contract, so a JSON library here would be imposed on
+         all of them. Whoever owns a file supplies its parser. -->
 
 
     <build>
