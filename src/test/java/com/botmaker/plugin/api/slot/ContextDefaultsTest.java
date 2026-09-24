@@ -3,6 +3,7 @@ package com.botmaker.plugin.api.slot;
 import com.botmaker.plugin.api.StudioServices;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Executable;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,10 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ContextDefaultsTest {
 
-    private static final TypeRef STRING = new TypeRef() {
-        @Override public String simpleName() { return "String"; }
-        @Override public String qualifiedName() { return "java.lang.String"; }
-    };
+    private static final TypeRef STRING = TypeRef.of(String.class);
 
     /** A Parameters row, or a {@code @Managed} value: a value with no call site anywhere. */
     private static ValueContext row() {
@@ -46,8 +44,7 @@ class ContextDefaultsTest {
             @Override public void set(Object value) {}
             @Override public String source() { return "\"570\""; }
             @Override public StudioServices services() { return null; }
-            @Override public Optional<String> enclosingClassName() { return Optional.of("Game"); }
-            @Override public Optional<String> enclosingMethodName() { return Optional.of("launchSteam"); }
+            @Override public Optional<Executable> enclosingExecutable() { return Optional.empty(); }
             @Override public int argIndex() { return 0; }
         };
     }

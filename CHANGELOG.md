@@ -15,6 +15,33 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+**Release this as `0.3.0`.** Everything below breaks a plugin compiled against `0.2.0`, which in `0.x` is
+the minor digit. `botmaker.japicmp.baseline` is pinned to `v0.3.0` already, so the gate reports the
+missing tag and passes until it exists — the move `v0.1.6` and `v0.2.0` used. It forces toolkit, host, cli,
+basics and the SDK (and so Studio and the dashboard).
+
+### Changed
+
+- **`TypeRef` answers questions about a class; it hands over no name.** `is(Class)` and the new
+  `isSubtypeOf(Class)` compare binary names, `isResolved()` stays, and `displayName()` is for a label only.
+  `simpleName()`, `qualifiedName()` and `isNamed(String)` are deleted: every editor that used them accepted
+  `"Duration"` or `"java.time.Duration"`, so a bot's own class called `Duration` was claimed by the SDK's
+  wait editor. An unresolved type answers `false` to both questions rather than being guessed from its
+  spelling. `TypeRef.of(Class)` and `TypeRef.unresolved(String)` build one — for a host that holds the
+  class, and for a test.
+- **`SlotContext.enclosingExecutable()` replaces `enclosingClassName()` and `enclosingMethodName()`.** The
+  host resolves the call's binding and loads the declaration on the plugin's classloader, so an editor sees
+  the exact overload — declaring class, parameters, varargs — instead of the name the source wrote before
+  the dot. Empty for a call that did not resolve, or one on a class the plugin cannot load (the bot's own).
+- **`SlotEditor.forCall(Predicate<Executable>, index, create)` and `onCall(ctx, Predicate<Executable>,
+  index)`** replace the forms that took an owner class and method names as strings and matched the class by
+  simple name. `SlotEditor.calls(Class, String...)` builds the predicate and **throws when the class
+  declares no public method of a given name**, so a rename fails the plugin's tests instead of hiding an
+  editor; `SlotEditor.declaredOn(Class)` is every method a class declares, for a predicate that filters
+  names itself.
+
 ## [0.2.0] — 2026-09-23
 
 No source changes since v0.1.7; re-released for updated upstream pins.

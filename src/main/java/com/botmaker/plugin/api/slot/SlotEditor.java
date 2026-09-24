@@ -2,6 +2,11 @@ package com.botmaker.plugin.api.slot;
 
 import javafx.scene.Node;
 
+import java.lang.reflect.Executable;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -28,7 +33,7 @@ import java.util.function.Predicate;
  * {@link ValueContext#slot()} and declines when the answer is empty.
  *
  * <p>{@link #matches(ValueContext)} is called for every value the user opens, so it must be cheap: read the
- * type, maybe read the enclosing method name, decide. Do the work in {@link #create(ValueContext)}.
+ * type, maybe ask about the enclosing call, decide. Do the work in {@link #create(ValueContext)}.
  */
 public interface SlotEditor {
 
@@ -92,67 +97,74 @@ public interface SlotEditor {
     }
 
     /**
-     * An editor for argument {@code index} of any of {@code methods} called on {@code owner}.
+     * An editor for argument {@code index} of any call {@code call} accepts — {@code index} {@code -1} for
+     * any argument.
      *
      * <p>For values the type cannot tell apart. A Steam app id, a program path, a command-line flag and a
      * window title are all {@code String}, and only the call around a slot says which of them it holds:
      *
      * <pre>{@code
-     * SlotEditor.forCall(Game.class, 0, GameEditors::steamAppId, "launchSteam", "launchSteamIfNotRunning")
+     * SlotEditor.forCall(SlotEditor.calls(Game.class, "launchSteam", "launchSteamIfNotRunning"), 0,
+     *         GameEditors::steamAppId)
      * }</pre>
      *
      * <p><b>It declines when there is no call</b>, which is a row of the Parameters window and every
-     * {@code @Managed} value — neither has one by construction. Declining is the honest answer, and it is
-     * why an editor chosen this way is <b>absent</b> there rather than misfiring. A value that must be
-     * editable in both places needs a type-matched editor too, or needs to be a type of its own.
+     * {@code @Managed} value — neither has one by construction — and when the host could not resolve the
+     * call. Declining is the honest answer, and it is why an editor chosen this way is <b>absent</b> there
+     * rather than misfiring. A value that must be editable in both places needs a type-matched editor too,
+     * or needs to be a type of its own.
      *
-     * <p>The class is matched by simple name, or by a qualified name ending in it: the host resolves the
-     * call out of the bot's own classpath and may hand back either spelling, and an older version of the
-     * plugin's library may have had the class in another package. The cost is stated rather than hidden — a
-     * slot on somebody else's {@code Game} matches too, and a plugin for which that is a real risk should
-     * give the value a type instead.
-     *
-     * <p>This replaced the toolkit's {@code CallSites} on 2026-09-22. <em>Which slot an editor claims</em>
-     * is contract vocabulary, and the helper was 116 lines of predicate construction with no UI in it; it
-     * belongs beside {@link #of}, which was already here for the same reason.
+     * <p>The call is the host's resolved {@link SlotContext#enclosingExecutable()}, so a slot on somebody
+     * else's {@code Game} is not claimed and a call on a local variable of type {@code Game} is. Until 0.3.0
+     * this took the class and the method names as text and matched the class by simple name.
      */
-    static SlotEditor forCall(Class<?> owner, int index, Function<ValueContext, Node> create,
-                              String... methods) {
-        String[] names = methods == null ? new String[0] : methods.clone();
-        return of(ctx -> onCall(ctx, owner, index, name -> {
-            for (String method : names) {
-                if (method != null && method.equals(name)) return true;
-            }
-            return false;
-        }), create);
+    static SlotEditor forCall(Predicate<Executable> call, int index, Function<ValueContext, Node> create) {
+        return of(ctx -> onCall(ctx, call, index), create);
     }
 
     /**
-     * {@link #forCall} where the set of method names is already written down somewhere — a table the editor
-     * reads to know what to draw.
+     * Whether {@code ctx} is argument {@code index} of a call {@code call} accepts — {@code index} {@code -1}
+     * for any argument.
      *
-     * <p>Asking that table rather than repeating its keys is what stops a predicate claiming a call the
-     * table has no entry for, which is an editor that does not know what to do and therefore draws nothing.
+     * <p>Public because a plugin whose predicate needs a shape {@link #forCall} does not cover — an index that
+     * depends on the overload — should ask the question the same way it does.
      */
-    static SlotEditor forCall(Class<?> owner, int index, Predicate<String> methods,
-                              Function<ValueContext, Node> create) {
-        return of(ctx -> onCall(ctx, owner, index, methods), create);
-    }
-
-    /**
-     * Whether {@code ctx} is argument {@code index} of a call on {@code owner} whose name {@code methods}
-     * accepts — {@code index} {@code -1} for any argument.
-     *
-     * <p>Public because a plugin whose predicate needs a shape the factories above do not cover should ask
-     * the question the same way they do, rather than re-deriving the two class spellings.
-     */
-    static boolean onCall(ValueContext ctx, Class<?> owner, int index, Predicate<String> methods) {
+    static boolean onCall(ValueContext ctx, Predicate<Executable> call, int index) {
         SlotContext slot = ctx == null ? null : ctx.slot().orElse(null);
-        if (slot == null || (index >= 0 && slot.argIndex() != index)) return false;
-        String enclosing = slot.enclosingClassName().orElse(null);
-        String simple = owner.getSimpleName();
-        if (enclosing == null || !(enclosing.equals(simple) || enclosing.endsWith("." + simple))) return false;
-        return methods != null && methods.test(slot.enclosingMethodName().orElse(""));
+        if (slot == null || call == null || (index >= 0 && slot.argIndex() != index)) return false;
+        return slot.enclosingExecutable().filter(call).isPresent();
+    }
+
+    /**
+     * Every method and constructor {@code owner} itself declares — compared by the declaring class's binary
+     * name, since the host loads the call on the plugin's loader and a {@code Class} is never compared by
+     * identity across one.
+     */
+    static Predicate<Executable> declaredOn(Class<?> owner) {
+        String name = owner.getName();
+        return executable -> executable != null && executable.getDeclaringClass().getName().equals(name);
+    }
+
+    /**
+     * The public methods of {@code owner} named {@code methods}, every overload of each.
+     *
+     * <p><b>Checked when it is built</b>: a name {@code owner} declares no public method by throws
+     * {@link IllegalArgumentException} at once, so a typo or a rename fails the plugin's own tests — and
+     * {@code botmaker plugin validate} — instead of leaving an editor that silently never appears.
+     */
+    static Predicate<Executable> calls(Class<?> owner, String... methods) {
+        Set<String> names = new HashSet<>();
+        for (String method : methods == null ? new String[0] : methods) {
+            boolean declared = false;
+            for (Method each : owner.getDeclaredMethods()) {
+                if (each.getName().equals(method) && Modifier.isPublic(each.getModifiers())) declared = true;
+            }
+            if (!declared) {
+                throw new IllegalArgumentException(owner.getName() + " declares no public method " + method);
+            }
+            names.add(method);
+        }
+        return declaredOn(owner).and(executable -> executable instanceof Method && names.contains(executable.getName()));
     }
 
     /**

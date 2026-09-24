@@ -58,8 +58,11 @@
              surface, the whole value vocabulary, 2026-09-21/22). So the same move again, decided 2026-09-23:
              v0.2.0, the release that carries them — in 0.x the minor digit is the breaking one — and a tag
              that does not exist yet, for exactly the reason above. Japicmp.bump will not move it back to
-             v0.1.6. -->
-        <botmaker.japicmp.baseline>v0.2.0</botmaker.japicmp.baseline>
+             v0.1.6.
+             v0.3.0 the same way on 2026-09-24: TypeRef lost its three name members and SlotContext its two
+             enclosing names for an Executable, and SlotEditor.forCall takes a Predicate<Executable>. Pinned
+             ahead of the tag, which does not exist yet. -->
+        <botmaker.japicmp.baseline>v0.3.0</botmaker.japicmp.baseline>
         <botmaker.japicmp.skip>false</botmaker.japicmp.skip>
     </properties>
 

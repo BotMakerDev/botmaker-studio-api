@@ -1,6 +1,6 @@
 package com.botmaker.plugin.api.slot;
 
-
+import java.lang.reflect.Executable;
 import java.util.Optional;
 
 /**
@@ -8,7 +8,7 @@ import java.util.Optional;
  *
  * <p>A plugin never sees a syntax tree or writes Java: the value crosses as a value
  * ({@link ValueContext#value}, {@link ValueContext#set}), and what this interface adds is only the
- * <em>names</em> of the call site — which class, which method, which argument.
+ * call site — which method, resolved, and which argument of it.
  *
  * <p><b>It is a {@link ValueContext} with a call site.</b> The supertype is the half that is true of every
  * value the host edits — a type, the current value, a way to write it back — and this interface adds the
@@ -19,18 +19,22 @@ import java.util.Optional;
 public interface SlotContext extends ValueContext {
 
     /**
-     * The simple name of the type declaring the called method — {@code "Game"} — or empty when the host
-     * could not resolve the call.
+     * The method or constructor this slot is an argument of — {@code Game.launchSteam(String)} — resolved by
+     * the host from the call's binding and loaded on the plugin's own classloader; empty when the call did
+     * not resolve, or when the called class is not on the plugin's classpath (a method of the bot itself).
      *
      * <p>Present because a few editors are chosen by <em>where</em> a value is used rather than by its type:
      * a Steam app id and a window title are both {@code String}. Unresolved is an ordinary state — a bot
      * that does not currently compile still opens in the editor — so an editor keyed on this must answer
-     * "not mine" when it is empty rather than assume a name is always there.
+     * "not mine" when it is empty rather than assume a call is always there.
+     *
+     * <p><b>An {@code Executable}, not two names</b> (since 0.3.0). {@code enclosingClassName()} and
+     * {@code enclosingMethodName()} answered what the source wrote before the dot, so {@code game.launch(…)}
+     * on a local named {@code game} was not a call on {@code Game}, and any class called {@code Game} was.
+     * The resolved declaration is exact: its declaring class, its overload, whether it is varargs.
+     * {@link SlotEditor#calls} is the ordinary way to ask about it.
      */
-    Optional<String> enclosingClassName();
-
-    /** The name of the called method — {@code "launchSteam"} — or empty when it is unresolved. */
-    Optional<String> enclosingMethodName();
+    Optional<Executable> enclosingExecutable();
 
     /** The zero-based position of this slot in the call's argument list, or {@code -1} if it is not an argument. */
     int argIndex();

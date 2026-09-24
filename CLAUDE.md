@@ -320,8 +320,12 @@ it must be allowed to move slower.
 
 **2. Nothing from a plugin may cross as a `Class<?>` the host is expected to load.** The host resolves types
 out of the *bot's* classpath, not its own, so a type may be a different version of itself or absent
-entirely. `TypeRef` crosses as names and compares by fully-qualified name; that is the comparison that is
-actually true across two classloaders. (Inside a catalog a `Class<?>` *is* used — but the plugin holds it,
+entirely. `TypeRef` answers `is(Class)`/`isSubtypeOf(Class)` by binary name and hands over no name at all
+since 0.3.0 (`simpleName`/`qualifiedName`/`isNamed` were deleted: every caller matched a spelling, and a
+bot's own `Duration` was claimed as `java.time.Duration`); that is the comparison that is actually true
+across two classloaders. A slot's call is `SlotContext.enclosingExecutable()`, which the host loads on the
+**plugin's** loader — so it is a class the plugin could have named, and `SlotEditor.calls` compares its
+declaring class by name. (Inside a catalog a `Class<?>` *is* used — but the plugin holds it,
 and it is the plugin's own class.)
 
 **3. No syntax tree, in either direction.** `SlotContext.currentSource()` is a `String` and
