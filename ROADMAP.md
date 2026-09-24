@@ -5,6 +5,25 @@ reasoning.
 
 ## Done
 
+### 2026-09-24 — a type is asked about by class, a call is an `Executable` (0.3.0)
+
+`TypeRef` is `is(Class)`, `isSubtypeOf(Class)`, `isResolved()` and `displayName()`, with `TypeRef.of(Class)`
+and `TypeRef.unresolved(String)`; `simpleName()`, `qualifiedName()` and `isNamed(String)` are deleted.
+`SlotContext.enclosingExecutable()` replaces `enclosingClassName()`/`enclosingMethodName()`, and
+`SlotEditor.forCall`/`onCall` take a `Predicate<Executable>` built by `SlotEditor.calls(Class, String...)`
+(checked when built) or `declaredOn(Class)`.
+
+- **Why.** Every caller of the name members matched a spelling — the SDK accepted `"Duration"` or
+  `"java.time.Duration"` — so a bot's own `Duration` was claimed by the wait editor, and `onCall` matched
+  `Game` against any class of that simple name, but not `game.launch(…)` on a variable.
+- **Where the class comes from.** The host loads the call on the plugin's own loader
+  (`PluginLoader.classLoader()`), so the `Executable`'s declaring class is one the plugin could name. It is
+  still compared by binary name, never by identity.
+- **What it cost.** A call the host could not resolve has no `Executable`, so a call-site editor is absent
+  there; before, a name still matched. Unresolved is now honest rather than guessed.
+- **Release.** `0.3.0`, forcing toolkit, host, cli, basics and sdk; japicmp baseline pinned to `v0.3.0`
+  ahead of the tag. Full record: `docs/refactor/36-bound-values.md`.
+
 ### 2026-09-23 — no member carries Java for a plugin to parse or write
 
 `ValueContext.setSource`, `SlotContext.enclosingCall` and `SlotContext.replaceEnclosingCall` are deleted, and
