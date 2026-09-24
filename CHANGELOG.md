@@ -42,6 +42,16 @@ basics and the SDK (and so Studio and the dashboard).
   editor; `SlotEditor.declaredOn(Class)` is every method a class declares, for a predicate that filters
   names itself.
 
+### Added
+
+- **A host creates a plugin's missing `@Managed` holder, once.** `PluginValues.create(id)` writes
+  `plugins/<last id segment>/<holder>.java` when the project has no value called `id`, and never overwrites
+  a file. It answers empty on success, or the sentence to show. `ManagedValue` grows `holder` (the class's
+  simple name), `valueType` (what the method returns; null for a type-level open set, created as an empty
+  annotated class) and `initial` (what the method first returns; null for the type's fresh value). The two-
+  and four-argument constructors keep a plugin that declares none of it compiling; the default `create`
+  refuses.
+
 ## [0.2.0] — 2026-09-23
 
 No source changes since v0.1.7; re-released for updated upstream pins.

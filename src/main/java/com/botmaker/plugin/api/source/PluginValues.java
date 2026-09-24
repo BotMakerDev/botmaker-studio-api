@@ -58,6 +58,24 @@ public interface PluginValues {
     Optional<ValueContext> open(String id);
 
     /**
+     * Writes the class that holds {@code id} when the project has none, and answers why not when it did not.
+     *
+     * <p>The host creates {@code src/main/java/<bot package>/plugins/<last id segment>/<holder>.java} once —
+     * every method-shaped value of the declaring plugin with the same {@link ManagedValue#holder}, each
+     * returning its type's fresh value — and never overwrites a file that exists. From then on it is the
+     * user's, as a file a template shipped is. It does not edit {@code main}: the status line says what to add.
+     *
+     * <p>Only the host can: it alone knows the bot's package and the grammar a fresh value is written in.
+     * Empty when {@code id} is now there to {@link #open}, including when it already was.
+     *
+     * @return empty on success, else the sentence to show — no plugin declares {@code id} with a holder, no
+     *         project is open, or the file could not be written
+     */
+    default Optional<String> create(String id) {
+        return Optional.of("This host keeps no source tree.");
+    }
+
+    /**
      * A host that keeps no source tree: no ids, nothing to open.
      *
      * <p>Total rather than absent, as {@code Sources.NONE} and {@code Runs.NONE} are, so the

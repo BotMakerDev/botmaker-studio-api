@@ -5,6 +5,20 @@ reasoning.
 
 ## Done
 
+### 2026-09-25 — the host creates a missing `@Managed` holder (0.3.0)
+
+`PluginValues.create(String id)` (default: refused) and `ManagedValue(id, reason, holder, valueType,
+initial)`, with the old two-argument constructor kept and a four-argument one for "start as the fresh value".
+
+- **Why a capability.** Since `pluginSources()` went (2026-09-21) nothing puts `Sdk.java` into a project that
+  was not made from the template, and the flow window could only say so. Writing it needs the bot's package
+  and the grammar a value is written in — both the host's alone, the test for a new `StudioServices`
+  member.
+- **Why `initial`.** A type declared only by its parts (`Flow`, a `ComponentType`) has no fresh value, and
+  the value to start from is the plugin's to say. It crosses as a value, as every value does; the host writes
+  it through its own grammar.
+- **What the host does not do.** Overwrite a file, merge into one, or edit `main`.
+
 ### 2026-09-24 — a type is asked about by class, a call is an `Executable` (0.3.0)
 
 `TypeRef` is `is(Class)`, `isSubtypeOf(Class)`, `isResolved()` and `displayName()`, with `TypeRef.of(Class)`
