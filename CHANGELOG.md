@@ -15,6 +15,14 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Changed
+
+- **`editor` moved to `EditableType<T>`.** A type its owner draws implements `EditableType` (`editor`
+  abstract, never `null`); a plain `PluginType` says its owner does not draw it — another plugin does, or the
+  host's fallback. Breaking: every plugin recompiles. `botmaker plugin validate` fails a type nobody draws.
+
 ## [0.2.2] — 2026-09-27
 
 ### Added

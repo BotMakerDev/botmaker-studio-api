@@ -5,6 +5,19 @@ reasoning.
 
 ## Done
 
+### 2026-09-27 — `EditableType`: drawing a type is a declared kind (picker phase 6f)
+
+`editor(ValueContext)` left `PluginType` for `EditableType<T> extends PluginType<T>`, where it is abstract and
+never answers `null`.
+
+- **Why.** The maintainer asked that `botmaker plugin validate` refuse a type nobody draws. A `null` editor
+  could only be seen by calling it, which needs a running JavaFX toolkit the CLI and the registry CI do not
+  have. An interface is read from the class alone.
+- **What a plain `PluginType` now means.** Its owner does not draw it: another plugin's `SlotEditor.forType`
+  does, or the host's fallback. That is the SDK's six (`ImageTemplateGroup`, `CaptureSource`, the four vision
+  results) until picker phases 6d/6e.
+- **Breaking**, like every removal since `v0.2.0`: the next contract release is `0.3.0`.
+
 ### 2026-09-26 — `SlotContext.argumentValue`, a neighbour argument as a value (picker phase 6a)
 
 `default <T> Optional<T> argumentValue(int index, Class<T> type)`, empty by default.

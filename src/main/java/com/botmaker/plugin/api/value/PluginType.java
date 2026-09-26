@@ -4,7 +4,9 @@ import com.botmaker.plugin.api.slot.ValueContext;
 import javafx.scene.Node;
 
 /**
- * A type this plugin owns: what it is, what a fresh one is, and how a person edits one.
+ * A type this plugin owns: what it is and what a fresh one is. How a person edits one is
+ * {@link EditableType}'s, since 2026-09-27: a type its owner draws implements that too, and a plain
+ * {@code PluginType} says in its class that somebody else draws it.
  *
  * <p><b>One declaration per type, and every method abstract.</b> That is the whole reason this interface
  * exists. A type used to need four separate declarations that nothing checked against each other — a
@@ -74,20 +76,6 @@ public interface PluginType<T> {
     default java.lang.reflect.Method freshCall() {
         return null;
     }
-
-    /**
-     * The control a person edits one of these with, or {@code null} for a type that is declarable but has
-     * nothing to edit — the host then shows the expression as written, read-only, exactly as it does for a
-     * type no plugin declares at all.
-     *
-     * <p>Called on the JavaFX application thread, and only after the host decided this type is the one being
-     * edited.
-     *
-     * <p>Read the current value with {@link ValueContext#value(Class)} — which answers empty when the
-     * expression in the file is one the grammar cannot read, the case that must render read-only rather
-     * than overwrite — and write one back with {@link ValueContext#set(Object)}.
-     */
-    Node editor(ValueContext ctx);
 
     /**
      * A small, non-interactive picture of the value — a swatch, a thumbnail, a label — or {@code null}.

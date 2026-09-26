@@ -25,8 +25,9 @@ one artifact (`javafx-controls`, `provided`).
   `MemberId`, and the package-private `SourceOrder`. The *result* type:
   `PaletteCatalog.of(Class<?>...)` builds it by reflection. `CatalogBuilder`, `MemberRef` and the arity
   shapes `M0`–`M5` were deleted on 2026-08-27 — see *The catalog* below.
-- `com.botmaker.plugin.api.value` — **three types since 2026-09-22**: `PluginType<T>` (the class, `fresh()`,
-  `editor(ValueContext)`, optional `preview`), `ComponentType<T>` (`componentTypes`, `components`, `build`,
+- `com.botmaker.plugin.api.value` — **four types since 2026-09-27**: `PluginType<T>` (the class, `fresh()`,
+  optional `freshCall`/`preview`), `EditableType<T>` (adds `editor(ValueContext)`, never `null` — a type its
+  owner draws), `ComponentType<T>` (`componentTypes`, `components`, `build`,
   optional `factory`, an `Executable`), and `Visibility`. What a bot's *value* can be, which is a question the
   contract answers so a plugin can own a type without the SDK granting it one. See *The value vocabulary*
   below for what the other seven types were and why none of them is here.
@@ -335,7 +336,9 @@ re-parse. Keeping it that way is what stops the host's parser from becoming plug
 
 ## The value vocabulary — one declaration per type, and no plugin parses anything
 
-A plugin declares a type **once**, as a `PluginType<T>`: `type()`, `fresh()`, `editor(ValueContext)`. Where
+A plugin declares a type **once**, as a `PluginType<T>`: `type()`, `fresh()` — and `EditableType<T>`'s
+`editor(ValueContext)` when it draws the type itself (2026-09-27; a plain `PluginType` is drawn by another
+plugin's `forType` or the host's fallback, and `plugin validate` refuses one nobody draws). Where
 its Java is a call rather than a literal, the same class also implements `ComponentType<T>` and says what
 goes in the brackets. **Every method is abstract**, so javac asks for all of it at the one moment the author
 has the type in front of them.

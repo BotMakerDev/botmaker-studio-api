@@ -28,7 +28,7 @@ class PluginTypeTest {
     record Point(int x, int y) {}
 
     /** What a plugin writes: one class, both interfaces, no id and no text anywhere. */
-    static final class PointType implements PluginType<Point>, ComponentType<Point> {
+    static final class PointType implements EditableType<Point>, ComponentType<Point> {
         @Override public Class<Point> type()   { return Point.class; }
         @Override public Point fresh()         { return new Point(0, 0); }
         @Override public Node editor(ValueContext ctx) { return null; }
@@ -99,11 +99,22 @@ class PluginTypeTest {
         PluginType<String> text = new PluginType<>() {
             @Override public Class<String> type() { return String.class; }
             @Override public String fresh() { return ""; }
-            @Override public Node editor(ValueContext ctx) { return null; }
         };
 
         assertEquals("", text.fresh());
         assertTrue(!(text instanceof ComponentType<?>), "a JDK literal has no components");
         assertEquals(null, text.preview(null), "and no preview until it wants one");
+    }
+
+    /**
+     * Drawing a type is a declared kind, not a {@code null}: a plain {@code PluginType} says "I do not draw this"
+     * in its class, so {@code botmaker plugin validate} can ask without starting JavaFX (2026-09-27).
+     */
+    @Test
+    void the_editor_lives_on_editable_type_only() throws NoSuchMethodException {
+        assertThrows(NoSuchMethodException.class, () -> PluginType.class.getMethod("editor", ValueContext.class));
+        java.lang.reflect.Method editor = EditableType.class.getMethod("editor", ValueContext.class);
+        assertTrue(java.lang.reflect.Modifier.isAbstract(editor.getModifiers()));
+        assertTrue(PluginType.class.isAssignableFrom(EditableType.class));
     }
 }
