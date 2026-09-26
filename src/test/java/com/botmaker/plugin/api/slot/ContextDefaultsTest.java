@@ -67,6 +67,13 @@ class ContextDefaultsTest {
     }
 
     @Test
+    void anotherArgumentIsUnreadableUnlessTheHostSaysOtherwise() {
+        assertTrue(slot().argumentValue(0, String.class).isEmpty());
+        assertTrue(slot().argumentValue(-1, String.class).isEmpty());
+        assertTrue(slot().argumentValue(7, Object.class).isEmpty());
+    }
+
+    @Test
     void anUnrestrictedRunAnswersEmptyRatherThanEveryElement() {
         SlotRun bare = new SlotRun() {
             @Override public List<Element> elements() { return List.of(new Element(null, "Pictures.ORE")); }

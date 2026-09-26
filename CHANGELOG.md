@@ -15,6 +15,14 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Added
+
+- **`SlotContext.argumentValue(index, type)`**: another argument of the slot's call, read as a value, empty when
+  the host cannot read it. Read-only, and a `default`, so a plugin built against `0.2.1` is unaffected. For an
+  editor that depends on its neighbour (a `Precision` beside its `Color`).
+
 ## [0.2.1] — 2026-09-26
 
 **Release this as `0.3.0`.** Everything below breaks a plugin compiled against `0.2.0`, which in `0.x` is

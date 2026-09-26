@@ -5,6 +5,15 @@ reasoning.
 
 ## Done
 
+### 2026-09-26 — `SlotContext.argumentValue`, a neighbour argument as a value (picker phase 6a)
+
+`default <T> Optional<T> argumentValue(int index, Class<T> type)`, empty by default.
+
+- **Why a capability.** The SDK's Precision editor shows what a tolerance accepts around the `Color` passed
+  beside it. Only the host has the call's syntax tree and the grammar that reads an argument as a value.
+- **Why read-only.** Writing another argument is rewriting the call, which `replaceEnclosingCall`'s deletion
+  (2026-09-23) settled. A value, never text: an argument the host cannot read answers empty.
+
 ### 2026-09-25 — the host creates a missing `@Managed` holder (0.3.0)
 
 `PluginValues.create(String id)` (default: refused) and `ManagedValue(id, reason, holder, valueType,

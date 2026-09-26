@@ -39,6 +39,20 @@ public interface SlotContext extends ValueContext {
     /** The zero-based position of this slot in the call's argument list, or {@code -1} if it is not an argument. */
     int argIndex();
 
+    /**
+     * Another argument of the call this slot sits in — {@code index} is the call's own zero-based position —
+     * read as a value of {@code type}; empty when the host cannot read it.
+     *
+     * <p>For an editor whose meaning depends on its neighbour: a {@code Precision} is a tolerance around the
+     * {@code Color} passed beside it, and showing what it accepts needs that colour. Read-only on purpose —
+     * writing another argument is rewriting the call, which a plugin may not do. A value, never source text:
+     * an argument the host cannot read (a variable, a call, a varargs tail) answers empty, as does an index
+     * outside the call. {@code default} so a host that implements nothing answers "cannot read".
+     */
+    default <T> Optional<T> argumentValue(int index, Class<T> type) {
+        return Optional.empty();
+    }
+
     // enclosingCall() and replaceEnclosingCall(String, String...) were deleted on 2026-09-23. They handed a
     // plugin the whole call as Java text to split and a way to write a new one back; their one user was the
     // SDK's duration picker turning Wait.time(x) into Wait.between(a, b), and that toggle went with them.
