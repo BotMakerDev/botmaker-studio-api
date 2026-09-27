@@ -66,26 +66,9 @@ public interface StudioServices {
     }
 
     /**
-     * Find and repoint a token sequence across the bot's own Java sources.
-     *
-     * <p>Host-only on every count — the open buffers, the walk over what the bot owns, the review mark and
-     * the history snapshot are all editor machinery — and it names no plugin's concept, which is what
-     * separates it from the {@code Assets} service deleted above. A plugin says <em>replace this with
-     * that</em>; the host has no idea what either means. See {@link Sources} for why the needle is a token
-     * sequence rather than a regex.
-     *
-     * <p>{@code default} for the reason {@link #runs()} is: a host with no editor behind it — the
-     * {@code botmaker} CLI's validator — answers honestly without implementing anything, and a plugin's
-     * rename path finds nothing rather than having to ask whether rewriting is supported.
-     */
-    default Sources sources() {
-        return Sources.NONE;
-    }
-
-    /**
      * This plugin's own values, as they are written in the bot's Java — see {@link PluginValues}.
      *
-     * <p>Host-only on every part of it, and for the same reasons as {@link Sources}: the source tree, the
+     * <p>Host-only on every part of it: the source tree, the
      * open buffers, the syntax tree, the history snapshot and the file roles are the editor's, while what
      * the value <em>means</em> is the plugin's. Nothing in these signatures names a plugin's concept — an id
      * is a string the plugin itself chose — so the rule <em>capabilities, never vocabularies</em> holds.

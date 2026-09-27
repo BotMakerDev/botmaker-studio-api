@@ -23,7 +23,8 @@ it in `managedValues()`, in `ManagedValues.claim`, and through the toolkit's `Ma
 the id was spelled five times in the SDK before.
 
 - `com.botmaker.plugin.api` — `StudioPlugin`, `StudioServices` and what it hands back: `Theme`, `Dialogs`,
-  `Runs`, `Sources`. A plugin reads those four as one facility, which is why they stay at the root. Beside
+  `Runs`. A plugin reads those as one facility, which is why they stay at the root (`Sources` was the fourth
+  until 2026-09-28; see *`Sources` is deleted* below). Beside
   them, since 2026-09-28, **`StyleClasses`**: the style-class names the host's stylesheet defines, constants
   only. It passes the host-only rule below — only the host knows what its stylesheet names — and it is the
   one thing a plugin's widgets and Studio's own both need, which is why it is here rather than a reason for
@@ -163,6 +164,14 @@ wherever the stored string is a *reference* rather than the value — a template
 raw text puts the decoding back on the person the choices exist for. It is not a sixth contribution surface:
 it reuses the matcher `matches()` already provides, and its default is exactly today's behaviour for every
 type the host does not answer itself, so a type costs nothing by not implementing it.
+
+**`Sources` is deleted (2026-09-28), and the two paragraphs below are its history.** The token needle was the
+wrong unit: the SDK's picture rename replaced `Pictures.ORE` at each use and left the declaration named `ORE`,
+so the bot stopped compiling, and a static import or a renamed class was never found. A plugin's names are
+`@Managed` open-set constants now, and `PluginValues` changes them by binding — `members`, `open(id, member)`,
+`add`, `uses`, `rename`, `repoint`, `remove`, each total and refused when the bot would stop compiling (Studio's
+`project/managed/ManagedSets`). The capability/vocabulary split below still holds: the host rewrites, the
+plugin says which constant.
 
 **And one passed it on 2026-09-01, which is the clearest statement of the rule so far because the thing it
 splits was one class in the editor for a year.** **`StudioServices.sources()`**, returning a `Sources`:

@@ -12,8 +12,10 @@
  * Here: {@link com.botmaker.plugin.api.StudioPlugin}, which every plugin implements, and
  * {@link com.botmaker.plugin.api.StudioServices} with the facilities it hands back —
  * {@link com.botmaker.plugin.api.Dialogs}, {@link com.botmaker.plugin.api.Theme},
- * {@link com.botmaker.plugin.api.Runs}, {@link com.botmaker.plugin.api.Sources}. A plugin reads those four
- * as one facility, which is why they are not four packages.
+ * {@link com.botmaker.plugin.api.Runs}, {@link com.botmaker.plugin.api.StyleClasses}. A plugin reads those
+ * as one facility, which is why they are not four packages. ({@code Sources}, a find-and-replace over token
+ * needles, was the fourth until 2026-09-28: a plugin's names are {@code @Managed} constants now, renamed by
+ * binding through {@link com.botmaker.plugin.api.source.PluginValues}.)
  *
  * <p>One package per contribution surface below: {@code catalog} (the palette),
  * {@code slot} (editing one value), {@code toolbar} (a button), {@code source} (a plugin's values in the

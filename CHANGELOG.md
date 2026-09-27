@@ -19,6 +19,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **An open set's constants, changed by binding, on `PluginValues`**: `members(id)`, `open(id, member)`,
+  `add(id, member, value)`, `uses(id, member)` (host-built `PluginValues.Use` records), `rename`, `repoint`
+  (marks each function it guessed in with `@Refactor(note)`) and `remove` (refused while used). Each is total,
+  answers a refusal as the sentence to show, and refuses a change that would stop the bot compiling. All
+  `default`, so `PluginValues.NONE` and older hosts answer "no source tree".
 - **`StyleClasses`**: the style-class names the host's stylesheet defines for a plugin to wear
   (`PILL`, `CHIP`, `CAPTION`, `DIALOG_HINT`, `PRIMARY_BUTTON`, `UNTHEMED`, …), as constants. They were the
   toolkit's `Styles`, spelled again by hand in Studio, with nothing tying either copy to the stylesheet; the
@@ -56,6 +61,10 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Removed
 
+- **`Sources` and `StudioServices.sources()`.** A find-and-replace over token needles a plugin built from how
+  it guessed its names were spelled: it renamed a picture's uses and left its declaration, so the bot stopped
+  compiling, and missed a static import or a renamed class. Its one user, the SDK's picture library, uses the
+  open-set operations on `PluginValues` below. Breaking: a plugin calling `sources()` recompiles onto them.
 - **`…api.parameters` (`ParameterRow`) and `value.Visibility`.** No plugin built or read either once the
   parameter-data surface went (2026-09-22); both are Studio's now.
 - **`ActionContext.openProjectName()` and `pinnedVersion()`.** No plugin read them, and the host always

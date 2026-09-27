@@ -5,6 +5,14 @@ reasoning.
 
 ## Done
 
+### 2026-09-28 — `Sources` replaced by open-set operations on `PluginValues` (plugin authoring cleanup, phase 4)
+
+`Sources`, `Sources.Use` and `StudioServices.sources()` are deleted. `PluginValues` gained `members`,
+`open(id, member)`, `add`, `uses` (`PluginValues.Use`, host-built), `rename`, `repoint` and `remove`, all
+`default` and total. The needle was a guess at spelling and it failed the one case it was built for: a
+picture rename changed the uses and left the declaration. The host now resolves a constant by binding and
+compiles every change as the whole bot first (Studio's `ManagedSets`).
+
 ### 2026-09-28 — `StyleClasses` (plugin authoring cleanup, phase 3)
 
 The host's style-class names, constants only, moved here from the toolkit's `Styles` (which implements it) so

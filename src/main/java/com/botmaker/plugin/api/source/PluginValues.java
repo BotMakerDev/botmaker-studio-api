@@ -2,6 +2,7 @@ package com.botmaker.plugin.api.source;
 
 import com.botmaker.plugin.api.slot.ValueContext;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,11 +23,20 @@ import java.util.Optional;
  * three screens into a run. A value that lives in the bot's own source is one a developer with no BotMaker
  * installed can read, grep, refactor and hand to a compiler.
  *
- * <h2>Two methods, because that is all a plugin needs</h2>
+ * <h2>What ids are there, open one — and for an open set, its constants</h2>
  *
- * <p>What ids are there, and open one. Everything else — where the file is, which buffer is unsaved, how to
- * make the write undoable, whether the expression is one the value catalog can read — is the host's, and a
- * plugin asking about any of it would be asking about the editor rather than about its own data.
+ * <p>For a value held by one method: what ids are there, and open one. For an open set — a whole class of
+ * constants, {@code Pictures} — the same two questions one level down ({@link #members}, {@link #open(String,
+ * String)}), plus the four changes a set undergoes: {@link #add}, {@link #rename}, {@link #repoint},
+ * {@link #remove}. Everything else — where the file is, which buffer is unsaved, how to make the write
+ * undoable, what refers to a constant, whether the bot still compiles — is the host's, and a plugin asking
+ * about any of it would be asking about the editor rather than about its own data.
+ *
+ * <p><b>By binding, never by spelling</b> (2026-09-28). These replace {@code Sources}, a find-and-replace over
+ * token needles that a plugin built from how it guessed its names were spelled: a qualified use, a static
+ * import or a class the user renamed was missed, and a rename changed the uses but not the declaration. A
+ * constant's uses are what javac resolves to it, and a rename or repoint that would stop the bot compiling
+ * is refused. A path literal a user wrote in their own code is theirs and nothing matches it.
  *
  * <p><b>Reading may fail, and that is ordinary.</b> A user may hand-edit a {@code @Managed} body into
  * something that is not a single {@code return <expression>;}, or use a value type no loaded plugin
@@ -72,13 +82,86 @@ public interface PluginValues {
      *         project is open, or the file could not be written
      */
     default Optional<String> create(String id) {
-        return Optional.of("This host keeps no source tree.");
+        return Optional.of(NO_SOURCE_TREE);
     }
+
+    // ── an open set ─────────────────────────────────────────────────────────────────────────────────────
+    //
+    // A ManagedValue.openSet is a whole class — @Managed("pictures") on Pictures — whose public static final
+    // constants the plugin adds, renames and removes. Every operation below is addressed by the set's id and
+    // one constant's name, and every one is done by binding: the host resolves the constant and changes what
+    // javac says refers to it, never a spelling. Each is total and refuses with the sentence to show.
+
+    /**
+     * One place the bot's source refers to a constant, for the list a refusal shows. Built by the host.
+     *
+     * @param file the source file
+     * @param line 1-based
+     * @param text the line, trimmed
+     */
+    record Use(Path file, int line, String text) {}
+
+    /**
+     * The names of the constants the open set {@code id} holds, in the order they are written. Empty when the
+     * project has no class carrying {@code @Managed(id)}.
+     */
+    default List<String> members(String id) {
+        return List.of();
+    }
+
+    /**
+     * One constant's initialiser as a value — {@code new ImageTemplate("…/ore.png")} for {@code Pictures.ORE}
+     * — read and written through the same context a slot is. Empty when there is no such constant, or its
+     * initialiser is not one the grammar reads.
+     */
+    default Optional<ValueContext> open(String id, String member) {
+        return Optional.empty();
+    }
+
+    /**
+     * Declares {@code public static final <T> member = <value>;} in the open set's class, {@code T} being the
+     * value's class and the initialiser written by the grammar. Refused when the name is not a Java name, is
+     * already taken, or the value is one no loaded plugin declares.
+     */
+    default Optional<String> add(String id, String member, Object value) {
+        return Optional.of(NO_SOURCE_TREE);
+    }
+
+    /** Every use of the constant outside its own declaration. Empty when it is unused or cannot be resolved. */
+    default List<Use> uses(String id, String member) {
+        return List.of();
+    }
+
+    /**
+     * Renames the constant and every use of it — the host's one rename, by binding, refused when the bot would
+     * stop compiling. Exact, so nothing is marked for review.
+     */
+    default Optional<String> rename(String id, String member, String newName) {
+        return Optional.of(NO_SOURCE_TREE);
+    }
+
+    /**
+     * Points every use of {@code member} at {@code replacement}, another constant of the same set. That is a
+     * guess on the user's behalf, so each function it touched is marked {@code @Refactor(note)} where the bot
+     * can compile the mark; a blank note marks nothing. Refused when either constant is missing or the result
+     * would add a compile error. The declaration of {@code member} stays: {@link #remove} it after.
+     */
+    default Optional<String> repoint(String id, String member, String replacement, String note) {
+        return Optional.of(NO_SOURCE_TREE);
+    }
+
+    /** Deletes the constant's declaration. Refused while anything uses it, the uses listed in the sentence. */
+    default Optional<String> remove(String id, String member) {
+        return Optional.of(NO_SOURCE_TREE);
+    }
+
+    /** What every write answers on a host with no project behind it. */
+    String NO_SOURCE_TREE = "This host keeps no source tree.";
 
     /**
      * A host that keeps no source tree: no ids, nothing to open.
      *
-     * <p>Total rather than absent, as {@code Sources.NONE} and {@code Runs.NONE} are, so the
+     * <p>Total rather than absent, as {@code Runs.NONE} is, so the
      * {@code botmaker} CLI's validator can construct a plugin and let it ask without a null check reaching
      * plugin code.
      */
