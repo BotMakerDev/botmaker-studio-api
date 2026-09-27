@@ -5,6 +5,11 @@ reasoning.
 
 ## Done
 
+### 2026-09-28 — `StyleClasses` (plugin authoring cleanup, phase 3)
+
+The host's style-class names, constants only, moved here from the toolkit's `Styles` (which implements it) so
+Studio can spell them too and test its stylesheet against them, without depending on the toolkit.
+
 ### 2026-09-28 — a managed value is typed, and its runtime is here (plugin authoring cleanup, phase 2)
 
 `ManagedValue<T>` carries `Class<T> type` (was `Type valueType`) with `of`/`openSet`/`openOnly`, and

@@ -23,7 +23,12 @@ it in `managedValues()`, in `ManagedValues.claim`, and through the toolkit's `Ma
 the id was spelled five times in the SDK before.
 
 - `com.botmaker.plugin.api` — `StudioPlugin`, `StudioServices` and what it hands back: `Theme`, `Dialogs`,
-  `Runs`, `Sources`. A plugin reads those four as one facility, which is why they stay at the root.
+  `Runs`, `Sources`. A plugin reads those four as one facility, which is why they stay at the root. Beside
+  them, since 2026-09-28, **`StyleClasses`**: the style-class names the host's stylesheet defines, constants
+  only. It passes the host-only rule below — only the host knows what its stylesheet names — and it is the
+  one thing a plugin's widgets and Studio's own both need, which is why it is here rather than a reason for
+  Studio to depend on the toolkit. Studio spells the names with it and `StyleClassesTest` holds its
+  stylesheet to it.
 - **One package per contribution surface** (2026-09-21): `…api.slot` (`SlotEditor`, `SlotContext`,
   `SlotRun`, `ValueContext`, `TypeRef`, `Bounds`), `…api.toolbar` (`ToolbarItem`, `ToolbarGroup`, `EnabledWhen`, `ActionContext`),
   `…api.source` (`ManagedValue`, `PluginValues` — `PluginSource` went 2026-09-21, `SourceSeed` 2026-09-22),

@@ -19,6 +19,12 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`StyleClasses`**: the style-class names the host's stylesheet defines for a plugin to wear
+  (`PILL`, `CHIP`, `CAPTION`, `DIALOG_HINT`, `PRIMARY_BUTTON`, `UNTHEMED`, …), as constants. They were the
+  toolkit's `Styles`, spelled again by hand in Studio, with nothing tying either copy to the stylesheet; the
+  host now spells them with these constants and its tests fail when one names a class its stylesheet does not
+  define. The toolkit's `Styles` implements this interface, so `Styles.PILL` keeps compiling.
+
 - **`Runs.property(name)` / `Runs.setProperty(name, value)`.** A system property every run of the bot on this
   machine starts with (`-D<name>=<value>`), kept by the host out of the project and out of git — for a fact
   about running here, such as which game this computer launches. `default` keeps nothing.
