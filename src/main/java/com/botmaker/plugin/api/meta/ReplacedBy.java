@@ -145,7 +145,7 @@ public @interface ReplacedBy {
      * exactly a same-shape redirect, and the bot compiles and quietly does something else. That is the worst
      * outcome the model admits, and nothing in the bytecode reveals it.
      *
-     * <p>So the author says it. Studio marks every redirected call site {@code @NeedsReview} when this is
+     * <p>So the author says it. Studio marks every redirected call site {@link Refactor @Refactor} when this is
      * set, even where the shape did not move, with {@link #note()} as the mark's text — which is why the gate
      * refuses {@code behaviourChanged = true} with a blank {@code note}: a flag with no sentence tells the
      * user their bot changed and nothing about how.

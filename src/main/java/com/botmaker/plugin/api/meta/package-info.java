@@ -5,6 +5,10 @@
  * renamed or retired element carries to whatever takes its place. It is the whole compatibility vocabulary,
  * and that is a deliberate narrowing — as of 2026-08-27 this package held three.
  *
+ * <p>Since 2026-09-27 it holds a second, facing the other way: {@link com.botmaker.plugin.api.meta.Refactor} is
+ * what a host writes on a <em>bot's</em> function when a refactor had to guess there — a plugin upgrade, a
+ * signature change, a plugin's own rewrite — so the user can find and review it.
+ *
  * <p>{@code @Replaces}, the back edge, existed because a host upgrading a bot holds only two jars: the
  * version the bot pins and the version it is moving to. A bot jumping 1.0 → 3.0 could not see a pointer added
  * in 2.0 on an element deleted in 3.0, so the surviving element had to name what it replaced. It goes because

@@ -19,6 +19,9 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`@Refactor(value, done)`** in `…api.meta`. A host writes it on a bot's function when a refactor guessed
+  there (a default value standing in for a removed call, a new parameter filled at a call site); `done = true`
+  once reviewed. Replaces the `NeedsReview` annotation Studio used to generate into the bot's own package.
 - **`ComponentType.constants()`.** The `public static final` fields a value equal to one is written as,
   before the factory: `ZoneOffset.UTC` rather than `ZoneOffset.ofHoursMinutes(0, 0)`. `default` answers none.
 - **`ValueContext.bounds()` and `Bounds`.** A field's `@Param(min, max)` reaches its editor, which stops a
