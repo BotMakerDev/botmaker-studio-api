@@ -17,6 +17,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
+### Added
+
+- **`ValueContext.bounds()` and `Bounds`.** A field's `@Param(min, max)` reaches its editor, which stops a
+  stepper at the ends and clamps what is typed. `default` answers `Bounds.NONE`; either end may be open.
+
 ### Changed
 
 - **`editor` moved to `EditableType<T>`.** A type its owner draws implements `EditableType` (`editor`

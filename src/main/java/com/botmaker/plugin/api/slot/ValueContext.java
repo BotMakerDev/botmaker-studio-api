@@ -107,4 +107,17 @@ public interface ValueContext {
     default Optional<SlotContext> slot() {
         return Optional.empty();
     }
+
+    /**
+     * The range the value is declared to stay within, {@link Bounds#NONE} when nothing is declared
+     * (2026-09-27).
+     *
+     * <p>A capability only the host has: the limit is a rule about the <em>field</em>, written as
+     * {@code @Param(min = …, max = …)} on the bot's own declaration, and the value alone does not carry it. A
+     * number editor stops its stepper at the ends and clamps what is typed; the host also clamps what
+     * {@link #set(Object)} writes, so an editor that ignores this cannot write a value outside it.
+     */
+    default Bounds bounds() {
+        return Bounds.NONE;
+    }
 }

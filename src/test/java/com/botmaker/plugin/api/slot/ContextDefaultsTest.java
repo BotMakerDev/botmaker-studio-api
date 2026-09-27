@@ -95,6 +95,36 @@ class ContextDefaultsTest {
     }
 
     @Test
+    void aValueIsUnboundedUnlessTheHostSaysOtherwise() {
+        assertEquals(Bounds.NONE, row().bounds());
+        assertEquals(Bounds.NONE, slot().bounds());
+    }
+
+    @Test
+    void boundsClampToTheNearestEndAndEitherEndMayBeOpen() {
+        Bounds zeroToOne = new Bounds(0, 1);
+        Bounds atMostTen = new Bounds(Double.NEGATIVE_INFINITY, 10);
+
+        assertEquals(1, zeroToOne.clamp(5));
+        assertEquals(0, zeroToOne.clamp(-2));
+        assertEquals(0.5, zeroToOne.clamp(0.5));
+        assertEquals(-1e9, atMostTen.clamp(-1e9), "an open end clamps nothing");
+        assertEquals(10, atMostTen.clamp(11));
+        assertTrue(zeroToOne.isBounded());
+        assertTrue(atMostTen.isBounded());
+        assertTrue(!Bounds.NONE.isBounded());
+        assertEquals(7, Bounds.NONE.clamp(7));
+    }
+
+    @Test
+    void reversedEndsAreReadInOrder() {
+        Bounds reversed = new Bounds(10, 0);
+
+        assertEquals(0, reversed.min());
+        assertEquals(10, reversed.max());
+    }
+
+    @Test
     void aValueCarriesItsTypedValueAndTheSourceItWasWrittenAs() {
         ValueContext value = row();
 
