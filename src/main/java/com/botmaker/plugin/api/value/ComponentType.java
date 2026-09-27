@@ -103,6 +103,18 @@ public interface ComponentType<T> {
     }
 
     /**
+     * The {@code public static final} fields of {@link #type()} a value equal to one is written as, before
+     * the {@link #factory()} is tried: {@code ZoneOffset.UTC} rather than {@code ZoneOffset.ofHoursMinutes(0, 0)}.
+     * Empty by default, so {@code Duration.ZERO} stays {@code Duration.ofMillis(0L)} — a type names the
+     * constants a person would write, and no others. The host already reads every such field of a declared
+     * class; this only says which ones it also writes. A field that is not public, static, final and of a
+     * type assignable to {@link #type()} is ignored.
+     */
+    default List<java.lang.reflect.Field> constants() {
+        return List.of();
+    }
+
+    /**
      * {@link #components} against a value the host holds as {@code Object}.
      *
      * <p>The one unchecked cast in the design, kept here so no caller writes its own. It is sound because

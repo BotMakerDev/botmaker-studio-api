@@ -19,6 +19,8 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`ComponentType.constants()`.** The `public static final` fields a value equal to one is written as,
+  before the factory: `ZoneOffset.UTC` rather than `ZoneOffset.ofHoursMinutes(0, 0)`. `default` answers none.
 - **`ValueContext.bounds()` and `Bounds`.** A field's `@Param(min, max)` reaches its editor, which stops a
   stepper at the ends and clamps what is typed. `default` answers `Bounds.NONE`; either end may be open.
 

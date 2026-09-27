@@ -5,6 +5,14 @@ reasoning.
 
 ## Done
 
+### 2026-09-27 — `ComponentType.constants()` (picker feedback 3, phase 3)
+
+A `default` answering none: the `public static final` fields of the type a value equal to one is written as,
+before the factory. Opt-in rather than a host rule, because a rule would turn every `Duration.ofMillis(0L)`
+into `Duration.ZERO` and every `LocalTime.of(0, 0, 0)` into one of two equal constants. Basics' `ZoneOffset`
+names `UTC`, so `OffsetTime.of(7, 30, 0, 0, ZoneOffset.UTC)` is what a UTC time reads as. The host already read
+every such field; this says which it writes (Studio's `ValueWriter.namedConstant`).
+
 ### 2026-09-27 — `EditableType`: drawing a type is a declared kind (picker phase 6f)
 
 `editor(ValueContext)` left `PluginType` for `EditableType<T> extends PluginType<T>`, where it is abstract and
