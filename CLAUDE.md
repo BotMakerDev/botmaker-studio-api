@@ -10,6 +10,18 @@ Read the umbrella `../CLAUDE.md` first for how the six modules fit together, and
 Interfaces and records. Nothing else. It has no implementation, references no Studio type, and depends on
 one artifact (`javafx-controls`, `provided`).
 
+**One exception, since 2026-09-28: `managed.ManagedValues`**, the bot-side runtime of `@Managed`
+(`claim(ManagedValue<T>, Consumer<? super T>)`, `install(Class<?>...)`). It is the annotation's other half and
+runs inside a bot, which already has this jar through any plugin that puts `@Managed` there. It was
+`botmaker-plugin-basics`' until then, so a plugin needing its values at run time had to depend on basics for
+thirty lines. Add nothing else of the kind: the test is *does every plugin with a bot-side half need it, and
+does it name nothing but this module and the JDK*.
+
+**`ManagedValue<T>` is typed and declared once** (2026-09-28): `ManagedValue.of(id, holder, type, initial,
+reason)`, `openSet(id, holder, reason)`, `openOnly(id, reason)`. A plugin keeps one constant per value and uses
+it in `managedValues()`, in `ManagedValues.claim`, and through the toolkit's `ManagedHandle` in its windows —
+the id was spelled five times in the SDK before.
+
 - `com.botmaker.plugin.api` — `StudioPlugin`, `StudioServices` and what it hands back: `Theme`, `Dialogs`,
   `Runs`, `Sources`. A plugin reads those four as one facility, which is why they stay at the root.
 - **One package per contribution surface** (2026-09-21): `…api.slot` (`SlotEditor`, `SlotContext`,

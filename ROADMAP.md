@@ -5,6 +5,15 @@ reasoning.
 
 ## Done
 
+### 2026-09-28 — a managed value is typed, and its runtime is here (plugin authoring cleanup, phase 2)
+
+`ManagedValue<T>` carries `Class<T> type` (was `Type valueType`) with `of`/`openSet`/`openOnly`, and
+`managedValues()` answers `List<ManagedValue<?>>`. `managed.ManagedValues` — `claim(ManagedValue<T>,
+Consumer<? super T>)` and `install` — moved from plugin-basics: the one class here that is not an interface or
+a record, admitted because every plugin with a bot-side half needs it and it names only this module and the
+JDK. The SDK spelled each id five times; now one constant serves the plugin, the runtime and the windows.
+`ManagedValuesTest` moved with it and gained the typed refusal.
+
 ### 2026-09-28 — members no plugin uses leave (plugin authoring cleanup, phase 1)
 
 A review of what the SDK and basics actually call found four things only the host touched. `ParameterRow` and

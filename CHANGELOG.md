@@ -29,8 +29,17 @@ is allowed to make. Additions arrive as `default` methods.
   before the factory: `ZoneOffset.UTC` rather than `ZoneOffset.ofHoursMinutes(0, 0)`. `default` answers none.
 - **`ValueContext.bounds()` and `Bounds`.** A field's `@Param(min, max)` reaches its editor, which stops a
   stepper at the ends and clamps what is typed. `default` answers `Bounds.NONE`; either end may be open.
+- **`managed.ManagedValues`**, the bot-side runtime of `@Managed`, moved here from `botmaker-plugin-basics`:
+  `claim(ManagedValue<T>, Consumer<? super T>)` hands a plugin's sink a typed value, `install(Class<?>...)`
+  runs a bot's values classes. A plugin no longer depends on basics to receive its values.
 
 ### Changed
+
+- **`ManagedValue` is typed: `ManagedValue<T>(id, reason, holder, Class<T> type, T initial)`**, with
+  `of(id, holder, type, initial, reason)`, `openSet(id, holder, reason)`, `openOnly(id, reason)`,
+  `isOpenSet()` and `cast(Object)`. `valueType()` is `type()`, a `Class` rather than a `Type`, and
+  `StudioPlugin.managedValues()` answers `List<ManagedValue<?>>`. Declare each value once as a constant and use
+  it everywhere. Breaking: the two old constructors are gone.
 
 - **An instance-method `factory()` may now be written, not only read.** Documentation only: the host writes
   such a chain for a value the owning declaration's own parts do not build back equal (`Combo.of(keys)` has no

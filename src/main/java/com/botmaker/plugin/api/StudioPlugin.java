@@ -158,7 +158,7 @@ public interface StudioPlugin {
      * {@code default} for the reason every method here but {@code id()} is: an older plugin manages nothing,
      * and every value stays exactly as editable as it was.
      */
-    default List<ManagedValue> managedValues() {
+    default List<ManagedValue<?>> managedValues() {
         return List.of();
     }
 
