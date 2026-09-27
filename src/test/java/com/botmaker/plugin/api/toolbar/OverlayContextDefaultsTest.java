@@ -5,8 +5,6 @@ import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator.ReplaceUnderscores;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -21,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class OverlayContextDefaultsTest {
 
     /** A context implementing only what a toolbar item always needed. */
-    private record Minimal(Optional<String> openProjectName, String pinnedVersion) implements ActionContext {
+    private record Minimal() implements ActionContext {
         @Override
         public StudioServices services() {
             return null;
@@ -30,7 +28,7 @@ class OverlayContextDefaultsTest {
 
     @Test
     void a_context_with_no_overlay_answers_empty_rather_than_null() {
-        ActionContext ctx = new Minimal(Optional.of("Demo"), "1.2.0");
+        ActionContext ctx = new Minimal();
 
         assertTrue(ctx.overWindowTitle().isEmpty(), "no overlay is open");
         assertTrue(ctx.overBounds().isEmpty(), "no overlay is open");

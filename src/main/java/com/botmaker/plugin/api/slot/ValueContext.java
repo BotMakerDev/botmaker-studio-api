@@ -90,7 +90,7 @@ public interface ValueContext {
     // setSource(String, Class<?>...) was deleted on 2026-09-23: it was a plugin writing Java text the compiler
     // never looked at. A value is written with set(Object) and nothing else.
 
-    /** The host services an editor may use: theming, screen capture, dialogs, and the project's location. */
+    /** The host services an editor may use: theming, dialogs, the open project and its values. */
     StudioServices services();
 
     /**

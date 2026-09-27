@@ -21,7 +21,7 @@ import java.util.function.Predicate;
  * every plugin.
  *
  * <p><b>Most editors are not declared here at all.</b> A plugin's own type declares its editor beside
- * itself, on {@link com.botmaker.plugin.api.value.PluginType#editor}, so the type is named once. This
+ * itself, on {@link com.botmaker.plugin.api.value.EditableType#editor}, so the type is named once. This
  * surface is for the two cases that are not about a type the plugin owns: {@link #forCall}, an editor
  * chosen by the call a slot sits in, and {@link #forType}, an override of the editor for a type another
  * plugin declared.

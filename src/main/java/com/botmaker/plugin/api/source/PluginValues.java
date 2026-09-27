@@ -8,8 +8,8 @@ import java.util.Optional;
 /**
  * A plugin's own values, as they are written in the bot's Java.
  *
- * <p>Each one is a {@code @Managed("id")} method in the file this plugin gave the bot
- * ({@link PluginSource}). The host finds it by that id, works out its type from the method's declared return
+ * <p>Each one is a {@code @Managed("id")} method in the bot's own source — the file its template shipped, or
+ * the one {@link #create} wrote. The host finds it by that id, works out its type from the method's declared return
  * type, and hands back a {@link ValueContext} over the expression the method returns — the same context a
  * slot on the canvas and a row in the Parameters window are edited through. So a plugin's own window reads
  * and writes its value with the interface it already knows, and no second way to edit a value exists.

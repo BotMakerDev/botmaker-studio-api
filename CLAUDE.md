@@ -13,8 +13,7 @@ one artifact (`javafx-controls`, `provided`).
 - `com.botmaker.plugin.api` — `StudioPlugin`, `StudioServices` and what it hands back: `Theme`, `Dialogs`,
   `Runs`, `Sources`. A plugin reads those four as one facility, which is why they stay at the root.
 - **One package per contribution surface** (2026-09-21): `…api.slot` (`SlotEditor`, `SlotContext`,
-  `SlotRun`, `ValueContext`, `TypeRef`), `…api.parameters` (`ParameterRow` alone since 2026-09-22 —
-  `ParameterGroup` and `ParameterEdit` went with the surface that used them), `…api.toolbar` (`ToolbarItem`, `ToolbarGroup`, `EnabledWhen`, `ActionContext`),
+  `SlotRun`, `ValueContext`, `TypeRef`, `Bounds`), `…api.toolbar` (`ToolbarItem`, `ToolbarGroup`, `EnabledWhen`, `ActionContext`),
   `…api.source` (`ManagedValue`, `PluginValues` — `PluginSource` went 2026-09-21, `SourceSeed` 2026-09-22),
   and, since 2026-09-22, `…api.params` (`@Param`) and `…api.managed` (`@Managed`), the two annotations that
   sit on a **bot's** own declarations. Sixteen types moved out of
@@ -25,10 +24,10 @@ one artifact (`javafx-controls`, `provided`).
   `MemberId`, and the package-private `SourceOrder`. The *result* type:
   `PaletteCatalog.of(Class<?>...)` builds it by reflection. `CatalogBuilder`, `MemberRef` and the arity
   shapes `M0`–`M5` were deleted on 2026-08-27 — see *The catalog* below.
-- `com.botmaker.plugin.api.value` — **four types since 2026-09-27**: `PluginType<T>` (the class, `fresh()`,
+- `com.botmaker.plugin.api.value` — **three types since 2026-09-28**: `PluginType<T>` (the class, `fresh()`,
   optional `freshCall`/`preview`), `EditableType<T>` (adds `editor(ValueContext)`, never `null` — a type its
-  owner draws), `ComponentType<T>` (`componentTypes`, `components`, `build`,
-  optional `factory`, an `Executable`), and `Visibility`. What a bot's *value* can be, which is a question the
+  owner draws) and `ComponentType<T>` (`componentTypes`, `components`, `build`,
+  optional `factory`, an `Executable`). What a bot's *value* can be, which is a question the
   contract answers so a plugin can own a type without the SDK granting it one. See *The value vocabulary*
   below for what the other seven types were and why none of them is here.
 - `com.botmaker.plugin.api.palette` — **`@Palette`**, **`@Hidden`**, `@PaletteLabel`, `@PaletteDefault`: the
@@ -238,7 +237,8 @@ holds — compare `Assets`, which had to say the word *picture*.
 ## Parameter data (2026-09-10 – 2026-09-22) — deleted, and why it is worth reading anyway
 
 **`ParameterGroup`, `ParameterEdit`, `StudioPlugin.parameters(String)`, `parameterRows(String)` and
-`parameterEdited(ParameterEdit)` are gone. `ParameterRow` stays.** A parameter is a `@Param` static field in
+`parameterEdited(ParameterEdit)` are gone, and `ParameterRow` and `Visibility` followed them to Studio on
+2026-09-28** — no plugin ever built or read either once the surface was gone. A parameter is a `@Param` static field in
 the bot's own Java, read and written by the host off the syntax tree, and a plugin that wants a row of its
 own puts a `@Param` field in the file it ships — the host's ordinary walk of the bot's sources finds it with
 no surface at all.
@@ -329,10 +329,12 @@ across two classloaders. A slot's call is `SlotContext.enclosingExecutable()`, w
 declaring class by name. (Inside a catalog a `Class<?>` *is* used — but the plugin holds it,
 and it is the plugin's own class.)
 
-**3. No syntax tree, in either direction.** `SlotContext.currentSource()` is a `String` and
-`replaceWith(String, String...)` takes one. This was not a simplification imposed on the host — it is what
-the host already did, since fifteen of its nineteen built-in editors handed back source text and let it
-re-parse. Keeping it that way is what stops the host's parser from becoming plugin surface.
+**3. No syntax tree and no Java text, in either direction.** An editor reads a value
+(`ValueContext.value(Class)`) and writes one (`set(Object)`); the host owns every character of syntax. The
+one string left is `ValueContext.source()`, to *show* what the grammar could not read, never to parse. (Until
+2026-09-22 the rule was the opposite — `currentSource()` and `replaceWith(String…)` carried Java text both
+ways — and every plugin that wanted a typed value wrote its own parser, none of them agreeing.) Keeping it
+this way is what stops the host's parser from becoming plugin surface.
 
 ## The value vocabulary — one declaration per type, and no plugin parses anything
 
@@ -520,8 +522,8 @@ means nothing was compared.
 ## Building
 
 ```bash
-mvn test        # PaletteCatalogTest, PluginTypeTest, SlotEditorTest, ParameterDataTest, the two defaults
-                # tests — 39, and the module's only behaviour
+mvn test        # PaletteCatalogTest, PluginTypeTest, SlotEditorTest, StudioPluginDefaultsTest, the context
+                # defaults tests — the module's only behaviour
 mvn verify      # the above plus japicmp against botmaker.japicmp.baseline (see above)
 mvn install     # com.github.LiQiyeDev:botmaker-studio-api:0.0.0-SNAPSHOT
 ```

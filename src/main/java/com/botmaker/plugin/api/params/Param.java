@@ -73,9 +73,9 @@ public @interface Param {
      *
      * <p>Constants rather than two string literals in Studio and two more in whatever reads a bot: an
      * annotation may declare them, and the side that defines the vocabulary is the side that should spell
-     * it. Still a {@code String} rather than {@link com.botmaker.plugin.api.value.Visibility}: an
-     * annotation element's value is written into a bot's class file, and pinning that to an enum this
-     * module owns would make renaming a constant a break in every compiled bot.
+     * it. A {@code String} rather than an enum: an annotation element's value is written into a bot's class
+     * file, and pinning that to an enum this module owns would make renaming a constant a break in every
+     * compiled bot.
      */
     String EDITOR = "editor";
 

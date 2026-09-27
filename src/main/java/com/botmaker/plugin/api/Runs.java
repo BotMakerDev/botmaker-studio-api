@@ -2,7 +2,6 @@ package com.botmaker.plugin.api;
 
 import java.util.OptionalLong;
 import java.util.function.Consumer;
-import java.util.function.LongConsumer;
 
 /**
  * The open project's bot, as a running process — start it, stop it, and hear about it.
@@ -15,9 +14,8 @@ import java.util.function.LongConsumer;
  * <h2>Telemetry crosses as its own wire bytes, and that is the whole reason it can cross at all</h2>
  *
  * <p>{@link #onTelemetry} hands over <em>one encoded frame</em>, and this module has no idea what is in it.
- * The format belongs to whichever runtime the bot is built on, and that runtime decodes its own wire — the
- * same trick {@link SlotContext#currentSource()} plays with Java source, and for the same reason: a decoded
- * shape crossing here would be a vocabulary, which is exactly what the contract refuses to carry. A host
+ * The format belongs to whichever runtime the bot is built on, and that runtime decodes its own wire: a
+ * decoded shape crossing here would be a vocabulary, which is exactly what the contract refuses to carry. A host
  * that relays a frame it cannot read is doing its job.
  *
  * <p>Bytes rather than text because the wire already <em>is</em> bytes and has exactly one definition. A
@@ -146,16 +144,5 @@ public interface Runs {
     default void setProperty(String name, String value) {
     }
 
-    /**
-     * Reads {@link #pid()} into {@code action} when there is one, and answers whether there was.
-     *
-     * <p>Here so that the ordinary use — <em>do this to the bot if one is running</em> — does not spell out
-     * an {@code OptionalLong} dance at every call site.
-     */
-    default boolean withPid(LongConsumer action) {
-        OptionalLong running = pid();
-        if (running.isEmpty()) return false;
-        action.accept(running.getAsLong());
-        return true;
-    }
+    // withPid(LongConsumer) stood here until 2026-09-28, a convenience over pid() that no plugin called.
 }

@@ -136,7 +136,8 @@ public interface StudioPlugin {
      * {@code java.awt.Color} plugin-basics declares.
      *
      * <p>An editor for this plugin's <em>own</em> type does not belong here: it is
-     * {@link PluginType#editor}, declared beside the type, so the type is named once.
+     * {@link com.botmaker.plugin.api.value.EditableType#editor}, declared beside the type, so the type is named
+     * once.
      *
      * <p>Order matters only within one plugin: the host consults its own editors before any plugin's, so a
      * slot holding a project variable stays a variable no matter what a plugin claims about its type.
@@ -215,8 +216,8 @@ public interface StudioPlugin {
     // What replaced it had already replaced it. A user's parameter is a @Param static field in the bot's own
     // Java (2026-09-17), read and written off the syntax tree; a plugin that wants a row of its own puts a
     // @Param field in the file it ships, and the host's ordinary walk of the bot's sources finds it with no
-    // surface at all. ParameterRow stays: it is still the shape one row crosses in, and the window still
-    // draws its value with the slot editor the canvas uses.
+    // surface at all. ParameterRow stayed here until 2026-09-28 and then went to Studio, the only thing that
+    // ever built or read one; the window still draws a row's value with the slot editor the canvas uses.
 
     // parameterDeclared(ParameterDeclaration) stood here from 2026-09-10 to 2026-09-17: the declaration half
     // of the parameters window, one call carrying the row as wanted rather than a verb. It went first, with
@@ -253,11 +254,10 @@ public interface StudioPlugin {
      * be guessing at a moment the host knows precisely, which is the argument {@code projectClosing()}
      * already makes from the other end.
      *
-     * <p><b>It is what makes the data surfaces answerable at all.</b> {@link #parameterRows(String)} takes a
-     * group id and nothing else, deliberately: rows are asked for every time a window is drawn, and a
-     * surface that had to be handed the host on each call would make every future one take it too. So the
-     * host says <em>here is the project</em> once per bind, and the plugin reads its own file from
-     * {@link StudioServices#projectDir()} or {@link StudioServices#resourcesDir()} whenever it is asked.
+     * <p>No contribution surface takes a services argument, deliberately: a surface that had to be handed the
+     * host on each call would make every future one take it too. So the host says <em>here is the project</em>
+     * once per bind, and the plugin reads its own values ({@link StudioServices#pluginValues()}) and files
+     * ({@link StudioServices#resourcesDir()}) whenever it is asked.
      *
      * <p>Called once per bind, <b>after</b> the outgoing project's plugins have been told it is closing, and
      * again whenever a change to the project's libraries rebinds the set. A plugin that keeps the services
@@ -265,7 +265,7 @@ public interface StudioPlugin {
      *
      * <p><b>Do nothing expensive here.</b> This runs while a project is opening, on the path the user is
      * waiting on. Read the file when a surface is asked for, not now — the same rule that keeps
-     * {@code buildCatalog}/{@code buildValueTypes} lazy, and for the same reason: a plugin that parses a
+     * the toolkit's {@code AbstractStudioPlugin} builders lazy, and for the same reason: a plugin that parses a
      * project on bind is a plugin every project open pays for whether or not anything reads the result.
      *
      * <p>Throwing is contained and reported, and the project still opens: a plugin must not be able to

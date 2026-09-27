@@ -4,8 +4,9 @@
  * <h2>What is here, and what is deliberately not</h2>
  * Interfaces and records. No implementation, no Studio types, and no syntax tree: a plugin describes what it
  * offers ({@link com.botmaker.plugin.api.catalog.PaletteCatalog}) and how it edits a value
- * ({@link com.botmaker.plugin.api.slot.SlotEditor}), and writes back Java source as text. The host's parser,
- * its project model and its UI internals are all on the other side of this line.
+ * ({@link com.botmaker.plugin.api.slot.SlotEditor}), and hands values back as values — the host writes every
+ * character of Java. The host's parser, its project model and its UI internals are all on the other side of
+ * this line.
  *
  * <h2>This package, and the ones under it</h2>
  * Here: {@link com.botmaker.plugin.api.StudioPlugin}, which every plugin implements, and
@@ -15,10 +16,12 @@
  * as one facility, which is why they are not four packages.
  *
  * <p>One package per contribution surface below: {@code catalog} (the palette),
- * {@code slot} (editing one value), {@code parameters} (the Parameters window),
- * {@code toolbar} (a button), {@code source} (the Java a plugin gives a bot), {@code value} (the value
- * vocabulary), {@code palette} (the curation annotations) and {@code meta} ({@code @ReplacedBy}). They were
- * all at this root until 2026-09-21, which is how the root became the place a new type landed.
+ * {@code slot} (editing one value), {@code toolbar} (a button), {@code source} (a plugin's values in the
+ * bot's Java), {@code value} (the value vocabulary), {@code record} (what a recorded gesture writes),
+ * {@code palette} (the curation annotations), {@code params} and {@code managed} (the two annotations on a
+ * bot's own declarations) and {@code meta} ({@code @ReplacedBy}, {@code @Refactor}). They were all at this
+ * root until 2026-09-21, which is how the root became the place a new type landed. {@code parameters}
+ * (the Parameters window's row) went to Studio on 2026-09-28.
  *
  * <h2>The one dependency</h2>
  * JavaFX, because a slot editor returns a {@code javafx.scene.Node}. That pins the platform to JavaFX

@@ -39,6 +39,14 @@ is allowed to make. Additions arrive as `default` methods.
   abstract, never `null`); a plain `PluginType` says its owner does not draw it — another plugin does, or the
   host's fallback. Breaking: every plugin recompiles. `botmaker plugin validate` fails a type nobody draws.
 
+### Removed
+
+- **`…api.parameters` (`ParameterRow`) and `value.Visibility`.** No plugin built or read either once the
+  parameter-data surface went (2026-09-22); both are Studio's now.
+- **`ActionContext.openProjectName()` and `pinnedVersion()`.** No plugin read them, and the host always
+  answered `""` for the pin. The open project is `services().projectDir()`.
+- **`Runs.withPid(LongConsumer)`**, a convenience over `pid()` nothing called.
+
 ## [0.2.2] — 2026-09-27
 
 ### Added

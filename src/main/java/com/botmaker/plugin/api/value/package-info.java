@@ -5,13 +5,15 @@
  * <h2>Three declarations, and that is the whole package</h2>
  *
  * <ul>
- *   <li>{@link com.botmaker.plugin.api.value.PluginType} — a type this plugin owns: the class it is, what a
- *       fresh one is, and how a person edits one. Every method abstract.</li>
+ *   <li>{@link com.botmaker.plugin.api.value.PluginType} — a type this plugin owns: the class it is and what
+ *       a fresh one is.</li>
+ *   <li>{@link com.botmaker.plugin.api.value.EditableType} — a {@code PluginType} its owner also draws.</li>
  *   <li>{@link com.botmaker.plugin.api.value.ComponentType} — beside it, for a type whose Java is a call:
  *       the components that go in the brackets, as values.</li>
- *   <li>{@link com.botmaker.plugin.api.value.Visibility} — whether whoever runs the bot is offered a
- *       value. Not about the type at all; about the declaration.</li>
  * </ul>
+ *
+ * <p>{@code Visibility} stood here until 2026-09-28. It is about a {@code @Param} declaration rather than a
+ * type, no plugin read it, and it is Studio's now.
  *
  * <h2>What was here until 2026-09-22, and why none of it is</h2>
  *

@@ -5,6 +5,17 @@ reasoning.
 
 ## Done
 
+### 2026-09-28 — members no plugin uses leave (plugin authoring cleanup, phase 1)
+
+A review of what the SDK and basics actually call found four things only the host touched. `ParameterRow` and
+`Visibility` are Studio's (`project/params/`): the surface that let a plugin hand a row over went on
+2026-09-22, and nothing outside Studio built or read one afterwards. `ActionContext.openProjectName()` and
+`pinnedVersion()` are deleted — no plugin read them, and the host answered `""` for the pin because it cannot
+know which plugin's item is pressed. `Runs.withPid` is deleted; `pid()` stays (the SDK's pilot reads it).
+Stale javadoc naming deleted members (`currentSource`, `parameterRows`, `PluginSource`, `PluginType#editor`)
+is corrected, and rule 3 in `CLAUDE.md` now says what is true: no Java text in either direction.
+`ParameterDataTest` became `StudioPluginDefaultsTest`, covering the two newer surfaces' defaults too.
+
 ### 2026-09-27 — `Runs.property`/`setProperty`; the `@Managed` shape is checked (studio cleanup, phase 7a)
 
 A system property every run of the bot on this machine starts with, kept by the host in its git-excluded
