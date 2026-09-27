@@ -26,6 +26,9 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Changed
 
+- **An instance-method `factory()` may now be written, not only read.** Documentation only: the host writes
+  such a chain for a value the owning declaration's own parts do not build back equal (`Combo.of(keys)` has no
+  hold, so `Combo.of(…).held(…)`). No signature changes.
 - **`editor` moved to `EditableType<T>`.** A type its owner draws implements `EditableType` (`editor`
   abstract, never `null`); a plain `PluginType` says its owner does not draw it — another plugin does, or the
   host's fallback. Breaking: every plugin recompiles. `botmaker plugin validate` fails a type nobody draws.

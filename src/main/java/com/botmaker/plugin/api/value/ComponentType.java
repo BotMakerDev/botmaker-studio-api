@@ -67,8 +67,8 @@ public interface ComponentType<T> {
     T build(List<Object> parts);
 
     /**
-     * What writes this value: a constructor, a {@code public static} method, or — read only — an instance
-     * method called on part 0.
+     * What writes this value: a constructor, a {@code public static} method, or an instance method called on
+     * part 0.
      *
      * <ul>
      *   <li><b>A constructor</b>, the default: the one taking {@link #componentTypes()} in order, written
@@ -78,10 +78,14 @@ public interface ComponentType<T> {
      *       {@link #type()}: {@code Source.current()} returns a {@code CaptureSource}.</li>
      *   <li><b>An instance method</b>, whose receiver is part 0: {@code part₀.method(p₁, …)}. That is a chain
      *       a person writes by hand — {@code Precision.TIGHT.minArea(400)},
-     *       {@code CaptureSource.window("Game").region(r)}. The host reads it and <b>never writes it</b>: an
-     *       edited value is written through the declaration that owns the class name. So such a type is
-     *       listed in {@code StudioPlugin.componentTypes()} beside that declaration and never claims the
-     *       class.</li>
+     *       {@code CaptureSource.window("Game").region(r)}. The host reads it, and an edited value is written
+     *       through the declaration that owns the class name. So such a type is listed in
+     *       {@code StudioPlugin.componentTypes()} beside that declaration and never claims the class.
+     *       <b>The one time the host writes a chain</b> (2026-09-27) is a value that declaration's own parts
+     *       do not build back equal — {@code Combo.of(keys)} has no hold — when a chain's parts do, and its
+     *       part 0 is a different value the declaration writes whole: {@code Combo.of(Key.CTRL, Key.S)
+     *       .held(Duration.ofMillis(200))}. One link deep; a chain whose part 0 is the value itself (a
+     *       wither) is never written.</li>
      * </ul>
      *
      * <p>An {@link Executable} rather than a name, so a rename fails where the plugin builds this, not in a
