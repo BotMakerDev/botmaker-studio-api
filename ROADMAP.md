@@ -5,6 +5,16 @@ reasoning.
 
 ## Done
 
+### 2026-09-27 — `Runs.property`/`setProperty`; the `@Managed` shape is checked (studio cleanup, phase 7a)
+
+A system property every run of the bot on this machine starts with, kept by the host in its git-excluded
+state and passed as `-D`. It is a capability, not a vocabulary: the host owns the checkout's local state and
+the process it launches, and it has no idea what a name means — the SDK's `botmaker.launch.target` is the first
+user, replacing a `launch.target` key in `botmaker-project.properties` that travelled with the project although
+it named one computer's game. `default`s keep nothing. `@Managed`'s javadoc now says the one method a host ever
+writes is `public static T id() { return <expression>; }`, and that `botmaker plugin validate`'s new `managed`
+check holds a plugin's declared values to it.
+
 ### 2026-09-27 — `ComponentType.constants()` (picker feedback 3, phase 3)
 
 A `default` answering none: the `public static final` fields of the type a value equal to one is written as,

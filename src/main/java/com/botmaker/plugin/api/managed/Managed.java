@@ -46,6 +46,11 @@ import java.lang.annotation.Target;
  *       branch, a loop — is code the author wrote deliberately, and it is kept and never rewritten.
  * </ul>
  *
+ * <p>So the one method a host ever writes, rewrites or a bot's runtime installs is
+ * {@code public static T id() { return <expression>; }}. A plugin's side is held to it before it is published:
+ * {@code botmaker plugin validate}'s {@code managed} check (2026-09-27) writes each declared value's first
+ * expression the way a host would and reads it back, so a value no host could write never reaches a bot.
+ *
  * <h2>On a type instead: an open set</h2>
  *
  * <p>{@code @Managed} on a class says the plugin's window owns <em>every member of it</em>, so the code

@@ -122,6 +122,31 @@ public interface Runs {
     };
 
     /**
+     * The value of the system property every run of this bot <b>on this machine</b> is started with, or
+     * {@code null} when none is set (2026-09-27).
+     *
+     * <p>For a fact about running the bot here rather than about the bot — which game this computer launches,
+     * say — so it must never be committed with the project, never be published with it, and still reach the
+     * bot's process. The host keeps it beside the project in its own git-excluded state and passes it to every
+     * run and debug session as {@code -D<name>=<value>}; a bot run any other way passes its own {@code -D}.
+     * Host-only because the host owns both halves: the checkout's local state and the process it launches.
+     *
+     * <p>The name is a system property's, and a plugin names only its own: {@code botmaker.launch.target}
+     * belongs to the plugin whose runtime reads it. A host that runs no bots keeps nothing and answers
+     * {@code null}.
+     */
+    default String property(String name) {
+        return null;
+    }
+
+    /**
+     * Sets {@link #property(String)} for every later run on this machine; {@code null} or blank clears it. A run
+     * already in flight keeps what it started with. A host that runs no bots ignores it.
+     */
+    default void setProperty(String name, String value) {
+    }
+
+    /**
      * Reads {@link #pid()} into {@code action} when there is one, and answers whether there was.
      *
      * <p>Here so that the ordinary use — <em>do this to the bot if one is running</em> — does not spell out

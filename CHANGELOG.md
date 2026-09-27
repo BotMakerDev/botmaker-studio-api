@@ -19,6 +19,9 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`Runs.property(name)` / `Runs.setProperty(name, value)`.** A system property every run of the bot on this
+  machine starts with (`-D<name>=<value>`), kept by the host out of the project and out of git — for a fact
+  about running here, such as which game this computer launches. `default` keeps nothing.
 - **`@Refactor(value, done)`** in `…api.meta`. A host writes it on a bot's function when a refactor guessed
   there (a default value standing in for a removed call, a new parameter filled at a call site); `done = true`
   once reviewed. Replaces the `NeedsReview` annotation Studio used to generate into the bot's own package.
