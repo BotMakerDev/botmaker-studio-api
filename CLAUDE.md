@@ -2,31 +2,37 @@
 
 Guidance for working in **botmaker-studio-api**, the contract a BotMaker Studio plugin compiles against.
 
-Read the umbrella `../CLAUDE.md` first for how the six modules fit together, and
-`../docs/refactor/24-plugin-platform.md` for why this module exists at all.
+Read the umbrella `../CLAUDE.md` first, `../docs/refactor/24-plugin-platform.md` for why this module exists at
+all and `../docs/refactor/25-compatibility.md` before changing any public member. This file states what is
+true now. The mechanisms that were here and went — `Assets`, `Capture`, `Sources`, `PluginSource`, the
+parameter-data surface, the scaffold/seed surface, `ValueType`/`ValueCodec`/`ValueCatalog`, the catalog's
+method-reference builder, `@Replaces`/`@Since` — and why each went are in
+`../docs/refactor/31-umbrella-history.md` (*contract*); the text this file carried until 2026-09-28 is
+`git show ad93451:CLAUDE.md` in this repository. Search there before re-proposing one.
 
 ## What this module is
 
-Interfaces and records. Nothing else. It has no implementation, references no Studio type, and depends on
-one artifact (`javafx-controls`, `provided`).
+Interfaces, records, annotations, and the step classes that build a declaration. It has no implementation of
+a host, references no Studio type, and depends on one artifact (`javafx-controls`, `provided`).
 
-**One exception, since 2026-09-28: `managed.ManagedValues`**, the bot-side runtime of `@Managed`
-(`claim(ManagedValue<T>, Consumer<? super T>)`, `install(Class<?>...)`). It is the annotation's other half and
-runs inside a bot, which already has this jar through any plugin that puts `@Managed` there. It was
-`botmaker-plugin-basics`' until then, so a plugin needing its values at run time had to depend on basics for
-thirty lines. Add nothing else of the kind: the test is *does every plugin with a bot-side half need it, and
-does it name nothing but this module and the JDK*.
+**One runtime class: `managed.ManagedValues`**, the bot-side half of `@Managed`
+(`claim(ManagedValue<T>, Consumer<? super T>)`, `install(Class<?>...)`). It runs inside a bot, which already
+has this jar through any plugin that puts `@Managed` there. Add nothing else of the kind: the test is *does
+every plugin with a bot-side half need it, and does it name nothing but this module and the JDK*.
 
-**The second exception, the same day: the declaration steps.** Every surface a plugin fills is declared
-through small final step classes here, each offering only the moves valid next, so the compiler walks an
-author through a declaration and an incomplete one does not compile (the maintainer's call, over a toolkit
-builder: a plugin should need no toolkit to declare itself):
+Studio is the host; `botmaker-sdk` is the first plugin — a *privileged default* plugin, but a plugin, with
+no back door. If the SDK needs something this module does not expose, the contract is wrong, not the SDK.
+
+### The declaration steps
+
+Every surface a plugin fills is declared through small final step classes, each offering only the moves
+valid next, so the compiler walks an author through a declaration and an incomplete one does not compile (the
+maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare itself):
 
 - **The plugin**: `StudioPlugin.id(ID).named(NAME).types(() -> …).parts(…).editors(…).values(…).toolbar(…)
   .recorded(…)`, a `PluginDeclaration` handed to `DeclaredPlugin`'s constructor. Each surface is a supplier,
   asked when the host asks and cached nowhere: the lists are `static final` constants, and a list built in
-  the constructor would load its classes — JavaFX among them — on a headless host. It replaced the toolkit's
-  `AbstractStudioPlugin`, whose memoised `build…` hooks bought nothing over constants.
+  the constructor would load its classes — JavaFX among them — on a headless host.
 - **A type**: `PluginType.value(X.class)` → `fresh(…)` | `firstConstant()` | `filledBy(Owner::method)` →
   `editor(() -> E::draw)` → optional `preview(…)` → `writtenAs(Owner::factory, X::part, …)` |
   `writtenAsEach(…)` | `writtenAsRecord()` | `writtenAsConstant()` | `writtenAsLiteral()` | `writtenAsParts()`
@@ -38,360 +44,120 @@ builder: a plugin should need no toolkit to declare itself):
   built, and refuses a lambda. One typed `writtenAs` per arity, so the accessors' types pick an overloaded
   factory (`LocalDate::of`, `Color::new`); past ten, a plugin declares its own interface extending `Ref` and
   uses `writtenAs(Ref, Function...)`. `build` is invoking the factory on the parts coerced to its parameters,
-  `null` when they do not fit or it throws. `Ref.member(owner, name, params)` names the one factory javac cannot
-  reference — a static and an instance method sharing a name and arity (`CaptureSource.region`).
+  `null` when they do not fit or it throws.
 - **A managed value**: `ManagedValue.method(id).in(holder).holds(T.class, initial).because(reason)`,
   `.notCreated()` instead of `in` for one the host may open and never create, and
-  `ManagedValue.openSet(id).in(holder).because(reason)`. **A recorded value**:
-  `RecordedValue.of(T.class).at(Finder::find)`.
+  `ManagedValue.openSet(id).in(holder).because(reason)`. It is typed and declared once: a plugin keeps one
+  constant per value and uses it in `managedValues()`, in `ManagedValues.claim`, and through the toolkit's
+  `ManagedHandle`. **A recorded value**: `RecordedValue.of(T.class).at(Finder::find)`.
 - **A slot editor**: `SlotEditor.onParameter(Annotation.class)` | `forType(X.class)` | `when(predicate)` →
   `.draw(() -> E::draw[, () -> E::preview])` (`EditorSteps`). A value the type cannot tell apart is told apart
   by a `RUNTIME` annotation on the parameter it is passed to (`launchSteam(@SteamAppId String)`), matched by
   the annotation's binary name through `SlotContext.parameter()`; an editor reads its settings off it
-  (`@Setting(label, min, max, …)`). It replaced `forCall(calls(Owner.class, "name"), index, …)`, which named
-  methods by string and arguments by position.
+  (`@Setting(label, min, max, …)`). A preview is a small, non-interactive picture of one value, for a value
+  shown in a list of choices rather than edited.
 - **A toolbar item**: `ToolbarItem.id(ID).label(…).tooltip(…).in(group, order)` → optional
-  `.enabledWhen(…)`/`.icon(…)` → `.onPress(() -> MyWindow::open)` (`ToolbarSteps`, 2026-09-28). The press is a
-  `Pressed`, a supplier of the handler, for `Drawn`'s reason: the item list is built headless. The positional
-  `ToolbarItem.of`/`whenStopped` are deleted, and `DeclaredPlugin.toolbarItems()` is `final`.
+  `.enabledWhen(…)`/`.icon(…)` → `.onPress(() -> MyWindow::open)` (`ToolbarSteps`). The press is a `Pressed`,
+  a supplier of the handler, for `Drawn`'s reason: the item list is built headless.
+  `DeclaredPlugin.toolbarItems()` is `final`.
 
 Implementing the interfaces by hand still works and the host cannot tell the two apart; the steps are how
 nobody has to know which methods to override, which may answer `null`, or how to name a factory without a
 string.
 
-**A value a plugin declares is built through steps or a static factory, never a public constructor
-(2026-09-28).** A record's canonical constructor is public and changes when a component is added, which throws
+### Two strings that stay
+
+Both were examined on 2026-09-28 and kept; do not propose removing either without new facts.
+
+- **`Ref.member(owner, name, params)`** names the one factory javac cannot reference: the SDK's
+  `CaptureSource.region`, where a static `region(src, r)` and an instance `src.region(r)` share a name and an
+  arity. The SDK's never-delete keeps both for ever, so a new-named factory would still leave this one.
+- **The SDK's flow activity body is the text `Collect::body`** (`FlowTypes`). It is not a plugin writing
+  Java: it goes through the host's own source-leaf path (Studio's `ValueWriter.ofClass`), which parses it into
+  a tree, and renames follow bindings in the real `Sdk.java`. A contract `MethodName` type was considered and
+  declined: one contract type, grammar changes and a flow-editor rewrite to save about forty lines.
+
+### A value a plugin declares is built through steps or a static factory, never a public constructor
+
+A record's canonical constructor is public and changes when a component is added, which throws
 `NoSuchMethodError` in every compiled plugin that called it. So `ToolbarItem` and `ManagedValue` are final
-classes whose constructors only their steps reach (same accessors, so the host is unchanged), and
-`SlotRun.Element`, which an editor hands back and has no steps, is built with `Element.of(value, source)`. A
-record is still right for what the **host** builds and a plugin only reads (`Bounds`, `ActionContext.Area`,
-`PluginValues.Use`, `RecordedValue.Spot`, `Dialogs.Choice`). A new value a plugin constructs gets steps or a
-factory from its first commit. `botmaker-plugin-host`'s `ContractLinks` is the load-time half: a plugin linking
-a contract member this build lacks — or one made package-private — is refused with the member named
-(`25-compatibility.md` §1–2).
+classes whose constructors only their steps reach, and `SlotRun.Element`, which an editor hands back and has
+no steps, is built with `Element.of(value, source)`. A record is still right for what the **host** builds and
+a plugin only reads (`Bounds`, `ActionContext.Area`, `PluginValues.Use`, `RecordedValue.Spot`,
+`Dialogs.Choice`). A new value a plugin constructs gets steps or a factory from its first commit.
+`botmaker-plugin-host`'s `ContractLinks` is the load-time half: a plugin linking a contract member this build
+lacks — or one made package-private — is refused with the member named (`25-compatibility.md` §1–2).
 
-**`ManagedValue<T>` is typed and declared once** (2026-09-28). A plugin keeps one constant per value and uses
-it in `managedValues()`, in `ManagedValues.claim`, and through the toolkit's `ManagedHandle` in its windows —
-the id was spelled five times in the SDK before.
+## The packages
 
-- `com.botmaker.plugin.api` — `StudioPlugin`, `StudioServices` and what it hands back: `Theme`, `Dialogs`,
-  `Runs`. A plugin reads those as one facility, which is why they stay at the root (`Sources` was the fourth
-  until 2026-09-28; see *`Sources` is deleted* below). Beside
-  them, since 2026-09-28, **`StyleClasses`**: the style-class names the host's stylesheet defines, constants
-  only. It passes the host-only rule below — only the host knows what its stylesheet names — and it is the
-  one thing a plugin's widgets and Studio's own both need, which is why it is here rather than a reason for
-  Studio to depend on the toolkit. Studio spells the names with it and `StyleClassesTest` holds its
-  stylesheet to it.
-- **One package per contribution surface** (2026-09-21): `…api.slot` (`SlotEditor`, `SlotContext`,
+- `com.botmaker.plugin.api` — `StudioPlugin`, `DeclaredPlugin`, `PluginDeclaration`, `StudioServices` and
+  what it hands back (`Theme`, `Dialogs`, `Runs`), and **`StyleClasses`**: the style-class names the host's
+  stylesheet defines, constants only. Only the host knows what its stylesheet names, and it is the one thing a
+  plugin's widgets and Studio's own both need — which is why it is here rather than a reason for Studio to
+  depend on the toolkit. `StyleClassesTest` in Studio holds the stylesheet to it.
+- **One package per contribution surface**: `…api.slot` (`SlotEditor`, `EditorSteps`, `SlotContext`,
   `SlotRun`, `ValueContext`, `TypeRef`, `Bounds`), `…api.toolbar` (`ToolbarItem`, `ToolbarSteps`, `Pressed`,
-  `ToolbarGroup`, `EnabledWhen`, `ActionContext`),
-  `…api.source` (`ManagedValue`, `PluginValues` — `PluginSource` went 2026-09-21, `SourceSeed` 2026-09-22),
-  and, since 2026-09-22, `…api.params` (`@Param`) and `…api.managed` (`@Managed`), the two annotations that
-  sit on a **bot's** own declarations. Sixteen types moved out of
-  the root, which had become the place every new one landed; nothing was renamed or removed. The break is
-  binary-incompatible and was taken while both implementors are in this repository — see
-  `../docs/refactor/25-compatibility.md` §2, and *japicmp* below for the baseline it pins.
-- `com.botmaker.plugin.api.catalog` — `PaletteCatalog`, `Category`, `FacadeEntry`, `MemberEntry`,
-  `MemberId`, and the package-private `SourceOrder`. The *result* type:
-  `PaletteCatalog.of(Class<?>...)` builds it by reflection. `CatalogBuilder`, `MemberRef` and the arity
-  shapes `M0`–`M5` were deleted on 2026-08-27 — see *The catalog* below.
-- `com.botmaker.plugin.api.value` — **three interfaces**: `PluginType<T>` (the class, `fresh()`,
-  optional `freshCall`/`preview`), `EditableType<T>` (adds `editor(ValueContext)`, never `null` — a type its
-  owner draws) and `ComponentType<T>` (`componentTypes`, `components`, `build`,
-  optional `factory`, an `Executable`); and since 2026-09-28 the steps that declare them (`TypeSteps`,
-  `CallSteps`, `DeclaredType`, `DeclaredCall`, `DeclaredCallType`, `Ref`, `Drawn` — see above). What a bot's *value* can be, which is a question the
-  contract answers so a plugin can own a type without the SDK granting it one. See *The value vocabulary*
-  below for what the other seven types were and why none of them is here.
-- `com.botmaker.plugin.api.palette` — **`@Palette`**, **`@Hidden`**, `@PaletteLabel`, `@PaletteDefault`: the
-  marks a plugin puts on its own classes, read **at runtime by `PaletteCatalog.of`**. All four are
-  `RUNTIME` since 2026-08-27, because the plugin itself reflects on them. Their elements are plain `String`s
-  on purpose — an annotation element's type must be visible from the module *declaring* the annotation, so a
-  contract annotation can never take a plugin-defined enum constant.
-
-  **Two bits, not three.** `@Palette` = **catalogued** (the recognition set: imports, "does `Point` mean this
-  plugin's or `java.awt`'s"). `@Hidden` on the type = **not offered** in an insert menu; on a member = that
-  member is not offered. `FacadeRole{MENU,HIDDEN,VALUE}` is deleted: nothing ever distinguished its second
-  state from its third, and `VALUE` existed only to work around `@Internal` welding *not-surface* to
-  *not-offered*. `@Facade` → `@Palette` (no `role`), `meta.@Internal` → `palette.@Hidden`.
-- `com.botmaker.plugin.api.meta` — **`@ReplacedBy` alone**, which arrived from the SDK's `api.meta` in 1.2.0
-  because a plugin renaming its own types wants exactly the machinery the SDK already had. A pointer may name
-  a target in **another module** — the SDK's shims point here. It is the one annotation still `CLASS`
-  retention, and for a reason: **Studio** reads it out of a jar it never loads, and `CLASS` keeps it out of
-  every running bot's reflection data.
-
-  **`@Replaces` and `@Since` were deleted on 2026-08-27.** The back edge existed because Studio holds only
-  two jars at upgrade, so a bot skipping a release could not see a pointer added on an element later deleted.
-  japicmp now enforces **never-delete** on `com.botmaker.sdk.api.**`, so the deprecated element and its
-  forward pointer are both still in the target jar and `@ReplacedBy` alone answers every upgrade, chains
-  included. `@Since` went by this repo's standing test for a gate: *the question must not already be answered
-  by bytecode*.
-
-**These are annotations, not implementation**, so they do not breach the *interfaces and records* rule above.
-
-Studio is the host; `botmaker-sdk` is the first plugin — a *privileged default* plugin, but a plugin, with
-no back door. That is what makes the contract honest: if the SDK needs something this module does not
-expose, the contract is wrong, not the SDK.
+  `ToolbarGroup`, `EnabledWhen`, `ActionContext`), `…api.source` (`ManagedValue`, `PluginValues`),
+  `…api.record` (`@Records`, `Gesture`, `RecordedValue`), and `…api.params` (`@Param`) and `…api.managed`
+  (`@Managed`, `ManagedValues`), the two annotations that sit on a **bot's** own declarations.
+- `…api.value` — `PluginType<T>` (the class, `fresh()`, optional `freshCall`/`preview`), `EditableType<T>`
+  (adds `editor(ValueContext)`, never `null` — a type its owner draws), `ComponentType<T>` (`componentTypes`,
+  `components`, `build`, `factory`, an `Executable`), and the steps that declare them (`TypeSteps`,
+  `CallSteps`, `CallShape`, `DeclaredType`, `DeclaredCall`, `DeclaredCallType`, `Ref`, `Drawn`).
+- `…api.catalog` — `PaletteCatalog`, `Category`, `FacadeEntry`, `MemberEntry`, `MemberId`, and the
+  package-private `SourceOrder`. `PaletteCatalog.of(Class<?>...)` builds it by reflection.
+- `…api.palette` — **`@Palette`**, **`@Hidden`**, `@PaletteLabel`, `@PaletteDefault`: the marks a plugin puts
+  on its own classes, `RUNTIME` because the catalog reflects on them. Their elements are plain `String`s on
+  purpose — an annotation element's type must be visible from the module *declaring* the annotation, so a
+  contract annotation can never take a plugin-defined enum constant. `@Palette` = **catalogued** (the
+  recognition set: imports, "does `Point` mean this plugin's or `java.awt`'s"); `@Hidden` on the type =
+  **not offered** in an insert menu, on a member = that member is not offered.
+- `…api.meta` — **`@ReplacedBy`** (a rename's forward pointer; `CLASS` retention, because Studio reads it out
+  of a jar it never loads and it stays out of every running bot's reflection data) and **`@Refactor(value,
+  done)`**, the mark on a function where a refactor wrote a value the user never chose.
 
 ## What may go on `StudioServices` — the host-only rule
 
 **A service belongs here only when the host is the *only* possible source of it.** Not when the host happens
 to have written it first, and not when a real editor needed it — that was the old test, and it is what let
-the contract grow a vocabulary belonging to one plugin.
+the contract grow a vocabulary belonging to one plugin (`Assets`, `Capture`'s source choice, `Sources`'
+needles: see the history).
 
-Four things pass: **which project is open** (`projectDir`/`resourcesDir`), **the theme the user chose**,
-**the window a dialog is owned by**, and **the screen overlay** — an overlay goes over every window on the
-screen including the host's own, hides the editor that opened it, and comes back on the right thread. Nothing
-else does. A plugin can enumerate monitors, windows and emulator instances, grab pixels from any of them and
-read a launcher's installed-game library, because **`botmaker-shared` is published on JitPack and any plugin
-may depend on it** — so nothing shared can do is a privilege, and the SDK gets no advantage from being built
-in this repository. The files under `resourcesDir()` are ordinary files.
+What passes: **which project is open** (`projectDir`/`resourcesDir`), **the theme the user chose**, **the
+window a dialog is owned by** (`dialogs()`), **the bot as a process** (`runs()`: start, stop, `isRunning`,
+`pid`, run-state and telemetry listeners — the host compiled the project and owns the process it launched),
+**the status line** (`status(String)`), and **a plugin's own values as compiled Java in the bot's source**
+(`pluginValues()`, below). Nothing else does. A plugin can enumerate monitors, windows and emulator
+instances, grab pixels from any of them and read a launcher's installed-game library, because
+**`botmaker-shared` is published and any plugin may depend on it** — so nothing shared can do is a
+privilege. The files under `resourcesDir()` are ordinary files.
 
-**Six members were deleted on 2026-08-27 for failing this test**, all added weeks earlier because the SDK's
-editors wanted them: the whole `Assets` interface and `StudioServices.assets()` (the project's *named
-pictures* — that is `ImageTemplate`'s concept), and `Capture`'s `SourceChoice`, `Frame`, `Sample`,
-`chooseSource`, `defaultSource`, `grabTargetFrame` and `sampleFromTarget` (a *capture source*, and a sampled
-colour with its tolerance — `CaptureSource`'s and the vision API's). A third set never landed: `Launcher`,
-`GameChoice`, `EmulatorChoice` and two `Dialogs` methods over them, written and reverted the same day. Each
-was justified at the time as "the host owns the policy, the plugin owns what it is written down as" — the
-`SourceChoice` split — and the flaw in that reasoning is that **the host only owned the policy because
-Studio was written first**. A second plugin could not have added its own `Assets`, so the SDK was reaching
-through the contract for its own API. That is the back door this module exists to close.
+When a plugin's editor needs something the host has and the contract does not expose, ask *could any plugin
+have built this on shared plus its own files?* If yes, it builds it. If no, and only then, the contract grows
+— and it grows a **capability**, never a vocabulary: nothing here may name a concept that belongs to some
+plugin's API.
 
-When a plugin's editor needs something the host has and the contract does not expose, the question to ask is
-*could any plugin have built this on shared plus its own files?* If yes, it builds it. If no, and only then,
-the contract grows — and it grows a **capability**, never a vocabulary: nothing here may name a concept that
-belongs to some plugin's API.
+**When a shape wants to cross, pass what already has one definition.** `Runs.onTelemetry` hands over one
+encoded telemetry frame, and this module has no idea what is in it: the wire already is bytes with exactly
+one definition, and a decoded record would have put one runtime's vocabulary in the contract. `runs()` and
+`status` are `default` (`Runs.NONE`, nothing), so a host that runs no bots implements neither.
 
-**Two more passed it on 2026-08-30, both for the Remote Pilot becoming an SDK feature.** `StudioServices`
-gained **`runs()`** (a `Runs`: start, stop, `isRunning`, `pid`, and listeners for run state and telemetry)
-and **`status(String)`** (one line in the host's own status area). They pass on the plainest reading of the
-rule in this section: the host compiled the project, holds its resolved classpath, owns the process it
-launched, and draws the status bar. A plugin cannot start a bot it did not compile, learn that one exited,
-or discover a pid it never spawned.
+**`StudioPlugin.projectClosing()` is not a surface.** It is the one fact a plugin cannot establish for
+itself: that the project it opened an operating-system resource for (the Remote Pilot's bound port and nested
+display) is gone. **Only a resource the OS counts justifies a lifecycle.** The instance is reused across
+projects, so it means *this project is over*, never *you are being discarded*.
 
-**The interesting half is telemetry, and it is the pattern to copy.** Studio holds a decoded
-`com.botmaker.shared.ipc.TelemetryEvent`, and passing that record would have been shorter and would have put
-one runtime's vocabulary in the contract. So `onTelemetry` hands over **one encoded frame** and this module
-has no idea what is in it — the same trick `SlotContext.currentSource()` plays with Java source. *Bytes*
-rather than text because the wire already is bytes and has exactly one definition; a text rendering invented
-for the contract would be owned by neither end and would drift from both. **When a shape wants to cross, ask
-what already has one definition and pass that.**
+**`pluginValues()` rewrites one expression inside a file the host did not write**
+(`../docs/refactor/33-plugin-java.md`). A bot holds a plugin's values as `@Managed("id")` methods in its own
+`src/main/java/<bot package>/plugins/<last id segment>/`, and the host never touches the class around them.
+`open(id)` hands back a **`ValueContext`**, so a slot, a Parameters row and a `@Managed` value are all edited
+through one interface and no second way to edit a value exists; a body that is not a single
+`return <expression>;` answers empty and is shown read-only with the reason. An open set (`@Managed` on a
+type, the SDK's `Pictures`) changes **by binding**: `members`, `add`, `uses`, `rename`, `repoint`, `remove`,
+each total and refused when the bot would stop compiling. The host rewrites; the plugin says which constant.
+`PluginValues.Use` is host-constructed only.
 
-Both are `default`, answering `Runs.NONE` and doing nothing, so a host that runs no bots implements neither
-— and a plugin never asks whether running is supported.
-
-**A third thing passed it, and it is not on `StudioServices` at all** —
-`StudioPlugin.projectClosing()`. It contributes nothing, which is why it is not a sixth surface: it is the
-one fact a plugin cannot establish for itself, that the project it opened an operating-system resource for
-is gone. A plugin polling for it would be guessing at a moment the host knows precisely. It exists because
-the Remote Pilot is becoming an SDK feature and holds a bound port and a nested `:N` display; the rule it
-sets for anything similar is that **only a resource the OS counts justifies a lifecycle** — anything
-garbage collection can reclaim needs no implementation. The instance is reused across projects, so it means
-*this project is over*, never *you are being discarded*.
-
-**No member carries Java text for a plugin to parse or write (2026-09-23).** `SlotContext.enclosingSource()`
-/ `enclosingCall()` and `replaceEnclosingCall(String, String...)` (phase 12c, 2026-08-28) handed a plugin the
-call around a slot as text and let it write a new one; their one user, the duration editor's "wait a random
-amount" toggle turning `Wait.time(x)` into `Wait.between(a, b)`, went with them. `ValueContext.setSource`
-went the same day. A slot tells an editor the **names** of its call site and nothing else, and a value is
-written with `set(Object)`. What still crosses as text is `ValueContext.source()`, to *show* what the host
-could not read. A fresh value the bot re-evaluates is `PluginType.freshCall()`, a `Method` the host writes
-as `Owner.method()` with its import (`String freshSource()` until 2026-09-23).
-
-**`SlotContext.siblingRun()` and `SlotRun`** (2026-08-31) — several sibling slots edited as one. A
-`SlotContext` is one argument of one call, which is right for almost everything and wrong for a value the
-author writes as a **run** of arguments: three pictures to match any of. An editor confined to a single
-argument can change one element and never add or remove one, so it hands back the whole run with
-`replace(List<?>)`. What the host contributes is what only the host has: that these arguments *are* one
-list, `minimum()` (how few elements the surrounding source still compiles with), and `allowed()` (the only
-values it still accepts). **Since 2026-09-23 the elements are values**: `SlotRun.Element(value, source)`,
-read by the host's grammar and the bot's `@Managed` constants, `null` when unreadable; an `Element` handed
-back is kept exactly as written. The earlier version said *when the host must describe a plugin's values,
-describe them as the text they are written as* — that was right while no one but the plugin could read the
-text, and stopped being right when the host's grammar became the one reader.
-
-**`SlotEditor.preview(ValueContext)`** — a small, non-interactive picture of one value, `default null`. The
-host shows a value in one more place than it edits one: beside a **declared choice**, in the list an author
-picks from. `create` is wrong there (a live control in a list of options) and plain text is wrong too
-wherever the stored string is a *reference* rather than the value — a template name is not a picture,
-`#3A7F2B` is not a colour — because offering a gallery to pick a choice from and then listing the result as
-raw text puts the decoding back on the person the choices exist for. It is not a sixth contribution surface:
-it reuses the matcher `matches()` already provides, and its default is exactly today's behaviour for every
-type the host does not answer itself, so a type costs nothing by not implementing it.
-
-**`Sources` is deleted (2026-09-28), and the two paragraphs below are its history.** The token needle was the
-wrong unit: the SDK's picture rename replaced `Pictures.ORE` at each use and left the declaration named `ORE`,
-so the bot stopped compiling, and a static import or a renamed class was never found. A plugin's names are
-`@Managed` open-set constants now, and `PluginValues` changes them by binding — `members`, `open(id, member)`,
-`add`, `uses`, `rename`, `repoint`, `remove`, each total and refused when the bot would stop compiling (Studio's
-`project/managed/ManagedSets`). The capability/vocabulary split below still holds: the host rewrites, the
-plugin says which constant.
-
-**And one passed it on 2026-09-01, which is the clearest statement of the rule so far because the thing it
-splits was one class in the editor for a year.** **`StudioServices.sources()`**, returning a `Sources`:
-`find(List<String> needles)` and `replace(Map<String,String>, historyLabel, reviewNote)` over the bot's own
-Java.
-
-Studio's `TemplateReferences` renamed an image template and carried every block that named it. Half of that is
-host work no plugin can do — the open buffers are editor state, the walk knows which files the bot owns, and
-`@NeedsReview` plus the Project History snapshot are the host's own undo model. The other half is that
-`ore.png` is spelled `Templates.ORE`, which is `ImageTemplate`'s concept and **nobody else's** — so the host
-was carrying one plugin's vocabulary, and a second plugin renaming a concept of its own had no way to ask for
-the same service. Cutting it at this interface leaves each side with what is actually theirs. The picture
-library moved to the SDK plugin the same day, and it was the last thing in Studio that knew what a picture is
-called.
-
-**The needle is the part to copy.** It is a **sequence of Java tokens**, matched as tokens and never as text:
-`Templates.ORE` matches `Templates . ORE` and does not match `Templates.OREX` or `MyTemplates.ORE`. That is a
-fact about Java, which is why it names nobody's concept — compare `Assets`, which had to say the word
-*picture*. Not a regex, deliberately: a regex hands every plugin the power to corrupt a user's source with a
-bad pattern, and pins one flavour of regex semantics into a surface only a major release may break. And text
-rather than an AST, which is rule 3 above arriving from the other direction — the file a rename most needs to
-reach is the one the user has open and half-edited, and it does not parse.
-
-`Use` is **host-constructed only**, and the record says so in its own javadoc: a plugin that had called its
-canonical constructor would take a `NoSuchMethodError` the day a component is added. That is why replacements
-are a `Map<String,String>` and not a `Replacement` record — see `docs/refactor/25-compatibility.md` §2.
-
-**And one more passed it on 2026-09-20: `StudioServices.pluginValues()`, returning a `PluginValues`** — a
-plugin's own values as **compiled Java in the bot's own source** rather than JSON
-(`docs/refactor/33-plugin-java.md`). Two methods, `ids()` and `open(String id)`, both total.
-
-**The host rewrites one expression inside a file it did not write.** A bot holds a plugin's values as
-`@Managed("id")` methods in its own `src/main/java/<bot package>/plugins/<last id segment>/`, and the host
-never touches the class around them: not to add a method, not to delete one, not to reformat it. What it
-rewrites is the expression such a method returns, one `ReturnStatement` at a time.
-
-**`StudioPlugin.pluginSources()` and `PluginSource` stood here for one day and are deleted (2026-09-21).**
-A plugin handed over a class's whole text with `${package}` where the package line goes, and the host copied
-it in on the next bind. Everything above survived that deletion unchanged — what went is the belief that the
-*host* had to put the first copy there. Two things retired it:
-
-- **A project gets its file from the template it was created from.** `botmaker-gamebot` carries one;
-  `botmaker-base` carries none and should, since it names no plugin at all. The one case left was *adding a
-  plugin to an existing project*, and a contract surface plus a copy-on-every-bind plus a package rewriter
-  is a great deal of machinery for it. What answers it instead is the plugin's own window offering to write
-  the file — one write, by the thing that wants it, at a user's click.
-- **The skeleton shrank until it was not worth shipping.** It carried an `install()` that the bot's `main`
-  called by hand, one line per plugin. `com.botmaker.sdk.api.bot.Bot.run(anchor, goHome, Sdk.class)` installs
-  every `@Managed` value it is handed (through `botmaker-plugin-basics`' `ManagedValues`), so the file is two
-  `@Managed` methods and nothing else. The bot still **names** each values class — a fact only it has, and one
-  javac checks — but no longer says what to do with them.
-
-**The deletion was reasoned as legitimate before `v0.1.6` is cut — and `v0.1.6` had already been cut**
-(2026-09-21, pushed; it contains `PluginSource`). So it is a break against the baseline, and the release
-that carries it is a major. See *japicmp* below.
-
-**That inversion is the whole design, and it is the fifth attempt.** The four before it — a record handed
-over reflectively, the grammar host-side, an annotation processor, and a sequence of `ModelCall` statements
-(shipped earlier the same day as `2bc1e2f` and withdrawn) — all made the host the **author of a compilation
-unit**, which forces it to own the package, the class name, the imports, the ordering and the whole round
-trip. **Not being the author answers all of those at once**, and shrinks what the host must parse from *a
-class* to *one expression* — the domain `ValueCatalog.valueOf` already covered and already had tests for
-(the host's `ValueGrammar.valueOf` since 2026-09-22).
-The fifth attempt had the plugin hand the file over as text; the sixth, a day later, has nobody hand it over
-at all and the host reading whatever Java is there. Both keep the property that matters, and the second is
-the one with no surface.
-
-**`open` hands back a `ValueContext`, which is the point.** A slot on the canvas, a row of the Parameters
-window and a `@Managed` value are all edited through one interface, so a plugin's own window reads and writes
-its value with the interface it already knows and **no second way to edit a value exists**. A body the user
-has hand-edited into something that is not a single `return <expression>;` answers empty and is shown
-read-only with the reason — the same rule a computed `@Param` initializer already gets.
-
-**The two alternatives that were never on the table** still shape this. A plugin that *emits text into the
-host* makes every plugin a code generator whose output the host cannot check — which is not what a
-`PluginSource` is, since it is copied once and then belongs to the user rather than being re-emitted. A
-plugin that supplies a *write callback* supplies one direction and leaves the other to discipline: the
-measured state of `ValueCodec`, where `literal` had seventeen implementations and `wireOfLiteral`, a
-`default` returning empty, had nine, because the reader had exactly one caller. **The half nobody is forced
-to write is the half that rots.**
-
-**The plugin names its own id** — its `@Managed` ids are its own, and one `StudioServices` instance serves
-every plugin. A plugin already names its own id to reach its own storage (`PluginData`), so nothing about the
-trust model changes.
-
-A class name, a method body and a `ValueForm` are facts about Java, so *capabilities, never vocabularies*
-holds — compare `Assets`, which had to say the word *picture*.
-
-## Parameter data (2026-09-10 – 2026-09-22) — deleted, and why it is worth reading anyway
-
-**`ParameterGroup`, `ParameterEdit`, `StudioPlugin.parameters(String)`, `parameterRows(String)` and
-`parameterEdited(ParameterEdit)` are gone, and `ParameterRow` and `Visibility` followed them to Studio on
-2026-09-28** — no plugin ever built or read either once the surface was gone. A parameter is a `@Param` static field in
-the bot's own Java, read and written by the host off the syntax tree, and a plugin that wants a row of its
-own puts a `@Param` field in the file it ships — the host's ordinary walk of the bot's sources finds it with
-no surface at all.
-
-**What killed it is the one measurement this file keeps making.** *Nothing ever declared a group.* The SDK's
-was the only implementation in existence and it declared no rows; `botmaker-plugin-basics`'
-`ParameterStore.declare`, the call that would have put a row in a plugin's file, had no caller anywhere. So
-`parameterRows` answered out of a pre-2026-09-17 project's JSON and empty for every project created since —
-a second reader of a format nothing writes, which the umbrella `CLAUDE.md` forbids by name. **The half
-nobody is forced to write is the half that rots**, and here the half nobody wrote was the writing half.
-
-The rest of this section is kept as it was written, because the cut it describes is a good one and the
-reasoning will be needed again — for a surface that does have two live ends.
-
----
-
-`StudioPlugin.parameterRows(String groupId)` and `parameterEdited(ParameterEdit)`, with `ParameterRow` and
-`ParameterEdit` beside `ParameterGroup`. The seventh surface, and the first one where a plugin hands over
-**project data** rather than something it decided at build time.
-
-It exists because the Parameters window read one plugin's storage format itself. `ParameterGroup` had always
-said the right thing — a plugin declares the *section*, a user declares the values in it — and then the host
-parsed the values out of `activities.json`, a file that predates the plugin system. A second plugin could not
-have had parameters at all, and the host knew what a `tag`, a `visibility` and a stored duration were. So
-this is the same cut as `StudioServices.sources()`: the host keeps the window, the undo, the rendering and
-the ordering; the plugin keeps the file, the meaning of the text and when it is written.
-
-**Every component of a row is already vocabulary this module owns** — a name, a `ValueForm`, the value's
-Java source, a `Visibility`, a declared option set, a `Range`, a category out of
-`ParameterGroup.categories()`. Nothing plugin-specific crosses, no `Class<?>` crosses, and the value is
-**text**, exactly as it is through `ValueCodec`. That is rules 2 and 3 above, satisfied by not needing an
-exemption.
-
-**The pair is shaped as a class and a record on purpose, and it is the clearest example of compatibility
-trap #2 in the module.** A plugin *builds* a row, so `ParameterRow` is a final class with a builder — a
-record's canonical constructor is part of its binary signature and a component added later throws
-`NoSuchMethodError` in every plugin already compiled. The host *builds* an edit and a plugin only reads it,
-so `ParameterEdit` is a record and may grow a component safely. The trap is a ban on records a **plugin**
-constructs, not a ban on records; `Use` (host-constructed, above) is the same call made the same way.
-
-**`parameterEdited` answers the row as stored**, `Optional.empty()` for a row this plugin does not own. That
-one return type is what carries a clamp, a normalisation and a refusal without the host modelling any of
-them: the window renders what comes back, so a value pulled to its `Range` or a duration spelled canonically
-shows up by itself, and a plugin that will not accept the edit answers the row it still holds.
-
-**`projectOpened(StudioServices)` arrived with it (2026-09-10) and is not a surface** — it is
-`projectClosing()`'s mirror, and the same kind of fact: a plugin is constructed once by `ServiceLoader` and
-then serves whatever the host binds, so *which* project it has is something only the host can tell it. It is
-here because a data surface takes a group id and nothing else. That was a choice: rows are asked for every
-time a window is drawn, and threading the host through each call would put it in every future data surface
-too. So the host names the project once per bind and the plugin reads its own file when asked. **Nothing
-expensive may happen in it** — a project open must not pay for a window nobody has looked at — which is the
-rule `AbstractStudioPlugin`'s four lazy builders already follow.
-
-**Asked, never pushed.** There is no listener, because a listener is a capability with a lifecycle — a
-registration, a thread, an unsubscribe — and the only thing it buys is a plugin's own dialog changing a value
-behind the window's back, which no plugin has yet.
-
-**There is no declaration half any more (2026-09-17).** `parameterDeclared(ParameterDeclaration)` and its
-record are deleted: a *user* parameter is a `@Param` static field in the bot's own Java, and the host adds,
-renames, retypes, refiles and removes one by editing the syntax tree. A plugin's rows are the plugin's own —
-an activity's enable flag, a capture target — and a plugin declares those in its own code, where a wire form
-for *here is the row I want* buys nothing. What is left of the surface is `parameterRows(String)` and
-`parameterEdited(ParameterEdit)`: read the rows, change a value.
-
-**The rule the deleted method was an instance of still stands**: state the desired end value and let the
-owner reconcile it, rather than adding a verb. A verb would have made the contract learn what retyping means,
-which is a rule about a plugin's own value types; an enum of verbs would have frozen today's list into a
-surface only a major release may extend. Reach for it whenever a surface looks like it needs a verb —
-`parameterEdited` is the one that remains, and its answer is the row *as stored*, which is how a clamp, a
-canonical spelling or a pruned value reports itself.
-
-## The three rules that are easy to break
+## The rules that are easy to break
 
 **1. Every method but `StudioPlugin.id()` is `default`, and stays that way.** A bot's source can be
 rewritten when the SDK changes — Studio holds an AST of it. A plugin's compiled `.class` files cannot be
@@ -401,191 +167,84 @@ it must be allowed to move slower.
 
 **2. Nothing from a plugin may cross as a `Class<?>` the host is expected to load.** The host resolves types
 out of the *bot's* classpath, not its own, so a type may be a different version of itself or absent
-entirely. `TypeRef` answers `is(Class)`/`isSubtypeOf(Class)` by binary name and hands over no name at all
-since 0.3.0 (`simpleName`/`qualifiedName`/`isNamed` were deleted: every caller matched a spelling, and a
-bot's own `Duration` was claimed as `java.time.Duration`); that is the comparison that is actually true
-across two classloaders. A slot's call is `SlotContext.enclosingExecutable()`, which the host loads on the
-**plugin's** loader — so it is a class the plugin could have named, and `SlotEditor.onParameter` compares
-the parameter's annotations by name. (Inside a catalog a `Class<?>` *is* used — but the plugin holds it,
-and it is the plugin's own class.)
+entirely. `TypeRef` answers `is(Class)`/`isSubtypeOf(Class)` by binary name and hands over no name at all;
+that is the comparison that is actually true across two classloaders. A slot's call is
+`SlotContext.enclosingExecutable()`, which the host loads on the **plugin's** loader — so it is a class the
+plugin could have named — and `SlotEditor.onParameter` compares the parameter's annotations by name.
 
 **3. No syntax tree and no Java text, in either direction.** An editor reads a value
 (`ValueContext.value(Class)`) and writes one (`set(Object)`); the host owns every character of syntax. The
-one string left is `ValueContext.source()`, to *show* what the grammar could not read, never to parse. (Until
-2026-09-22 the rule was the opposite — `currentSource()` and `replaceWith(String…)` carried Java text both
-ways — and every plugin that wanted a typed value wrote its own parser, none of them agreeing.) Keeping it
-this way is what stops the host's parser from becoming plugin surface.
+one string left is `ValueContext.source()`, to *show* what the grammar could not read, never to parse. A
+fresh value the bot re-evaluates is `PluginType.freshCall()`, a `Method` the host writes with its import.
+**`SlotContext.siblingRun()`** hands several sibling arguments over as one list of values
+(`SlotRun.Element`s, `null` value when unreadable, kept exactly as written when handed back), with what only
+the host knows: `minimum()` (how few elements still compile) and `allowed()`.
 
-## The value vocabulary — one declaration per type, and no plugin parses anything
+## The value vocabulary — one declaration per type
 
-A plugin declares a type **once**, as a `PluginType<T>`: `type()`, `fresh()` — and `EditableType<T>`'s
-`editor(ValueContext)` when it draws the type itself (2026-09-27; a plain `PluginType` is drawn by another
-plugin's `forType` or the host's fallback, and `plugin validate` refuses one nobody draws). Where
-its Java is a call rather than a literal, the same class also implements `ComponentType<T>` and says what
-goes in the brackets. **Every method is abstract**, so javac asks for all of it at the one moment the author
-has the type in front of them.
+A plugin declares a type **once**, as a `PluginType<T>` — an `EditableType<T>` when it draws the type itself
+(a plain one is drawn by another plugin's `forType` or the host's fallback, and `plugin validate` refuses a
+type nobody draws), plus a `ComponentType<T>` when its Java is a call.
 
-- **A fresh value is a `T`, not a string.** `fresh()` returns `new Point(0, 0)`, not `"new Point(0, 0)"`.
-  The old `SourceSeed` carried it as Java text javac never looked at, so a renamed class or a removed
-  constructor produced a seed the host wrote into somebody's file and could not compile. The two weaker
-  alternatives were both rejected on this point: an annotation is not enforced (an author may simply not
-  write it), and a base class cannot work at all — Java has no `static abstract`, and a JDK type like
-  `java.awt.Color` cannot be made to extend anything.
-- **Nothing parses.** There is no `parse(String)` and no `valueOfLiteral(String)`. The host owns every
-  character of syntax in both directions, which is what lets one grammar serve every plugin and what stopped
-  a `java.awt.Color` parameter being rewritten the moment it was opened.
-- **The identity is the Java class, not an id.** The host indexes declarations by `type()`'s canonical name.
-  The class is **read, never loaded** — only its names are taken off the object the plugin already holds,
-  and nothing compares `Class` objects — so rule 2 holds. Two plugins may not *own* one type; offering an
-  editor for somebody else's is `SlotEditor.forType`, and the host asks the user which to use.
+- **A fresh value is a `T`, not a string.** `fresh()` returns `new Point(0, 0)`, so a renamed class or a
+  removed constructor fails the plugin's own compile, not a user's file.
+- **Nothing parses.** The host owns every character of syntax in both directions, which is what lets one
+  grammar (Studio's `plugin/grammar/`) serve every plugin.
+- **The identity is the Java class, not an id.** The host indexes declarations by the class's canonical name,
+  **read, never loaded**. Two plugins may not *own* one type; offering an editor for somebody else's is
+  `SlotEditor.forType`, and the host asks the user which to use.
 - **A type no loaded plugin declares is a supported state, not an error path.** The value keeps the
-  expression its author wrote, renders read-only and is never rewritten. Refusing the file or coercing the
-  value would destroy a user's data because a jar is missing.
-- **`build(components(v))` equals `v` is the law**, and both halves are abstract for the reason
-  `ValueCodec`'s reader pair taught: the half nobody is forced to write is the half that rots.
-  `botmaker plugin validate` checks it against `fresh()`.
-- **`ComponentType.factory()` is an `Executable` (2026-09-23)**, not the name it was: a constructor by
-  default, a public static method, or an instance method on part 0 that the host reads and never writes
-  (`Precision.TIGHT.minArea(400)`). A plugin looks it up once, with the parameter types, so a rename fails in
-  the plugin's own tests; the host reads only its shape. `factoryOwner()` went with the string
+  expression its author wrote, renders read-only and is never rewritten.
+- **`build(components(v))` equals `v` is the law**, and `botmaker plugin validate` checks it against
+  `fresh()`. The half nobody is forced to write is the half that rots.
+- **`ComponentType.factory()` is an `Executable`**: a constructor, a public static method, or an instance
+  method on part 0 that the host reads and never writes (`Precision.TIGHT.minArea(400)`)
   (`../docs/refactor/35-typed-value-reader.md`).
-- **No Jackson here, and none is coming.** Adding a serialisation library to this module would impose it on
-  every plugin and tie the contract to its compatibility rate.
-
-### What was here until 2026-09-22
-
-`ValueType` (a persisted id and its spellings), `ValueCodec` (`parse`/`store`/`literal`/`valueOfLiteral`),
-`ValueCatalog` (the registry and its merge), `ValueForm`/`ValueContainer`/`HostContainers`/`SourceSplit`
-(the grammar), and `Range`. Three things killed them, and each is worth keeping:
-
-- **The codec half was already dead.** Storage stopped being text when a user parameter became a `@Param`
-  field (2026-09-17) and a plugin's values became `@Managed` methods (2026-09-21). `parse`, `store` and
-  `defaultWire` had no caller outside their own plumbing; `Codecs.ofEnum`, `or` and `seeded` had none at
-  all. What was *still* wired was wrong: a leaf round-tripped Java through wire text through
-  `literal(parse(java))`.
-- **The grammar was never a plugin's to read.** A `ValueForm` is how the host walks
-  `Map<String, List<Point>>` while writing it out and reading it back. Nothing outside the host ever walked
-  one, and now that a value crosses as a *value* nothing outside the host can want to. It lives in
-  `botmaker-studio`'s `com.botmaker.studio.plugin.grammar` now — with `ValueContainer` merged into
-  `ComponentType`, since a composite a plugin registers and a composite the host seeds are the same thing.
-- **Four declarations described one type.** For `Point`: a `ValueType`, a `ValueCodec`, a `SourceSeed` and a
-  `SlotEditor` predicate, in three files, two of them strings, with nothing checking they agreed.
-
-The removals were planned for a `v0.1.6` that turned out to be already cut, so like the `PluginSource` and
-`ParameterGroup` removals they are breaks against the baseline — see *japicmp* below.
+- **No Jackson here, and none is coming.** A serialisation library here would be every plugin's, at its
+  compatibility rate.
 
 ## The catalog, and why it is reflection
 
-**The host discovers the classes** (2026-09-23): when a plugin's `catalog()` is empty, the default,
+**The host discovers the classes**: when a plugin's `catalog()` is empty, the default,
 `botmaker-plugin-host`'s `Palettes.of(plugin)` finds every `@Palette` class in that plugin's jar and hands
-them to `PaletteCatalog.of(…)`. No plugin lists its classes (the SDK's list of 54 had missed two). A scan in
-this module was tried the same day and withdrawn: it is implementation, and discovery is the host's.
-**Members are discovered, never named**. Every public declared method of a `@Palette` class is offered unless something on
-it says otherwise, grouped by name, lead shape chosen by `@PaletteDefault` or else fewest parameters, labels
-from `@PaletteLabel`, whole name dropped if any overload is `@Hidden`.
-
-**It used to be method references** — `Mouse::click` through a `MemberRef extends Serializable` and a
-`SerializedLambda`, built by `CatalogBuilder` with one arity shape `M0`–`M5` per parameter count. All of that
-was deleted on 2026-08-27 along with `botmaker-plugin-processor`, and the property it was defended on does
-not need saving: *a catalog naming a renamed member does not compile* was answering a problem that only
-exists when something names members. Nothing does now, and since the host discovers classes, nothing
-names classes either.
-
-The processor also cost something a plugin author outside this repository could not pay: a pom that omitted
-`<annotationProcessorPaths>` got no catalog, and nothing said why. Reflection needs no build configuration.
-
-**Three things about `of` that are decisions rather than details:**
+them to `PaletteCatalog.of(…)`. No plugin lists its classes. **Members are discovered, never named**: every
+public declared method of a `@Palette` class is offered unless something on it says otherwise, grouped by
+name, lead shape chosen by `@PaletteDefault` or else fewest parameters, labels from `@PaletteLabel`, whole
+name dropped if any overload is `@Hidden`. Reflection needs no build configuration, which is why it replaced
+an annotation processor a plugin's pom could silently omit.
 
 - **It degrades, never throws.** Two `@PaletteDefault`s on one name, a `@PaletteLabel` on a `@Hidden` member,
-  two facades disagreeing about one category's label, a class with no `@Palette`, a facade whose members
-  cannot be read at all (`LinkageError` from an optional dependency the host did not resolve) — each is
-  collected into **`problems()`** and the rest of the catalog is built. The precedent is `ValueCatalog.merge`
-  and the rule behind both is the same: **no malformed catalog may be the reason a project will not open.**
-- **Member order is the class file's, not `getDeclaredMethods()`'s.** javac writes the `methods` table in
-  source order and reflection promises nothing, so `SourceOrder` parses the class file's constant pool and
-  methods table to recover the author's ordering — the one processor capability reflection alone lacks, and
-  the reason the switch reproduced the generated catalog's menus exactly. Every failure path returns an empty
-  list and the caller sorts alphabetically: the worst case is a cosmetic menu order.
-- **Constructors are not catalogued.** Reflecting them put an `<init>` entry under seven *offered* static
-  facades whose public constructor exists only because nobody wrote a private one, and a palette entry
-  inserts a call. `MemberId` keeps `of(Constructor)` and `CONSTRUCTOR` for a plugin that wants one.
+  a class with no `@Palette`, a facade whose members cannot be read (`LinkageError` from an optional
+  dependency the host did not resolve) — each is collected into **`problems()`** and the rest of the catalog
+  is built. **No malformed catalog may be the reason a project will not open.**
+- **Member order is the class file's, not `getDeclaredMethods()`'s.** `SourceOrder` parses the constant pool
+  and methods table to recover the author's ordering; every failure path returns an empty list and the
+  caller sorts alphabetically. **Reflection promises no order** — where order matters to a human, recover the
+  author's; where a thing is addressed by key, sort it.
+- **Constructors are not catalogued**: a palette entry inserts a call. `MemberId` keeps `of(Constructor)` for
+  a plugin that wants one.
 
-**What a catalog does not answer: presence.** It describes the build it was reflected from, not the jar the
-bot resolves — so whether a member exists in the jar a bot actually pins stays with the host's ClassGraph
-scan of that jar, and the catalog answers only curation, order and labels. The two compose as an
-intersection, which fails in the safe direction: an old pin may be offered slightly less than it truly had,
-never more.
-
-## A plugin does not write files — and this is where that was tried
-
-Deleted on 2026-08-29, whole: `com.botmaker.plugin.api.scaffold` (`@Scaffold`, `@ClassName`, `@EnumValues`,
-`@Editable`, `Seeding`), `catalog.ScaffoldCatalog`/`ScaffoldEntry`/`ScaffoldPlan`, and
-`StudioPlugin.scaffold`/`seedings`. It is recorded rather than edited away, because the reasoning that
-produced it is a good one and will be produced again.
-
-A **seed** was a real class in the plugin's own build, marked with what a host may substitute, written into a
-user's project once and thereafter *maintained* at the marks — the type name, and the constants of a
-substituted enum. It replaced `botmaker-sdk`'s `SourceEmitter`, which built nine `.java` files as Java
-strings that nothing checked until somebody ran the generator, and every step of it was an improvement on
-what it replaced: javac checked the seed, the class list was class literals, `ScaffoldPlan` validated without
-a parser, the key told a rename from a delete-plus-create.
-
-**The flaw is one level up, and it is the same flaw as `Assets` above.** Replacing one code generator with a
-generalised one made the wrong thing a surface: *any* plugin could now own files inside somebody's source
-tree. A file a plugin owns is a file its user cannot freely edit, rename or delete, and everything the
-mechanism grew — a key ledger persisted in the project, a reconciler, a rename engine rewriting the user's
-own references — was cost paid to work around that one fact. The rule that replaces it:
-
-> **A project's structure belongs to the user. A plugin contributes methods a user calls.**
-
-Everything a seed was for has an answer on this side of the line. Behaviour is a static method: an activity's
-body is `Activities.define("Mining", ctx -> …)` written wherever the user likes, not a generated subclass.
-Anything that followed *as a whole* from project data was data all along and is read at runtime — which was
-already the seed surface's own rule, stated in its javadoc, and is what the rest of the file always failed.
-The one thing genuinely lost is the compile check a per-activity `Outcome` enum bought; it is replaced by a
-host **picker** on the argument, which is a contribution surface this module already has.
-
-Two smaller things learned there, kept because they generalise:
-
-- **`javax.lang.model.SourceVersion`, never a hand-rolled keyword list.** It covers the three cases such a
-  list always misses — `true`, `false` and `null` are literals rather than keywords, and none is a name. It
-  lives in the `java.compiler` module, which is present: Studio's jpackage build bundles a **full** JDK
-  runtime. There are already three hand-rolled lists in this project (Studio's `VariableNames`,
-  `FunctionDraft`, and a partial one elsewhere); do not add a fourth.
-- **Reflection promises no order**, and `getDeclaredClasses()`/`getDeclaredMethods()` order varying by JVM is
-  how a plugin author's own test passes locally and fails in CI. Where order matters to a *human* — a
-  palette's members — `SourceOrder` recovers the author's; where a thing is addressed by key, sort it.
+**A project's structure belongs to the user; a plugin contributes methods a user calls.** No surface here
+writes files into a user's source tree (the scaffold/seed surface that did was deleted on 2026-08-29), and a
+file a plugin ships is copied once, from its template, and is the user's from then on.
 
 ## japicmp, and why it is legitimate here
 
 `mvn verify` compares this build against `botmaker.japicmp.baseline` and **fails on any binary- or
 source-incompatible change**, with no ignore list and no exemption annotation. It catches the trap
-`../docs/refactor/25-compatibility.md` lists as checked by nothing: adding a component to a public record
-changes its canonical constructor descriptor and throws `NoSuchMethodError` in every already-compiled
-plugin — source-compatible, binary-incompatible, and until 2026-08-27 carried by a Javadoc sentence.
+`../docs/refactor/25-compatibility.md` lists: adding a component to a public record changes its canonical
+constructor descriptor and throws `NoSuchMethodError` in every already-compiled plugin.
 
-The SDK's August japicmp gate was deleted because **CI cannot tell an intended break from an accident: it
-cannot see the version.** That is an objection to a *conditional* rule. Here the rule is unconditional —
-only a Studio major release may break a plugin, and that release edits this block — so there is nothing to
-distinguish and the objection does not apply. The baseline is set to the previous tag in every release
-commit, which `Japicmp.bump` does automatically and never moves backwards.
+The SDK's August japicmp gate was deleted because CI cannot tell an intended break from an accident. Here
+the rule is unconditional — only a Studio major release may break a plugin, and that release edits this
+block — so there is nothing to distinguish. The baseline is set to the previous tag in every release commit
+(`Japicmp.bump`, never backwards).
 
-**The baseline is pinned to `v0.1.6`**, set on 2026-09-21 while that tag did not exist yet, so the package
-move could ship in it (`ignoreMissingOldVersion` let the absent baseline pass). **`v0.1.6` was cut and
-pushed the same day.** Everything removed since — `PluginSource`, the parameter-data surface and the whole
-value vocabulary (2026-09-21/22) — is therefore a break against a published baseline, and the next
-`mvn verify` that could resolve it would refuse the build. **Decided 2026-09-23: that release is
-`0.2.0`**, the breaking digit in `0.x`, and the baseline is pinned to `v0.2.0` now — absent, so it reports
-and passes exactly as `v0.1.6` did, and `Japicmp.bump` never moves it back. **This pins the release: it
-must be `--studio-api 0.2.0`.**
-
-**Until 2026-09-23 this gate compared nothing.** The `api-gate` profile named no repository, so the
-baseline was only looked for on Maven Central, where no tag of this module exists, and
-`ignoreMissingOldVersion` passed every build. The profile carries JitPack now. Checked both ways:
-`-Dbotmaker.japicmp.baseline=v0.1.6` downloads that jar and fails, listing every removal above,
-subpackages included; the default `v0.2.0` reports the missing tag and passes. **When a baseline
-"passes", look at the first line of `target/japicmp/japicmp.diff`**: `against` followed by nothing
-means nothing was compared.
+**The baseline is pinned to `v0.3.0`, ahead of the tag.** `v0.2.0` shipped the 2026-09-21/22 removals; what
+has broken since (the steps replacing `forCall`/`calls` and the positional `ToolbarItem.of`, the hidden
+constructors) is the next release, which must therefore be **`--studio-api 0.3.0`**. An absent baseline tag
+reports and passes. **When a baseline "passes", look at the first line of `target/japicmp/japicmp.diff`**:
+`against` followed by nothing means nothing was compared.
 
 ## Style
 
@@ -596,14 +255,14 @@ means nothing was compared.
   decision that constrains an implementor (the callback that is not invoked on cancel, the label that falls
   back to the member name, the empty catalog meaning "declined to curate") is written down where they will
   read it.
-- **No utility methods that are not about the contract.** `Capture.toFxImage` is here because capture is
-  where the AWT image comes from; a general-purpose helper that merely happens to be useful is not.
+- **No utility methods that are not about the contract.** A general-purpose helper that merely happens to be
+  useful goes in a plugin or the toolkit.
 
 ## Building
 
 ```bash
-mvn test        # PaletteCatalogTest, PluginTypeTest, SlotEditorTest, StudioPluginDefaultsTest, the context
-                # defaults tests — the module's only behaviour
+mvn test        # the step tests, PaletteCatalogTest, SlotEditorTest, TypeRefTest, ManagedValuesTest,
+                # StudioPluginDefaultsTest, the context defaults tests — the module's only behaviour
 mvn verify      # the above plus japicmp against botmaker.japicmp.baseline (see above)
 mvn install     # com.github.LiQiyeDev:botmaker-studio-api:0.0.0-SNAPSHOT
 ```
