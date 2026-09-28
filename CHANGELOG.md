@@ -67,8 +67,15 @@ is allowed to make. Additions arrive as `default` methods.
 - **`managed.ManagedValues`**, the bot-side runtime of `@Managed`, moved here from `botmaker-plugin-basics`:
   `claim(ManagedValue<T>, Consumer<? super T>)` hands a plugin's sink a typed value, `install(Class<?>...)`
   runs a bot's values classes. A plugin no longer depends on basics to receive its values.
+- **`SlotRun.Element.of(value, source)`**, the way a plugin builds an element. The record's constructor stays
+  (a record's must be public), but a plugin that calls it breaks the day the record grows; the factory does not.
 
 ### Changed
+
+- **`ToolbarItem` and `ManagedValue` are final classes, not records.** Same accessors; the constructor is
+  reachable only through their steps, so a component added later is a new step and never a
+  `NoSuchMethodError` in a compiled plugin. A plugin that called either constructor directly no longer
+  compiles: declare the value with `ToolbarItem.id(…)` or `ManagedValue.method(…)`/`openSet(…)`.
 
 - **`ManagedValue` is typed: `ManagedValue<T>(id, reason, holder, Class<T> type, T initial)`**, with
   `of(id, holder, type, initial, reason)`, `openSet(id, holder, reason)`, `openOnly(id, reason)`,

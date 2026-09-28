@@ -30,16 +30,55 @@ package com.botmaker.plugin.api.source;
  * <p>Plain data, like every other contribution: the host reads the id as text and does the matching itself,
  * so no plugin code runs while a file is drawn.
  *
- * @param id      the annotation's id — {@code "flow"}, {@code "capture"}, {@code "pictures"}
- * @param reason  the sentence the host shows when it refuses an edit: what owns this and where to go instead
- * @param holder  the simple name of the class that holds it — {@code "Sdk"}, {@code "Pictures"} — or null
- *                when the host may not create it
- * @param type    the class the {@code @Managed} method returns, or null for an open set, whose annotation goes
- *                on the holder itself
- * @param initial what a created method first returns, or null for the type's fresh value
- * @param <T>     the value's class
+ * <p><b>A class, not a record</b> (2026-09-28): only {@link #method} and {@link #openSet}'s steps build one.
+ * A record's public canonical constructor changes when a component is added, and every plugin compiled
+ * against the old one would throw {@code NoSuchMethodError}; through the steps a new component is a new step.
+ *
+ * @param <T> the value's class
  */
-public record ManagedValue<T>(String id, String reason, String holder, Class<T> type, T initial) {
+public final class ManagedValue<T> {
+
+    private final String id;
+    private final String reason;
+    private final String holder;
+    private final Class<T> type;
+    private final T initial;
+
+    private ManagedValue(String id, String reason, String holder, Class<T> type, T initial) {
+        this.id = id;
+        this.reason = reason;
+        this.holder = holder;
+        this.type = type;
+        this.initial = initial;
+    }
+
+    /** The annotation's id — {@code "flow"}, {@code "capture"}, {@code "pictures"}. */
+    public String id() {
+        return id;
+    }
+
+    /** The sentence the host shows when it refuses an edit: what owns this and where to go instead. */
+    public String reason() {
+        return reason;
+    }
+
+    /**
+     * The simple name of the class that holds it — {@code "Sdk"}, {@code "Pictures"} — or null when the host
+     * may not create it.
+     */
+    public String holder() {
+        return holder;
+    }
+
+    /** The class the {@code @Managed} method returns, or null for an open set, whose annotation goes on the holder. */
+    public Class<T> type() {
+        return type;
+    }
+
+    /** What a created method first returns, or null for the type's fresh value. */
+    public T initial() {
+        return initial;
+    }
 
     /**
      * <b>The way to declare a method-shaped value</b>, step by step:
@@ -156,5 +195,10 @@ public record ManagedValue<T>(String id, String reason, String holder, Class<T> 
      */
     public T cast(Object value) {
         return type != null && type.isInstance(value) ? type.cast(value) : null;
+    }
+
+    @Override
+    public String toString() {
+        return "ManagedValue[" + id + (holder == null ? "" : " in " + holder) + "]";
     }
 }

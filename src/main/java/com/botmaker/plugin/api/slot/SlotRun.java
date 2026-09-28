@@ -31,6 +31,10 @@ public interface SlotRun {
      * <p>Handing one back to {@link #replace} keeps that argument exactly as written. That is how an editor
      * rewrites the run around a variable or a call it cannot read without deleting it.
      *
+     * <p><b>A plugin builds one with {@link #of}, never the constructor.</b> A record's constructor is public
+     * by rule, and it changes the day a component is added; a plugin compiled against it would then throw
+     * {@code NoSuchMethodError}. The factory keeps its signature when the record grows.
+     *
      * @param value  the element as a value, or {@code null} when the grammar cannot read it
      * @param source the element as the file writes it, for display only
      */
@@ -38,6 +42,11 @@ public interface SlotRun {
 
         public Element {
             source = source == null ? "" : source;
+        }
+
+        /** An element holding {@code value}, shown as {@code source} where the value cannot be drawn. */
+        public static Element of(Object value, String source) {
+            return new Element(value, source);
         }
 
         /** The value as a {@code T}, or empty when it is unreadable or another type. */
