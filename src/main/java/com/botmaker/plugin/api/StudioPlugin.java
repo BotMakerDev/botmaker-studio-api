@@ -139,11 +139,11 @@ public interface StudioPlugin {
      * The editors this plugin offers that a type cannot choose for itself, in the order it wants them
      * consulted.
      *
-     * <p>Two kinds, and only two. {@link SlotEditor#forCall} claims a slot by the call around it, for
-     * values the type cannot tell apart — a Steam app id and a window title are both {@code String}.
+     * <p>{@link SlotEditor#onParameter} claims an argument by an annotation on the parameter it is passed to,
+     * for values the type cannot tell apart — a Steam app id and a window title are both {@code String}.
      * {@link SlotEditor#forType} <em>overrides</em> the editor for a type <b>another</b> plugin declared,
      * which is how the SDK offers a colour picker that samples the capture target for the
-     * {@code java.awt.Color} plugin-basics declares.
+     * {@code java.awt.Color} plugin-basics declares. {@link SlotEditor#when} is for a claim neither states.
      *
      * <p>An editor for this plugin's <em>own</em> type does not belong here: it is
      * {@link com.botmaker.plugin.api.value.EditableType#editor}, declared beside the type, so the type is named

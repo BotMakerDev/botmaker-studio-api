@@ -5,6 +5,15 @@ reasoning.
 
 ## Done
 
+### 2026-09-28 — slot editors by parameter annotation (guided plugin declaration, phase 2)
+
+- `EditorSteps`: `SlotEditor.onParameter`/`forType`/`when` → `Drawing.draw(Drawn[, Drawn])`. The positional
+  factories, `forCall`/`onCall` and the string lookup `calls` are deleted.
+- `SlotContext.parameter()` (default): the declared parameter, varargs tail mapped to the last one. Matching
+  compares the annotation's binary name, never its `Class`.
+- `onParameter` refuses a `CLASS`/`SOURCE` annotation or one whose `@Target` excludes parameters when built.
+- **Next (phase 3):** `ToolbarItem.id(…)` steps, then `DeclaredPlugin.toolbarItems()` becomes `final`.
+
 ### 2026-09-28 — every surface declared by steps, factories by reference (guided plugin declaration, phase 1)
 
 - `StudioPlugin.id(…)` → `PluginDeclaration` → `DeclaredPlugin`; `PluginType.value`, `ComponentType.part`,

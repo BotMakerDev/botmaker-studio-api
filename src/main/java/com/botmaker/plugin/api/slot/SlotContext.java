@@ -1,6 +1,7 @@
 package com.botmaker.plugin.api.slot;
 
 import java.lang.reflect.Executable;
+import java.lang.reflect.Parameter;
 import java.util.Optional;
 
 /**
@@ -32,12 +33,31 @@ public interface SlotContext extends ValueContext {
      * {@code enclosingMethodName()} answered what the source wrote before the dot, so {@code game.launch(…)}
      * on a local named {@code game} was not a call on {@code Game}, and any class called {@code Game} was.
      * The resolved declaration is exact: its declaring class, its overload, whether it is varargs.
-     * {@link SlotEditor#calls} is the ordinary way to ask about it.
+     * {@link #parameter()} is the ordinary way to ask about it.
      */
     Optional<Executable> enclosingExecutable();
 
     /** The zero-based position of this slot in the call's argument list, or {@code -1} if it is not an argument. */
     int argIndex();
+
+    /**
+     * The declared parameter this slot's argument is passed to — the last one for every argument of a varargs
+     * tail — or empty when the call did not resolve or the slot is not an argument.
+     *
+     * <p>What {@link SlotEditor#onParameter} matches, and what an editor reads its settings from: an
+     * annotation on the parameter ({@code @Setting(label = "Match confidence", max = 1)}) is the plugin's own
+     * declaration of what the argument means, so the editor takes the label and the range off it rather than
+     * keeping a table keyed on method names. Since 2026-09-28; {@code default}, derived from
+     * {@link #enclosingExecutable()} and {@link #argIndex()}.
+     */
+    default Optional<Parameter> parameter() {
+        Executable call = enclosingExecutable().orElse(null);
+        int index = argIndex();
+        if (call == null || index < 0) return Optional.empty();
+        Parameter[] declared = call.getParameters();
+        if (index < declared.length) return Optional.of(declared[index]);
+        return call.isVarArgs() ? Optional.of(declared[declared.length - 1]) : Optional.empty();
+    }
 
     /**
      * Another argument of the call this slot sits in — {@code index} is the call's own zero-based position —

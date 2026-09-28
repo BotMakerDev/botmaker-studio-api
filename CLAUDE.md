@@ -44,6 +44,12 @@ builder: a plugin should need no toolkit to declare itself):
   `.notCreated()` instead of `in` for one the host may open and never create, and
   `ManagedValue.openSet(id).in(holder).because(reason)`. **A recorded value**:
   `RecordedValue.of(T.class).at(Finder::find)`.
+- **A slot editor**: `SlotEditor.onParameter(Annotation.class)` | `forType(X.class)` | `when(predicate)` →
+  `.draw(() -> E::draw[, () -> E::preview])` (`EditorSteps`). A value the type cannot tell apart is told apart
+  by a `RUNTIME` annotation on the parameter it is passed to (`launchSteam(@SteamAppId String)`), matched by
+  the annotation's binary name through `SlotContext.parameter()`; an editor reads its settings off it
+  (`@Setting(label, min, max, …)`). It replaced `forCall(calls(Owner.class, "name"), index, …)`, which named
+  methods by string and arguments by position.
 
 Implementing the interfaces by hand still works and the host cannot tell the two apart; the steps are how
 nobody has to know which methods to override, which may answer `null`, or how to name a factory without a
@@ -383,8 +389,8 @@ entirely. `TypeRef` answers `is(Class)`/`isSubtypeOf(Class)` by binary name and 
 since 0.3.0 (`simpleName`/`qualifiedName`/`isNamed` were deleted: every caller matched a spelling, and a
 bot's own `Duration` was claimed as `java.time.Duration`); that is the comparison that is actually true
 across two classloaders. A slot's call is `SlotContext.enclosingExecutable()`, which the host loads on the
-**plugin's** loader — so it is a class the plugin could have named, and `SlotEditor.calls` compares its
-declaring class by name. (Inside a catalog a `Class<?>` *is* used — but the plugin holds it,
+**plugin's** loader — so it is a class the plugin could have named, and `SlotEditor.onParameter` compares
+the parameter's annotations by name. (Inside a catalog a `Class<?>` *is* used — but the plugin holds it,
 and it is the plugin's own class.)
 
 **3. No syntax tree and no Java text, in either direction.** An editor reads a value

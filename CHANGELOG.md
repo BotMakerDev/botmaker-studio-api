@@ -19,6 +19,12 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **Slot editors are declared by steps too**: `SlotEditor.onParameter(Annotation.class)`,
+  `SlotEditor.forType(X.class)` or `SlotEditor.when(predicate)`, then `.draw(() -> E::draw)` (optionally with a
+  preview). `onParameter` claims every argument passed to a parameter carrying the annotation — the last
+  parameter for a varargs tail — and refuses, when built, an annotation that is not `RUNTIME` or cannot sit on
+  a parameter. `SlotContext.parameter()` (default) answers the declared `Parameter` a slot is passed to, so an
+  editor reads its settings off the annotation.
 - **Declaration steps for every surface a plugin fills**, each offering only the valid next move:
   `StudioPlugin.id(ID).named(NAME).types(…).parts(…).editors(…).values(…).toolbar(…).recorded(…)` handed to
   the new `DeclaredPlugin`; `PluginType.value(X.class)` → `fresh`/`firstConstant`/`filledBy` → `editor` →
@@ -74,6 +80,9 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Removed
 
+- **`SlotEditor.of`, `forType(type, create[, preview])`, `forCall`, `onCall`, `calls` and `declaredOn`.**
+  `calls(Owner.class, "method", …)` named methods by string and `forCall` arguments by position; the parameter
+  says what it takes now. Use `onParameter`/`forType`/`when` above.
 - **`ManagedValue.of(id, holder, type, initial, reason)`, `openSet(id, holder, reason)` and
   `openOnly(id, reason)`**: five and three positional arguments, two strings side by side. Use the steps above
   (`notCreated()` is what `openOnly` was).
