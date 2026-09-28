@@ -79,7 +79,7 @@ public class DeclaredPlugin implements StudioPlugin {
     }
 
     @Override
-    public List<ToolbarItem> toolbarItems() {
+    public final List<ToolbarItem> toolbarItems() {
         return declaration.toolbar();
     }
 

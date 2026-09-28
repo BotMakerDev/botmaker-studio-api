@@ -19,6 +19,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **Toolbar items are declared by steps**: `ToolbarItem.id(ID).label(…).tooltip(…).in(group, order)`, then
+  optionally `.enabledWhen(…)` and `.icon(…)`, then `.onPress(() -> MyWindow::open)`. The tooltip is required
+  and may not be blank. The press is a `Pressed` — a supplier of the handler, so building a plugin's toolbar
+  list links no window class, the same rule `Drawn` keeps for editors. `DeclaredPlugin.toolbarItems()` is
+  `final` now, like every other surface of it.
 - **Slot editors are declared by steps too**: `SlotEditor.onParameter(Annotation.class)`,
   `SlotEditor.forType(X.class)` or `SlotEditor.when(predicate)`, then `.draw(() -> E::draw)` (optionally with a
   preview). `onParameter` claims every argument passed to a parameter carrying the annotation — the last
@@ -80,6 +85,8 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Removed
 
+- **`ToolbarItem.of` and `ToolbarItem.whenStopped`**, the positional factories taking three strings in a row.
+  Use `ToolbarItem.id(…)`; the record's constructor stays.
 - **`SlotEditor.of`, `forType(type, create[, preview])`, `forCall`, `onCall`, `calls` and `declaredOn`.**
   `calls(Owner.class, "method", …)` named methods by string and `forCall` arguments by position; the parameter
   says what it takes now. Use `onParameter`/`forType`/`when` above.

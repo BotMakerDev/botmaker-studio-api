@@ -50,6 +50,10 @@ builder: a plugin should need no toolkit to declare itself):
   the annotation's binary name through `SlotContext.parameter()`; an editor reads its settings off it
   (`@Setting(label, min, max, …)`). It replaced `forCall(calls(Owner.class, "name"), index, …)`, which named
   methods by string and arguments by position.
+- **A toolbar item**: `ToolbarItem.id(ID).label(…).tooltip(…).in(group, order)` → optional
+  `.enabledWhen(…)`/`.icon(…)` → `.onPress(() -> MyWindow::open)` (`ToolbarSteps`, 2026-09-28). The press is a
+  `Pressed`, a supplier of the handler, for `Drawn`'s reason: the item list is built headless. The positional
+  `ToolbarItem.of`/`whenStopped` are deleted, and `DeclaredPlugin.toolbarItems()` is `final`.
 
 Implementing the interfaces by hand still works and the host cannot tell the two apart; the steps are how
 nobody has to know which methods to override, which may answer `null`, or how to name a factory without a
@@ -68,7 +72,8 @@ the id was spelled five times in the SDK before.
   Studio to depend on the toolkit. Studio spells the names with it and `StyleClassesTest` holds its
   stylesheet to it.
 - **One package per contribution surface** (2026-09-21): `…api.slot` (`SlotEditor`, `SlotContext`,
-  `SlotRun`, `ValueContext`, `TypeRef`, `Bounds`), `…api.toolbar` (`ToolbarItem`, `ToolbarGroup`, `EnabledWhen`, `ActionContext`),
+  `SlotRun`, `ValueContext`, `TypeRef`, `Bounds`), `…api.toolbar` (`ToolbarItem`, `ToolbarSteps`, `Pressed`,
+  `ToolbarGroup`, `EnabledWhen`, `ActionContext`),
   `…api.source` (`ManagedValue`, `PluginValues` — `PluginSource` went 2026-09-21, `SourceSeed` 2026-09-22),
   and, since 2026-09-22, `…api.params` (`@Param`) and `…api.managed` (`@Managed`), the two annotations that
   sit on a **bot's** own declarations. Sixteen types moved out of

@@ -5,6 +5,17 @@ reasoning.
 
 ## Done
 
+### 2026-09-28 — toolbar items by steps (guided plugin declaration, phase 3)
+
+- `ToolbarSteps`: `ToolbarItem.id` → `Labelling.label` → `Explaining.tooltip` → `Placing.in` →
+  `Pressing` (`enabledWhen`, `icon`, `onPress`). `ToolbarItem.of`/`whenStopped` deleted.
+- `Pressed extends Supplier<Consumer<ActionContext>>`: the extra arrow `Drawn` has, for the same reason — a
+  `static final` item list is built by a headless host, and `BotSettingsWindow::open` evaluated there would
+  load a class full of JavaFX. `.enabledWhen(EnabledWhen)` rather than the plan's `.whenStopped()`: the enum
+  has four values and one step per value would be three more to add later.
+- `DeclaredPlugin.toolbarItems()` is `final`; a declared plugin overrides only `projectOpened`/`projectClosing`.
+- `ToolbarStepsTest`: components, optional steps, the press resolved only when pressed, refusals.
+
 ### 2026-09-28 — slot editors by parameter annotation (guided plugin declaration, phase 2)
 
 - `EditorSteps`: `SlotEditor.onParameter`/`forType`/`when` → `Drawing.draw(Drawn[, Drawn])`. The positional

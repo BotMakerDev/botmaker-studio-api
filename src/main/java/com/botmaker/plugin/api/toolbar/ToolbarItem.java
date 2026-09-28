@@ -46,19 +46,12 @@ public record ToolbarItem(String id, Supplier<String> label, String tooltip, Sup
                           Consumer<ActionContext> onClick) {
 
     /**
-     * The ordinary case: a fixed label, no icon, always pressable.
-     *
-     * <p>Most items are this, and spelling out four nulls and an {@code EnabledWhen} at every call site is
-     * how a surface gets a reputation for being heavy.
+     * Declares an item, one named step at a time ({@link ToolbarSteps}): {@code ToolbarItem.id(ID).label(…)
+     * .tooltip(…).in(group, order).onPress(() -> MyWindow::open)}. The positional {@code of} and
+     * {@code whenStopped} went on 2026-09-28; {@code .enabledWhen(…)} and {@code .icon(…)} are the optional
+     * steps before the press.
      */
-    public static ToolbarItem of(String id, String label, String tooltip, ToolbarGroup group, int order,
-                                 Consumer<ActionContext> onClick) {
-        return new ToolbarItem(id, () -> label, tooltip, null, group, order, EnabledWhen.ALWAYS, onClick);
-    }
-
-    /** The same, for an item that only makes sense while nothing is running. */
-    public static ToolbarItem whenStopped(String id, String label, String tooltip, ToolbarGroup group,
-                                          int order, Consumer<ActionContext> onClick) {
-        return new ToolbarItem(id, () -> label, tooltip, null, group, order, EnabledWhen.BOT_STOPPED, onClick);
+    public static ToolbarSteps.Labelling id(String id) {
+        return new ToolbarSteps.Labelling(id);
     }
 }
