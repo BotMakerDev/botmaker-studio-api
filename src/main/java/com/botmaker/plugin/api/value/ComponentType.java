@@ -41,6 +41,16 @@ import java.util.List;
  */
 public interface ComponentType<T> {
 
+    /**
+     * <b>The way to declare a part</b> — a call inside a value that is never picked on its own, or a chain the
+     * host reads: {@code ComponentType.part(Flow.Edge.class).writtenAs(Flow::edge, Flow.Edge::from, …)}. See
+     * {@link CallSteps}. A type whose own Java is a call is declared by {@link PluginType#value} instead, and
+     * is its own component type.
+     */
+    static <T> TypeSteps.Part<T> part(Class<T> type) {
+        return new TypeSteps.Part<>(type);
+    }
+
     /** The class this describes. Read, never loaded — see {@link PluginType#type()}. */
     Class<T> type();
 

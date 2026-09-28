@@ -16,6 +16,48 @@ import java.util.Optional;
  */
 public interface RecordedValue<T> {
 
+    /**
+     * <b>The way to declare one</b>: {@code RecordedValue.of(ImageTemplate.class).at(PictureAt::find)}, where
+     * {@code find} is {@code Optional<ImageTemplate> find(StudioServices, Spot)}.
+     */
+    static <T> Steps<T> of(Class<T> type) {
+        return new Steps<>(type);
+    }
+
+    /** After {@link #of}: what is at a spot. */
+    final class Steps<T> {
+
+        private final Class<T> type;
+
+        private Steps(Class<T> type) {
+            if (type == null) throw new IllegalArgumentException("No type given");
+            this.type = type;
+        }
+
+        /** Answered by {@code at}; see {@link RecordedValue#at}. */
+        public RecordedValue<T> at(java.util.function.BiFunction<StudioServices, Spot, Optional<T>> at) {
+            if (at == null) throw new IllegalArgumentException(type.getName() + ": nothing reads the spot");
+            Class<T> declared = type;
+            return new RecordedValue<>() {
+                @Override
+                public Class<T> type() {
+                    return declared;
+                }
+
+                @Override
+                public Optional<T> at(StudioServices services, Spot spot) {
+                    Optional<T> found = at.apply(services, spot);
+                    return found == null ? Optional.empty() : found;
+                }
+
+                @Override
+                public String toString() {
+                    return "RecordedValue[" + declared.getName() + "]";
+                }
+            };
+        }
+    }
+
     /** The parameter type this answers. */
     Class<T> type();
 

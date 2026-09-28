@@ -38,6 +38,25 @@ import javafx.scene.Node;
 public interface PluginType<T> {
 
     /**
+     * <b>The way to declare a type</b>: the first of the {@link TypeSteps}, which then ask in turn for what a
+     * fresh one is, how a person edits it and how its Java is written.
+     *
+     * <pre>{@code
+     * public static final PluginType<Combo> COMBO = PluginType.value(Combo.class)
+     *         .fresh(() -> Combo.of(Key.CTRL, Key.S))
+     *         .editor(() -> InputEditors::combo)
+     *         .writtenAsEach(Combo::of, Combo::keys);
+     * }</pre>
+     *
+     * <p>Implementing this interface by hand still works, and the host cannot tell the two apart; the steps
+     * exist so that nobody has to know which methods to override, which of them may answer {@code null}, or
+     * how to name a factory without a string.
+     */
+    static <T> TypeSteps.Fresh<T> value(Class<T> type) {
+        return new TypeSteps.Fresh<>(type);
+    }
+
+    /**
      * The class this type is. <b>Read, never loaded</b> — the host takes its canonical name off the object
      * the plugin already holds, and compares names, exactly as the palette catalog does.
      */

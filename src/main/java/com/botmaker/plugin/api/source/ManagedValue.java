@@ -41,19 +41,108 @@ package com.botmaker.plugin.api.source;
  */
 public record ManagedValue<T>(String id, String reason, String holder, Class<T> type, T initial) {
 
-    /** A value the host may create in {@code holder}, starting as {@code initial}. */
-    public static <T> ManagedValue<T> of(String id, String holder, Class<T> type, T initial, String reason) {
-        return new ManagedValue<>(id, reason, holder, type, initial);
+    /**
+     * <b>The way to declare a method-shaped value</b>, step by step:
+     *
+     * <pre>{@code
+     * public static final ManagedValue<Flow> FLOW = ManagedValue.method("flow")
+     *         .in("Sdk")                              // the class that holds it | .notCreated()
+     *         .holds(Flow.class, Flow.NONE)           // what it returns, and what a created one starts as
+     *         .because("This is the bot's activity flow. Draw it in 🔀 Activity Flow.");
+     * }</pre>
+     */
+    public static MethodSteps method(String id) {
+        return new MethodSteps(id);
     }
 
-    /** A class of constants the user grows ({@code @Managed} on the type), created empty in {@code holder}. */
-    public static ManagedValue<Void> openSet(String id, String holder, String reason) {
-        return new ManagedValue<>(id, reason, holder, null, null);
+    /**
+     * <b>The way to declare an open set</b> — a class of constants the user grows, {@code @Managed} on the
+     * type: {@code ManagedValue.openSet("pictures").in("Pictures").because("…")}. Created empty in the holder.
+     */
+    public static SetSteps openSet(String id) {
+        return new SetSteps(id);
     }
 
-    /** A value the host can open and never create. */
-    public static ManagedValue<Void> openOnly(String id, String reason) {
-        return new ManagedValue<>(id, reason, null, null, null);
+    /** After {@link #method}: where the value lives. */
+    public static final class MethodSteps {
+
+        private final String id;
+
+        private MethodSteps(String id) {
+            this.id = requireText(id, "id");
+        }
+
+        /** In the class {@code holder} — {@code "Sdk"} — which the host writes when a project has none. */
+        public TypeStep in(String holder) {
+            return new TypeStep(id, requireText(holder, "holder"));
+        }
+
+        /** Somewhere the host may open and never create. */
+        public Reason<Void> notCreated() {
+            return new Reason<>(id, null, null, null);
+        }
+    }
+
+    /** After {@link MethodSteps#in}: what the method returns. */
+    public static final class TypeStep {
+
+        private final String id;
+        private final String holder;
+
+        private TypeStep(String id, String holder) {
+            this.id = id;
+            this.holder = holder;
+        }
+
+        /**
+         * A method returning a {@code type}, first returning {@code initial} when the host creates it — or,
+         * with {@code null}, the type's own fresh value.
+         */
+        public <T> Reason<T> holds(Class<T> type, T initial) {
+            if (type == null) throw new IllegalArgumentException(id + ": no type given");
+            return new Reason<>(id, holder, type, initial);
+        }
+    }
+
+    /** After {@link #openSet}: the class that is the set. */
+    public static final class SetSteps {
+
+        private final String id;
+
+        private SetSteps(String id) {
+            this.id = requireText(id, "id");
+        }
+
+        /** The class {@code holder} — {@code "Pictures"} — created empty when a project has none. */
+        public Reason<Void> in(String holder) {
+            return new Reason<>(id, requireText(holder, "holder"), null, null);
+        }
+    }
+
+    /** The last step: the sentence shown when the canvas refuses an edit. */
+    public static final class Reason<T> {
+
+        private final String id;
+        private final String holder;
+        private final Class<T> type;
+        private final T initial;
+
+        private Reason(String id, String holder, Class<T> type, T initial) {
+            this.id = id;
+            this.holder = holder;
+            this.type = type;
+            this.initial = initial;
+        }
+
+        /** What owns this value and where to change it instead. */
+        public ManagedValue<T> because(String reason) {
+            return new ManagedValue<>(id, requireText(reason, "reason"), holder, type, initial);
+        }
+    }
+
+    private static String requireText(String text, String what) {
+        if (text == null || text.isBlank()) throw new IllegalArgumentException("A managed value needs a " + what);
+        return text;
     }
 
     /** Whether this is an open set — {@code @Managed} on a type — rather than one method's value. */

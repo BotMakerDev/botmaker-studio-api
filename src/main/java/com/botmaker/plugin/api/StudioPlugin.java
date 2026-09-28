@@ -58,6 +58,16 @@ import java.util.List;
 public interface StudioPlugin {
 
     /**
+     * <b>The way to declare a plugin</b>: the first step of a {@link PluginDeclaration}, handed to
+     * {@link DeclaredPlugin}'s constructor — {@code StudioPlugin.id(ID).named(NAME).types(() -> …)…}.
+     * Implementing this interface by hand still works; the declaration is there so that nobody has to find
+     * out which of its methods to override.
+     */
+    static PluginDeclaration.Naming id(String id) {
+        return new PluginDeclaration.Naming(id);
+    }
+
+    /**
      * A stable identifier for this plugin — {@code "botmaker-sdk"} — used to attribute a contribution and to
      * order the host's merge. Never shown as-is; see {@link #displayName()}.
      */
@@ -265,7 +275,7 @@ public interface StudioPlugin {
      *
      * <p><b>Do nothing expensive here.</b> This runs while a project is opening, on the path the user is
      * waiting on. Read the file when a surface is asked for, not now — the same rule that keeps
-     * the toolkit's {@code AbstractStudioPlugin} builders lazy, and for the same reason: a plugin that parses a
+     * {@link DeclaredPlugin}'s surfaces behind suppliers, and for the same reason: a plugin that parses a
      * project on bind is a plugin every project open pays for whether or not anything reads the result.
      *
      * <p>Throwing is contained and reported, and the project still opens: a plugin must not be able to

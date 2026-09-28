@@ -19,6 +19,19 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **Declaration steps for every surface a plugin fills**, each offering only the valid next move:
+  `StudioPlugin.id(ID).named(NAME).types(…).parts(…).editors(…).values(…).toolbar(…).recorded(…)` handed to
+  the new `DeclaredPlugin`; `PluginType.value(X.class)` → `fresh`/`firstConstant`/`filledBy` → `editor` →
+  `preview` → `writtenAs`/`writtenAsEach`/`writtenAsRecord`/`writtenAsConstant`/`writtenAsLiteral`/
+  `writtenAsParts` (`TypeSteps`, `CallSteps`, `DeclaredType`, `DeclaredCallType`); `ComponentType.part(X.class)`
+  (`DeclaredCall`, with `constants(VALUE)`); `ManagedValue.method(id).in(holder).holds(T.class, initial)
+  .because(reason)` and `ManagedValue.openSet(id).in(holder).because(reason)`;
+  `RecordedValue.of(T.class).at(Finder::find)`. A plugin declares itself with no toolkit.
+- **`Ref`**: factories named by method reference (`Ref.Of0`–`Of10`, serializable, read through
+  `SerializedLambda`), never by name. The build is derived by invoking the factory on the parts; the accessors'
+  types pick an overloaded one. `writtenAs(Ref, Function...)` takes any arity through a plugin's own interface;
+  `Ref.member` names the one factory javac cannot reference. **`Drawn`** (was the toolkit's `Types.Drawn`).
+
 - **An open set's constants, changed by binding, on `PluginValues`**: `members(id)`, `open(id, member)`,
   `add(id, member, value)`, `uses(id, member)` (host-built `PluginValues.Use` records), `rename`, `repoint`
   (marks each function it guessed in with `@Refactor(note)`) and `remove` (refused while used). Each is total,
@@ -61,6 +74,9 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Removed
 
+- **`ManagedValue.of(id, holder, type, initial, reason)`, `openSet(id, holder, reason)` and
+  `openOnly(id, reason)`**: five and three positional arguments, two strings side by side. Use the steps above
+  (`notCreated()` is what `openOnly` was).
 - **`Sources` and `StudioServices.sources()`.** A find-and-replace over token needles a plugin built from how
   it guessed its names were spelled: it renamed a picture's uses and left its declaration, so the bot stopped
   compiling, and missed a static import or a renamed class. Its one user, the SDK's picture library, uses the

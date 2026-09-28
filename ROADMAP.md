@@ -5,6 +5,18 @@ reasoning.
 
 ## Done
 
+### 2026-09-28 — every surface declared by steps, factories by reference (guided plugin declaration, phase 1)
+
+- `StudioPlugin.id(…)` → `PluginDeclaration` → `DeclaredPlugin`; `PluginType.value`, `ComponentType.part`,
+  `ManagedValue.method`/`openSet`, `RecordedValue.of`. Step classes are the second exception to *interfaces
+  and records* (CLAUDE.md).
+- `Ref.Of0`–`Of10` + `Ref.resolve` (SerializedLambda) + derived build (`CallShape`); `writtenAs(Ref, …)` for
+  any arity; `Ref.member` for the ambiguous case.
+- Tests: `TypeStepsTest` (overload picked by accessors, varargs, receiver chain, coercion, refusals, a plugin's
+  own `Ref` shape), `DeclaredPluginTest`.
+- **Next (phases 2–3):** `SlotEditor.onParameter(Annotation)` for call sites; `ToolbarItem.id(…)` steps, then
+  `DeclaredPlugin.toolbarItems()` becomes `final`.
+
 ### 2026-09-28 — `Sources` replaced by open-set operations on `PluginValues` (plugin authoring cleanup, phase 4)
 
 `Sources`, `Sources.Use` and `StudioServices.sources()` are deleted. `PluginValues` gained `members`,

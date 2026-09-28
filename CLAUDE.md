@@ -17,8 +17,39 @@ runs inside a bot, which already has this jar through any plugin that puts `@Man
 thirty lines. Add nothing else of the kind: the test is *does every plugin with a bot-side half need it, and
 does it name nothing but this module and the JDK*.
 
-**`ManagedValue<T>` is typed and declared once** (2026-09-28): `ManagedValue.of(id, holder, type, initial,
-reason)`, `openSet(id, holder, reason)`, `openOnly(id, reason)`. A plugin keeps one constant per value and uses
+**The second exception, the same day: the declaration steps.** Every surface a plugin fills is declared
+through small final step classes here, each offering only the moves valid next, so the compiler walks an
+author through a declaration and an incomplete one does not compile (the maintainer's call, over a toolkit
+builder: a plugin should need no toolkit to declare itself):
+
+- **The plugin**: `StudioPlugin.id(ID).named(NAME).types(() -> …).parts(…).editors(…).values(…).toolbar(…)
+  .recorded(…)`, a `PluginDeclaration` handed to `DeclaredPlugin`'s constructor. Each surface is a supplier,
+  asked when the host asks and cached nowhere: the lists are `static final` constants, and a list built in
+  the constructor would load its classes — JavaFX among them — on a headless host. It replaced the toolkit's
+  `AbstractStudioPlugin`, whose memoised `build…` hooks bought nothing over constants.
+- **A type**: `PluginType.value(X.class)` → `fresh(…)` | `firstConstant()` | `filledBy(Owner::method)` →
+  `editor(() -> E::draw)` → optional `preview(…)` → `writtenAs(Owner::factory, X::part, …)` |
+  `writtenAsEach(…)` | `writtenAsRecord()` | `writtenAsConstant()` | `writtenAsLiteral()` | `writtenAsParts()`
+  (`TypeSteps`, `CallSteps`, results `DeclaredType`/`DeclaredCallType`). **A part**: `ComponentType.part(X.class)
+  .writtenAs(…)` (`DeclaredCall`, with `.constants(VALUE)`, and `.components`/`.build` for the one hand-made
+  part, the SDK's activity body).
+- **Factories are method references, never names.** `Ref.Of0`–`Of10` are serializable functional interfaces;
+  `Ref.resolve` reads the `SerializedLambda` into the `Method` or `Constructor` once, when the declaration is
+  built, and refuses a lambda. One typed `writtenAs` per arity, so the accessors' types pick an overloaded
+  factory (`LocalDate::of`, `Color::new`); past ten, a plugin declares its own interface extending `Ref` and
+  uses `writtenAs(Ref, Function...)`. `build` is invoking the factory on the parts coerced to its parameters,
+  `null` when they do not fit or it throws. `Ref.member(owner, name, params)` names the one factory javac cannot
+  reference — a static and an instance method sharing a name and arity (`CaptureSource.region`).
+- **A managed value**: `ManagedValue.method(id).in(holder).holds(T.class, initial).because(reason)`,
+  `.notCreated()` instead of `in` for one the host may open and never create, and
+  `ManagedValue.openSet(id).in(holder).because(reason)`. **A recorded value**:
+  `RecordedValue.of(T.class).at(Finder::find)`.
+
+Implementing the interfaces by hand still works and the host cannot tell the two apart; the steps are how
+nobody has to know which methods to override, which may answer `null`, or how to name a factory without a
+string.
+
+**`ManagedValue<T>` is typed and declared once** (2026-09-28). A plugin keeps one constant per value and uses
 it in `managedValues()`, in `ManagedValues.claim`, and through the toolkit's `ManagedHandle` in its windows —
 the id was spelled five times in the SDK before.
 
@@ -42,10 +73,11 @@ the id was spelled five times in the SDK before.
   `MemberId`, and the package-private `SourceOrder`. The *result* type:
   `PaletteCatalog.of(Class<?>...)` builds it by reflection. `CatalogBuilder`, `MemberRef` and the arity
   shapes `M0`–`M5` were deleted on 2026-08-27 — see *The catalog* below.
-- `com.botmaker.plugin.api.value` — **three types since 2026-09-28**: `PluginType<T>` (the class, `fresh()`,
+- `com.botmaker.plugin.api.value` — **three interfaces**: `PluginType<T>` (the class, `fresh()`,
   optional `freshCall`/`preview`), `EditableType<T>` (adds `editor(ValueContext)`, never `null` — a type its
   owner draws) and `ComponentType<T>` (`componentTypes`, `components`, `build`,
-  optional `factory`, an `Executable`). What a bot's *value* can be, which is a question the
+  optional `factory`, an `Executable`); and since 2026-09-28 the steps that declare them (`TypeSteps`,
+  `CallSteps`, `DeclaredType`, `DeclaredCall`, `DeclaredCallType`, `Ref`, `Drawn` — see above). What a bot's *value* can be, which is a question the
   contract answers so a plugin can own a type without the SDK granting it one. See *The value vocabulary*
   below for what the other seven types were and why none of them is here.
 - `com.botmaker.plugin.api.palette` — **`@Palette`**, **`@Hidden`**, `@PaletteLabel`, `@PaletteDefault`: the

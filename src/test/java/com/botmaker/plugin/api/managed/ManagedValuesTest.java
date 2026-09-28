@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ManagedValuesTest {
 
     private static ManagedValue<String> text(String id) {
-        return ManagedValue.of(id, "Values", String.class, "", "Mine.");
+        return ManagedValue.method(id).in("Values").holds(String.class, "").because("Mine.");
     }
 
     static final class Values {
@@ -122,7 +122,7 @@ class ManagedValuesTest {
     @Test
     void managedOnATypeInstallsNothingAndAnOpenSetCannotBeClaimed() {
         List<Object> taken = new ArrayList<>();
-        ManagedValues.claim(ManagedValue.openSet("test.pictures", "Pictures", "Mine."), taken::add);
+        ManagedValues.claim(ManagedValue.openSet("test.pictures").in("Pictures").because("Mine."), taken::add);
         ManagedValues.claim(text("test.pictures"), taken::add);
 
         ManagedValues.install(Pictures.class);

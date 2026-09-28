@@ -2,7 +2,7 @@
  * The types a project's values may be — and, since this lives here rather than in the SDK, a set any plugin
  * may extend.
  *
- * <h2>Three declarations, and that is the whole package</h2>
+ * <h2>Three declarations, and the steps that write them</h2>
  *
  * <ul>
  *   <li>{@link com.botmaker.plugin.api.value.PluginType} — a type this plugin owns: the class it is and what
@@ -11,6 +11,13 @@
  *   <li>{@link com.botmaker.plugin.api.value.ComponentType} — beside it, for a type whose Java is a call:
  *       the components that go in the brackets, as values.</li>
  * </ul>
+ *
+ * <p>A plugin declares them with {@link com.botmaker.plugin.api.value.PluginType#value} and
+ * {@link com.botmaker.plugin.api.value.ComponentType#part} (2026-09-28): {@link
+ * com.botmaker.plugin.api.value.TypeSteps} and {@link com.botmaker.plugin.api.value.CallSteps} offer each
+ * step only when it is valid, a factory is a method reference ({@link com.botmaker.plugin.api.value.Ref})
+ * rather than a name, and an editor is named behind a {@link com.botmaker.plugin.api.value.Drawn} so building
+ * the list links no JavaFX. Implementing the interfaces by hand still works.
  *
  * <p>{@code Visibility} stood here until 2026-09-28. It is about a {@code @Param} declaration rather than a
  * type, no plugin read it, and it is Studio's now.
