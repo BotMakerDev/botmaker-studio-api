@@ -5,6 +5,11 @@ reasoning.
 
 ## Done
 
+### 2026-09-29 — `TraceLine.writerClass`/`writerMethod` (rework follow-ups, phase 8b)
+
+- Two components before `className`: the class and method that wrote the line. The host filters its trace by
+  them, down to a single method (the user's request). Changed in place, for the same reason as `className`.
+
 ### 2026-09-29 — `TraceLine.className` (rework follow-ups, phase 8)
 
 - A component between `count` and `line`: the binary name of the bot class whose line it is. Phase 6 carried
