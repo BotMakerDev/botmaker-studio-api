@@ -15,6 +15,110 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+No source changes since v0.3.0; re-released for updated upstream pins.
+
+### Added
+
+- **A running bot's trace, line by line**: `Runs.onTrace(Consumer<TraceLine>)`, a `default` that delivers
+  nothing. `TraceLine` is a record the host builds: when, level (`DEBUG`/`INFO`/`WARN`/`ERROR`/`UNKNOWN`,
+  with `id()` and a total `fromId`), source, text, a repeat count, the class and method that wrote it
+  (`writerClass`, `writerMethod`), the bot's class (`className`) and optionally its source line, and a desktop
+  region. An unknown string is `""`. `Runs.DEBUG_PROPERTY` (`botmaker.debug`) is the run property for the host's debug-output
+  toggle. See `docs/refactor/40-run-trace.md` for why a log line is a capability and not a vocabulary.
+
+- **Toolbar items are declared by steps**: `ToolbarItem.id(ID).label(…).tooltip(…).in(group, order)`, then
+  optionally `.enabledWhen(…)` and `.icon(…)`, then `.onPress(() -> MyWindow::open)`. The tooltip is required
+  and may not be blank. The press is a `Pressed` — a supplier of the handler, so building a plugin's toolbar
+  list links no window class, the same rule `Drawn` keeps for editors. `DeclaredPlugin.toolbarItems()` is
+  `final` now, like every other surface of it.
+- **Slot editors are declared by steps too**: `SlotEditor.onParameter(Annotation.class)`,
+  `SlotEditor.forType(X.class)` or `SlotEditor.when(predicate)`, then `.draw(() -> E::draw)` (optionally with a
+  preview). `onParameter` claims every argument passed to a parameter carrying the annotation — the last
+  parameter for a varargs tail — and refuses, when built, an annotation that is not `RUNTIME` or cannot sit on
+  a parameter. `SlotContext.parameter()` (default) answers the declared `Parameter` a slot is passed to, so an
+  editor reads its settings off the annotation.
+- **Declaration steps for every surface a plugin fills**, each offering only the valid next move:
+  `StudioPlugin.id(ID).named(NAME).types(…).parts(…).editors(…).values(…).toolbar(…).recorded(…)` handed to
+  the new `DeclaredPlugin`; `PluginType.value(X.class)` → `fresh`/`firstConstant`/`filledBy` → `editor` →
+  `preview` → `writtenAs`/`writtenAsEach`/`writtenAsRecord`/`writtenAsConstant`/`writtenAsLiteral`/
+  `writtenAsParts` (`TypeSteps`, `CallSteps`, `DeclaredType`, `DeclaredCallType`); `ComponentType.part(X.class)`
+  (`DeclaredCall`, with `constants(VALUE)`); `ManagedValue.method(id).in(holder).holds(T.class, initial)
+  .because(reason)` and `ManagedValue.openSet(id).in(holder).because(reason)`;
+  `RecordedValue.of(T.class).at(Finder::find)`. A plugin declares itself with no toolkit.
+- **`Ref`**: factories named by method reference (`Ref.Of0`–`Of10`, serializable, read through
+  `SerializedLambda`), never by name. The build is derived by invoking the factory on the parts; the accessors'
+  types pick an overloaded one. `writtenAs(Ref, Function...)` takes any arity through a plugin's own interface;
+  `Ref.member` names the one factory javac cannot reference. **`Drawn`** (was the toolkit's `Types.Drawn`).
+
+- **An open set's constants, changed by binding, on `PluginValues`**: `members(id)`, `open(id, member)`,
+  `add(id, member, value)`, `uses(id, member)` (host-built `PluginValues.Use` records), `rename`, `repoint`
+  (marks each function it guessed in with `@Refactor(note)`) and `remove` (refused while used). Each is total,
+  answers a refusal as the sentence to show, and refuses a change that would stop the bot compiling. All
+  `default`, so `PluginValues.NONE` and older hosts answer "no source tree".
+- **`StyleClasses`**: the style-class names the host's stylesheet defines for a plugin to wear
+  (`PILL`, `CHIP`, `CAPTION`, `DIALOG_HINT`, `PRIMARY_BUTTON`, `UNTHEMED`, …), as constants. They were the
+  toolkit's `Styles`, spelled again by hand in Studio, with nothing tying either copy to the stylesheet; the
+  host now spells them with these constants and its tests fail when one names a class its stylesheet does not
+  define. The toolkit's `Styles` implements this interface, so `Styles.PILL` keeps compiling.
+
+- **`Runs.property(name)` / `Runs.setProperty(name, value)`.** A system property every run of the bot on this
+  machine starts with (`-D<name>=<value>`), kept by the host out of the project and out of git — for a fact
+  about running here, such as which game this computer launches. `default` keeps nothing.
+- **`@Refactor(value, done)`** in `…api.meta`. A host writes it on a bot's function when a refactor guessed
+  there (a default value standing in for a removed call, a new parameter filled at a call site); `done = true`
+  once reviewed. Replaces the `NeedsReview` annotation Studio used to generate into the bot's own package.
+- **`ComponentType.constants()`.** The `public static final` fields a value equal to one is written as,
+  before the factory: `ZoneOffset.UTC` rather than `ZoneOffset.ofHoursMinutes(0, 0)`. `default` answers none.
+- **`ValueContext.bounds()` and `Bounds`.** A field's `@Param(min, max)` reaches its editor, which stops a
+  stepper at the ends and clamps what is typed. `default` answers `Bounds.NONE`; either end may be open.
+- **`managed.ManagedValues`**, the bot-side runtime of `@Managed`, moved here from `botmaker-plugin-basics`:
+  `claim(ManagedValue<T>, Consumer<? super T>)` hands a plugin's sink a typed value, `install(Class<?>...)`
+  runs a bot's values classes. A plugin no longer depends on basics to receive its values.
+- **`SlotRun.Element.of(value, source)`**, the way a plugin builds an element. The record's constructor stays
+  (a record's must be public), but a plugin that calls it breaks the day the record grows; the factory does not.
+
+### Changed
+
+- **`ToolbarItem` and `ManagedValue` are final classes, not records.** Same accessors; the constructor is
+  reachable only through their steps, so a component added later is a new step and never a
+  `NoSuchMethodError` in a compiled plugin. A plugin that called either constructor directly no longer
+  compiles: declare the value with `ToolbarItem.id(…)` or `ManagedValue.method(…)`/`openSet(…)`.
+
+- **`ManagedValue` is typed: `ManagedValue<T>(id, reason, holder, Class<T> type, T initial)`**, with
+  `of(id, holder, type, initial, reason)`, `openSet(id, holder, reason)`, `openOnly(id, reason)`,
+  `isOpenSet()` and `cast(Object)`. `valueType()` is `type()`, a `Class` rather than a `Type`, and
+  `StudioPlugin.managedValues()` answers `List<ManagedValue<?>>`. Declare each value once as a constant and use
+  it everywhere. Breaking: the two old constructors are gone.
+
+- **An instance-method `factory()` may now be written, not only read.** Documentation only: the host writes
+  such a chain for a value the owning declaration's own parts do not build back equal (`Combo.of(keys)` has no
+  hold, so `Combo.of(…).held(…)`). No signature changes.
+- **`editor` moved to `EditableType<T>`.** A type its owner draws implements `EditableType` (`editor`
+  abstract, never `null`); a plain `PluginType` says its owner does not draw it — another plugin does, or the
+  host's fallback. Breaking: every plugin recompiles. `botmaker plugin validate` fails a type nobody draws.
+
+### Removed
+
+- **`ToolbarItem.of` and `ToolbarItem.whenStopped`**, the positional factories taking three strings in a row.
+  Use `ToolbarItem.id(…)`; the record's constructor stays.
+- **`SlotEditor.of`, `forType(type, create[, preview])`, `forCall`, `onCall`, `calls` and `declaredOn`.**
+  `calls(Owner.class, "method", …)` named methods by string and `forCall` arguments by position; the parameter
+  says what it takes now. Use `onParameter`/`forType`/`when` above.
+- **`ManagedValue.of(id, holder, type, initial, reason)`, `openSet(id, holder, reason)` and
+  `openOnly(id, reason)`**: five and three positional arguments, two strings side by side. Use the steps above
+  (`notCreated()` is what `openOnly` was).
+- **`Sources` and `StudioServices.sources()`.** A find-and-replace over token needles a plugin built from how
+  it guessed its names were spelled: it renamed a picture's uses and left its declaration, so the bot stopped
+  compiling, and missed a static import or a renamed class. Its one user, the SDK's picture library, uses the
+  open-set operations on `PluginValues` below. Breaking: a plugin calling `sources()` recompiles onto them.
+- **`…api.parameters` (`ParameterRow`) and `value.Visibility`.** No plugin built or read either once the
+  parameter-data surface went (2026-09-22); both are Studio's now.
+- **`ActionContext.openProjectName()` and `pinnedVersion()`.** No plugin read them, and the host always
+  answered `""` for the pin. The open project is `services().projectDir()`.
+- **`Runs.withPid(LongConsumer)`**, a convenience over `pid()` nothing called.
+
 ## [0.3.0] — 2026-09-29
 
 ### Added
