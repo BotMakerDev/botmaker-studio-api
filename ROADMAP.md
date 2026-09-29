@@ -5,6 +5,12 @@ reasoning.
 
 ## Done
 
+### 2026-09-29 — `TraceLine.className` (rework follow-ups, phase 8)
+
+- A component between `count` and `line`: the binary name of the bot class whose line it is. Phase 6 carried
+  the line number alone, which names no file in a bot of several classes, so Studio's Trace tab could not
+  reveal the block. Changed in place: `TraceLine` has not been released, and only the host builds it.
+
 ### 2026-09-29 — the run trace in the contract (rework follow-ups, phase 6)
 
 - `TraceLine` at the root beside `Runs` (not a new `run` package, as the plan's first draft had it:

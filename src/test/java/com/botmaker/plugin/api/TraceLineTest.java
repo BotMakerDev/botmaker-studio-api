@@ -29,13 +29,14 @@ class TraceLineTest {
 
     @Test
     void aLineWithMissingPartsReadsAsEmptyNeverNull() {
-        TraceLine line = new TraceLine(null, null, null, null, 0, null, null);
+        TraceLine line = new TraceLine(null, null, null, null, 0, null, null, null);
 
         assertEquals(Instant.EPOCH, line.at());
         assertEquals(TraceLine.Level.UNKNOWN, line.level());
         assertEquals("", line.source());
         assertEquals("", line.text());
         assertEquals(1, line.count());
+        assertEquals("", line.className());
         assertEquals(OptionalInt.empty(), line.line());
         assertEquals(Optional.empty(), line.where());
     }

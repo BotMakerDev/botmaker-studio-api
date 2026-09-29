@@ -27,11 +27,13 @@ import java.util.OptionalInt;
  * @param text   the line itself, without a level or source prefix; never {@code null}
  * @param count  how many identical lines this one stands for, at least 1 — a bot collapses a line it repeats
  *               in a loop rather than sending it every time
+ * @param className the binary name of the bot's class whose {@code line} it is ({@code com.example.Collect}),
+ *               {@code ""} when the bot did not know — a line number alone names no file, and a bot is several
  * @param line   the 1-based line of the bot's source that wrote it, when the bot knew
  * @param where  the part of the screen it is about, in desktop pixels, when there is one
  */
-public record TraceLine(Instant at, Level level, String source, String text, int count, OptionalInt line,
-                        Optional<Region> where) {
+public record TraceLine(Instant at, Level level, String source, String text, int count, String className,
+                        OptionalInt line, Optional<Region> where) {
 
     public TraceLine {
         if (at == null) at = Instant.EPOCH;
@@ -39,6 +41,7 @@ public record TraceLine(Instant at, Level level, String source, String text, int
         if (source == null) source = "";
         if (text == null) text = "";
         if (count < 1) count = 1;
+        if (className == null) className = "";
         if (line == null) line = OptionalInt.empty();
         if (where == null) where = Optional.empty();
     }

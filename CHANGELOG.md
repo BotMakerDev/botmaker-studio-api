@@ -21,8 +21,8 @@ is allowed to make. Additions arrive as `default` methods.
 
 - **A running bot's trace, line by line**: `Runs.onTrace(Consumer<TraceLine>)`, a `default` that delivers
   nothing. `TraceLine` is a record the host builds: when, level (`DEBUG`/`INFO`/`WARN`/`ERROR`/`UNKNOWN`,
-  with `id()` and a total `fromId`), source, text, a repeat count, and optionally the bot's source line and a
-  desktop region. `Runs.DEBUG_PROPERTY` (`botmaker.debug`) is the run property for the host's debug-output
+  with `id()` and a total `fromId`), source, text, a repeat count, the bot's class (`className`, `""` when
+  unknown) and optionally its source line, and a desktop region. `Runs.DEBUG_PROPERTY` (`botmaker.debug`) is the run property for the host's debug-output
   toggle. See `docs/refactor/40-run-trace.md` for why a log line is a capability and not a vocabulary.
 
 - **Toolbar items are declared by steps**: `ToolbarItem.id(ID).label(…).tooltip(…).in(group, order)`, then
