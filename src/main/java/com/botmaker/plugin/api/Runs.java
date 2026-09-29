@@ -145,4 +145,32 @@ public interface Runs {
     }
 
     // withPid(LongConsumer) stood here until 2026-09-28, a convenience over pid() that no plugin called.
+
+    /**
+     * The run property that turns a bot's debug output on: every run on this machine is started with
+     * {@code -Dbotmaker.debug=true} while the host's own toggle is on, and {@code false} while it is off
+     * (2026-09-29). Unset means the bot decides for itself.
+     *
+     * <p>The one property the host names rather than a plugin, because the toggle is the host's: showing a run's
+     * log is what hosting a run is. A plugin reads and sets it through {@link #property}/{@link #setProperty}
+     * like any other; a runtime that has no debug output ignores it.
+     */
+    String DEBUG_PROPERTY = "botmaker.debug";
+
+    /**
+     * Registers {@code listener} for the running bot's trace, one {@link TraceLine} at a time, and returns the
+     * way to unregister it (2026-09-29).
+     *
+     * <p>The host reads each line off the bot's own output channel and hands over what it read; a line this
+     * host could not read is not delivered. Unlike {@link #onTelemetry}, the value is a shape — see
+     * {@link TraceLine} on why a log line is a capability rather than a vocabulary. A host that shows no trace
+     * never calls the listener, which is what this default does.
+     *
+     * <p>Same two rules as {@link #onStateChanged}: close the handle in {@link StudioPlugin#projectClosing()},
+     * and assume nothing about the thread.
+     */
+    default AutoCloseable onTrace(Consumer<TraceLine> listener) {
+        return () -> {
+        };
+    }
 }

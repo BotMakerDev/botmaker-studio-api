@@ -5,6 +5,17 @@ reasoning.
 
 ## Done
 
+### 2026-09-29 — the run trace in the contract (rework follow-ups, phase 6)
+
+- `TraceLine` at the root beside `Runs` (not a new `run` package, as the plan's first draft had it:
+  `Runs` and what it relays are one facility). The compact constructor normalises every `null` to empty,
+  `count < 1` to 1, and an unknown level to `UNKNOWN`, so a reader never null-checks.
+- `Runs.onTrace` is a `default` no-op; `Runs.NONE` inherits it. `Runs.DEBUG_PROPERTY` is the one run
+  property the host names.
+- The design, with the wire, the bot side, Studio and the SDK plugin, is `docs/refactor/40-run-trace.md`.
+  Phases 7–9 implement it; nothing calls `onTrace` yet.
+- Test: `TraceLineTest`.
+
 ### 2026-09-28 — toolbar items by steps (guided plugin declaration, phase 3)
 
 - `ToolbarSteps`: `ToolbarItem.id` → `Labelling.label` → `Explaining.tooltip` → `Placing.in` →
