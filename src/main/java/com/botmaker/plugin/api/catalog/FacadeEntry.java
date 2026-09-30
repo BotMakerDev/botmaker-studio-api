@@ -18,8 +18,8 @@ import java.util.Optional;
  * type reached only as a variable, is catalogued for its identity without proposing any of its methods.
  *
  * <p><b>Catalogued and offered are two bits, not one.</b> Every entry here is catalogued; {@link #offered()}
- * says whether the insert menus also list it. Until 2026-08-27 this was a three-valued {@code FacadeRole}
- * whose third state ({@code VALUE}) nothing anywhere distinguished from its second.
+ * says whether the insert menus also list it — true for a {@code @Palette} class, false for a type one of
+ * them reaches (since 2026-09-30, when the type-level {@code @Hidden} that used to say it was deleted).
  *
  * @param type     the class
  * @param category the group it is filed under

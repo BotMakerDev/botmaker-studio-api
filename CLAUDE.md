@@ -109,9 +109,12 @@ lacks — or one made package-private — is refused with the member named (`25-
 - `…api.palette` — **`@Palette`**, **`@Hidden`**, `@PaletteLabel`, `@PaletteDefault`: the marks a plugin puts
   on its own classes, `RUNTIME` because the catalog reflects on them. Their elements are plain `String`s on
   purpose — an annotation element's type must be visible from the module *declaring* the annotation, so a
-  contract annotation can never take a plugin-defined enum constant. `@Palette` = **catalogued** (the
-  recognition set: imports, "does `Point` mean this plugin's or `java.awt`'s"); `@Hidden` on the type =
-  **not offered** in an insert menu, on a member = that member is not offered.
+  contract annotation can never take a plugin-defined enum constant. `@Palette` = **offered** (its own menu
+  entry); the **catalogue** (the recognition set: imports, "does `Point` mean this plugin's or
+  `java.awt`'s", a variable's member list) is the offered classes plus every public type of the same jar
+  their non-`@Hidden` members reach, derived by `PaletteCatalog.of` (2026-09-30). `@Hidden` is member-only:
+  that member is not offered and reaches nothing. Facades and categories are listed alphabetically by label;
+  `@Palette.order` is deleted.
 - `…api.meta` — **`@ReplacedBy`** (a rename's forward pointer; `CLASS` retention, because Studio reads it out
   of a jar it never loads and it stays out of every running bot's reflection data) and **`@Refactor(value,
   done)`**, the mark on a function where a refactor wrote a value the user never chose.
@@ -207,7 +210,9 @@ type nobody draws), plus a `ComponentType<T>` when its Java is a call.
 
 **The host discovers the classes**: when a plugin's `catalog()` is empty, the default,
 `botmaker-plugin-host`'s `Palettes.of(plugin)` finds every `@Palette` class in that plugin's jar and hands
-them to `PaletteCatalog.of(…)`. No plugin lists its classes. **Members are discovered, never named**: every
+them to `PaletteCatalog.of(…)`. No plugin lists its classes, and none annotates a value type: what an offered
+member takes or returns from the same jar (by code source; the JDK's classes have none) is catalogued, not
+offered, transitively. **Members are discovered, never named**: every
 public declared method of a `@Palette` class is offered unless something on it says otherwise, grouped by
 name, lead shape chosen by `@PaletteDefault` or else fewest parameters, labels from `@PaletteLabel`, whole
 name dropped if any overload is `@Hidden`. Reflection needs no build configuration, which is why it replaced
@@ -240,10 +245,9 @@ the rule is unconditional — only a Studio major release may break a plugin, an
 block — so there is nothing to distinguish. The baseline is set to the previous tag in every release commit
 (`Japicmp.bump`, never backwards).
 
-**The baseline is pinned to `v0.3.0`, ahead of the tag.** `v0.2.0` shipped the 2026-09-21/22 removals; what
-has broken since (the steps replacing `forCall`/`calls` and the positional `ToolbarItem.of`, the hidden
-constructors) is the next release, which must therefore be **`--studio-api 0.3.0`**. An absent baseline tag
-reports and passes. **When a baseline "passes", look at the first line of `target/japicmp/japicmp.diff`**:
+**The baseline is pinned to `v0.4.0`, ahead of the tag** (2026-09-30). `v0.3.0` is released; what has broken
+since (`@Palette.order` and the type-level `@Hidden` removed) is the next release, which must therefore be
+**`--studio-api 0.4.0`**. An absent baseline tag reports and passes. **When a baseline "passes", look at the first line of `target/japicmp/japicmp.diff`**:
 `against` followed by nothing means nothing was compared.
 
 ## Style

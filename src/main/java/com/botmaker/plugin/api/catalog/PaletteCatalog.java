@@ -5,11 +5,17 @@ import com.botmaker.plugin.api.palette.Palette;
 import com.botmaker.plugin.api.palette.PaletteDefault;
 import com.botmaker.plugin.api.palette.PaletteLabel;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.security.CodeSource;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -27,10 +33,12 @@ import java.util.Set;
  * class it finds in a plugin's jar, so a plugin names none of them:
  *
  * <pre>{@code
- * PaletteCatalog.of(Mouse.class, Keyboard.class, ImageFinder.class, Point.class);
+ * PaletteCatalog.of(Mouse.class, Keyboard.class, ImageFinder.class);
  * }</pre>
  *
- * <p>Everything else is read off those classes. Every public method a class declares is offered; the
+ * <p>Everything else is read off those classes. What their offered methods take and return from the same
+ * jar — {@code Point}, {@code MatchResult} — is catalogued with them, not offered, and never listed. Every
+ * public method a class declares is offered; the
  * exceptions carry {@link Hidden}, the lead overload of a name carries {@link PaletteDefault} when parameter
  * count does not decide it, and a menu name that should not be the member's own carries
  * {@link PaletteLabel}. <b>Classes and members are discovered, never named</b>, so nothing in a catalog can
@@ -82,12 +90,19 @@ public record PaletteCatalog(List<FacadeEntry> facades, List<String> problems) {
     // ---------------------------------------------------------------- construction
 
     /**
-     * Catalogues these classes, reading {@link Palette} and the member annotations off each.
+     * Offers these classes, reading {@link Palette} and the member annotations off each, and catalogues
+     * every type their offered members reach.
      *
-     * <p>Facade order is {@link Palette#order()} then simple name, so a group can be laid out without every
-     * member of it being renumbered when one is inserted. Member order is the order the class file declares
-     * its methods in — source order, as javac writes it — with alphabetical order as the fallback when the
-     * class file cannot be read.
+     * <p><b>Reach</b> is what an offered member takes or returns — parameter, return and public field types,
+     * type arguments and array elements included — plus a reached type's own supertypes, followed through each
+     * reached type's members in turn. It stops at the jar: only a public type loaded from the same jar or class
+     * directory as the class it was reached from is catalogued, so {@code Duration} and {@code List} never
+     * are, and another plugin's type is that plugin's. A {@link Hidden} member reaches nothing. A reached type
+     * is filed under the category of the class that reached it first and is not offered.
+     *
+     * <p>Facades are listed alphabetically by {@link FacadeEntry#displayLabel()}; member order is the order
+     * the class file declares its methods in — source order, as javac writes it — with alphabetical order as
+     * the fallback when the class file cannot be read.
      *
      * <p>A class with no {@code @Palette} is reported in {@link #problems()} and skipped, rather than
      * silently ignored: passing one is always a mistake, and it is exactly the mistake — a facade that
@@ -95,9 +110,8 @@ public record PaletteCatalog(List<FacadeEntry> facades, List<String> problems) {
      */
     public static PaletteCatalog of(Class<?>... facades) {
         List<String> problems = new ArrayList<>();
-        List<FacadeEntry> entries = new ArrayList<>(facades.length);
+        Map<Class<?>, FacadeEntry> entries = new LinkedHashMap<>();
         Map<String, String> categoryLabels = new HashMap<>();
-        Map<Class<?>, Integer> order = new HashMap<>();
 
         for (Class<?> type : facades) {
             Palette palette = type == null ? null : type.getAnnotation(Palette.class);
@@ -106,15 +120,108 @@ public record PaletteCatalog(List<FacadeEntry> facades, List<String> problems) {
                         + " was catalogued but carries no @Palette");
                 continue;
             }
+            if (entries.containsKey(type)) continue;
             Category category = category(type, palette, categoryLabels, problems);
-            order.put(type, palette.order());
-            entries.add(new FacadeEntry(type, category, !type.isAnnotationPresent(Hidden.class),
+            entries.put(type, new FacadeEntry(type, category, true,
                     blankToNull(palette.icon()), blankToNull(palette.label()), members(type, problems)));
         }
 
-        entries.sort(Comparator.<FacadeEntry>comparingInt(e -> order.get(e.type()))
-                .thenComparing(FacadeEntry::simpleName));
-        return new PaletteCatalog(entries, problems);
+        Deque<Class<?>> pending = new ArrayDeque<>(entries.keySet());
+        while (!pending.isEmpty()) {
+            Class<?> from = pending.removeFirst();
+            Category category = entries.get(from).category();
+            for (Class<?> reached : reach(from)) {
+                if (entries.containsKey(reached) || !sameJar(from, reached)) continue;
+                entries.put(reached, new FacadeEntry(reached, category, false, null, null,
+                        members(reached, problems)));
+                pending.addLast(reached);
+            }
+        }
+
+        List<FacadeEntry> sorted = new ArrayList<>(entries.values());
+        sorted.sort(BY_LABEL);
+        return new PaletteCatalog(sorted, problems);
+    }
+
+    /** Alphabetical by what the user reads, the qualified name settling a tie. */
+    private static final Comparator<FacadeEntry> BY_LABEL =
+            Comparator.comparing(FacadeEntry::displayLabel, String.CASE_INSENSITIVE_ORDER)
+                    .thenComparing(FacadeEntry::qualifiedName);
+
+    /**
+     * The public, non-array classes {@code type}'s offered surface names: its supertypes, and the parameter,
+     * return and type-argument types of every eligible method whose name is not {@link Hidden}, and the
+     * types of its public fields. The jar test is the caller's.
+     */
+    private static Set<Class<?>> reach(Class<?> type) {
+        Set<Class<?>> found = new LinkedHashSet<>();
+        try {
+            if (type.getSuperclass() != null) collect(type.getGenericSuperclass(), found);
+            for (java.lang.reflect.Type face : type.getGenericInterfaces()) collect(face, found);
+            Set<String> hidden = new HashSet<>();
+            for (Method method : type.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(Hidden.class)) hidden.add(method.getName());
+            }
+            for (Method method : type.getDeclaredMethods()) {
+                if (!eligible(type, method) || hidden.contains(method.getName())) continue;
+                collect(method.getGenericReturnType(), found);
+                for (java.lang.reflect.Type parameter : method.getGenericParameterTypes()) collect(parameter, found);
+            }
+            for (Field field : type.getDeclaredFields()) {
+                if (Modifier.isPublic(field.getModifiers()) && !field.isSynthetic()) {
+                    collect(field.getGenericType(), found);
+                }
+            }
+        } catch (LinkageError | java.lang.reflect.MalformedParameterizedTypeException
+                 | TypeNotPresentException e) {
+            // members() reports the same unreadable class once; reach adds nothing and says nothing more.
+            return Set.of();
+        }
+        found.remove(type);
+        found.removeIf(c -> c.isPrimitive() || !Modifier.isPublic(c.getModifiers()) || c.isSynthetic()
+                || c.isAnonymousClass() || c.isLocalClass());
+        return found;
+    }
+
+    /** Every class a generic type names: the raw class, its arguments, an array's element, a wildcard's bounds. */
+    private static void collect(java.lang.reflect.Type type, Set<Class<?>> into) {
+        switch (type) {
+            case Class<?> c -> {
+                Class<?> leaf = c;
+                while (leaf.isArray()) leaf = leaf.getComponentType();
+                into.add(leaf);
+            }
+            case java.lang.reflect.ParameterizedType p -> {
+                collect(p.getRawType(), into);
+                for (java.lang.reflect.Type argument : p.getActualTypeArguments()) collect(argument, into);
+            }
+            case java.lang.reflect.GenericArrayType a -> collect(a.getGenericComponentType(), into);
+            case java.lang.reflect.WildcardType w -> {
+                for (java.lang.reflect.Type bound : w.getUpperBounds()) collect(bound, into);
+                for (java.lang.reflect.Type bound : w.getLowerBounds()) collect(bound, into);
+            }
+            default -> {
+                // A type variable says nothing about which class a call hands over.
+            }
+        }
+    }
+
+    /**
+     * Whether both classes were loaded from one jar or class directory. A class with no location — the
+     * JDK's, loaded by the platform — is never in a plugin's jar.
+     */
+    private static boolean sameJar(Class<?> a, Class<?> b) {
+        URL left = location(a);
+        return left != null && left.equals(location(b));
+    }
+
+    private static URL location(Class<?> type) {
+        try {
+            CodeSource source = type.getProtectionDomain().getCodeSource();
+            return source == null ? null : source.getLocation();
+        } catch (SecurityException e) {
+            return null;
+        }
     }
 
     /**
@@ -283,16 +390,19 @@ public record PaletteCatalog(List<FacadeEntry> facades, List<String> problems) {
         return facades.stream().filter(f -> f.category().equals(category)).toList();
     }
 
-    /** The facades the insert menus list, in menu order — everything not {@link Hidden} on its type. */
+    /** The facades the insert menus list, alphabetically — the {@link Palette} classes, not what they reach. */
     public List<FacadeEntry> offeredFacades() {
         return facades.stream().filter(FacadeEntry::offered).toList();
     }
 
-    /** The categories that have at least one facade, in the order their first facade appears. */
+    /** The categories that have at least one facade, alphabetically by label. */
     public List<Category> categories() {
         Set<Category> seen = new LinkedHashSet<>();
         facades.forEach(f -> seen.add(f.category()));
-        return List.copyOf(seen);
+        return seen.stream()
+                .sorted(Comparator.comparing(Category::label, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(Category::id))
+                .toList();
     }
 
     public boolean offers(Class<?> type) {
@@ -324,10 +434,16 @@ public record PaletteCatalog(List<FacadeEntry> facades, List<String> problems) {
         }
         List<String> allProblems = new ArrayList<>(problems);
         allProblems.addAll(other.problems());
-        return new PaletteCatalog(List.copyOf(merged.values()), allProblems);
+        List<FacadeEntry> sorted = new ArrayList<>(merged.values());
+        sorted.sort(BY_LABEL);
+        return new PaletteCatalog(sorted, allProblems);
     }
 
-    /** Later wins on everything the entry says about itself; members are appended, never replaced. */
+    /**
+     * Later wins on everything the entry says about itself, unless only the earlier one offers the type —
+     * a class one catalog offers and another merely reaches stays offered as declared. Members are appended,
+     * never replaced.
+     */
     private static FacadeEntry mergeFacades(FacadeEntry existing, FacadeEntry incoming) {
         List<MemberEntry> members = new ArrayList<>(existing.members());
         Set<MemberId> seen = new LinkedHashSet<>();
@@ -337,8 +453,10 @@ public record PaletteCatalog(List<FacadeEntry> facades, List<String> problems) {
                 members.add(member);
             }
         }
-        return new FacadeEntry(incoming.type(), incoming.category(), incoming.offered(),
-                incoming.icon() != null ? incoming.icon() : existing.icon(),
-                incoming.label() != null ? incoming.label() : existing.label(), members);
+        FacadeEntry winner = existing.offered() && !incoming.offered() ? existing : incoming;
+        FacadeEntry other = winner == existing ? incoming : existing;
+        return new FacadeEntry(winner.type(), winner.category(), winner.offered(),
+                winner.icon() != null ? winner.icon() : other.icon(),
+                winner.label() != null ? winner.label() : other.label(), members);
     }
 }

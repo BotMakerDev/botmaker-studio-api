@@ -19,26 +19,13 @@ import java.lang.annotation.Target;
  * <p>The name is Swagger's, for the same reason Swagger has it: <em>this exists, keep it out of the generated
  * surface</em>.
  *
- * <h2>On a type</h2>
+ * <h2>Not on a type</h2>
  *
- * <p>Beside {@link Palette}, it means <b>catalogued but never offered</b> — the editor recognises a call into
- * the type and files it under this plugin, and the insert menus do not list it. Two shapes want that, and
- * they were separate {@code role} constants until this annotation absorbed both:
- *
- * <ul>
- *   <li><b>plumbing the user should not reach for directly</b> — a capture window driven by a picker rather
- *       than typed, a watchdog toggled by the generated loop, a guard installed by the entry point;
- *   <li><b>a value type</b> — a record, enum or interface reached only as a variable's type, which is still
- *       an <em>import target</em> and still worth cataloguing so the editor can tell {@code Point} from
- *       {@code java.awt.Point}.
- * </ul>
- *
- * <p>Either way the type keeps its member list: members are reached through a variable's member submenu and
- * through a placed block's overload picker, and both consult it. Cataloguing a hidden type is not an attempt
- * to put it in the menus.
- *
- * <p>Without {@link Palette} it says nothing at all — an uncatalogued class is already not offered. Nothing
- * refuses the pair; it is simply redundant.
+ * <p>It sat on thirty-eight types until 2026-09-30, beside {@link Palette}, to mean "catalogued, never
+ * offered". A type that should not be offered now simply carries no {@code @Palette}: if an offered call
+ * takes or returns it, it is catalogued anyway ({@link Palette} says how), and if none does, nothing in the
+ * editor should name it. A hidden member is still left out of that reach — a type only a hidden member names
+ * is not catalogued by it.
  *
  * <h2>On a member, the unit is the member name</h2>
  *
@@ -63,7 +50,7 @@ import java.lang.annotation.Target;
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE, ElementType.METHOD, ElementType.CONSTRUCTOR})
+@Target({ElementType.METHOD, ElementType.CONSTRUCTOR})
 public @interface Hidden {
 
     /**

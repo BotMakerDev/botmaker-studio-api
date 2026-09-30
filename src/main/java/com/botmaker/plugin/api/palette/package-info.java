@@ -5,7 +5,7 @@
  * read off them:
  *
  * <pre>{@code
- * @Palette(category = "vision", categoryLabel = "Vision", icon = "🔍", order = 20)
+ * @Palette(category = "vision", categoryLabel = "Vision", icon = "🔍")
  * public final class ImageFinder {
  *
  *     public static MatchResult find(ImageTemplate t) { … }        // offered
@@ -24,13 +24,13 @@
  * and is supported, and nobody notices it was never proposed. Here it is offered the moment it is written,
  * and declining it is a deliberate line of source carrying a reason.
  *
- * <h2>Two bits per class, not three</h2>
+ * <h2>Offered is annotated; catalogued is derived</h2>
  *
- * <p>{@link com.botmaker.plugin.api.palette.Palette} means <b>catalogued</b>: recognised as a call into this
- * plugin, filed under it, and available for the editor's "who owns this simple name" question.
- * {@link com.botmaker.plugin.api.palette.Hidden} on the type means <b>not offered</b> — catalogued all the
- * same, just never listed in the insert menus. A three-valued {@code role} element said this until
- * 2026-08-27, and every consumer of it only ever read one bit.
+ * <p>{@link com.botmaker.plugin.api.palette.Palette} means <b>offered</b>: the class has its own entry in the
+ * insert menus. Every type of the same jar an offered call takes or returns, transitively, is
+ * <b>catalogued</b> with it — recognised as this plugin's, its members listed on a variable of it — with no
+ * annotation at all. A type-level {@link com.botmaker.plugin.api.palette.Hidden} said "catalogued, not
+ * offered" until 2026-09-30, and a three-valued {@code role} element before that.
  *
  * <h2>Runtime retention, and why all four are alike now</h2>
  *

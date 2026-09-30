@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class PaletteCatalogTest {
 
-    @Palette(category = "demo", categoryLabel = "Demo", icon = "🧪", order = 10)
+    @Palette(category = "demo", categoryLabel = "Demo", icon = "🧪")
     @SuppressWarnings("unused")
     static final class Widget {
 
@@ -59,19 +59,47 @@ class PaletteCatalogTest {
         }
     }
 
-    @Palette(category = "demo", order = 20)
-    @Hidden("a value type: recognised, never proposed")
-    record Coordinate(int x, int y) {
+    /** Offered; what it takes and returns is catalogued with it, except through a hidden member. */
+    @Palette(category = "demo")
+    @SuppressWarnings("unused")
+    static final class Pointer {
+
+        public static void move(Coordinate to) {
+        }
+
+        public static List<Step> path() {
+            return List.of();
+        }
+
+        @Hidden("plumbing")
+        public static void secret(Secret s) {
+        }
+    }
+
+    /** Reached from {@code Pointer.move}. */
+    public record Coordinate(int x, int y) {
+    }
+
+    /** Reached from {@code Pointer.path}'s type argument; reaches {@link Coordinate} again. */
+    public record Step(Coordinate at) {
+    }
+
+    /** Reached only through a hidden member, so never catalogued. */
+    public static final class Secret {
     }
 
     static final class Unmarked {
     }
 
-    @Palette(category = "demo", categoryLabel = "Demonstration", order = 30)
+    @Palette(category = "demo", categoryLabel = "Demonstration")
     static final class Disagrees {
     }
 
-    @Palette(category = "demo", order = 40)
+    @Palette(category = "alpha", categoryLabel = "Alpha")
+    static final class Early {
+    }
+
+    @Palette(category = "demo")
     @SuppressWarnings("unused")
     static final class TwoLeads {
 
@@ -85,15 +113,19 @@ class PaletteCatalogTest {
     }
 
     private static PaletteCatalog demo() {
-        return PaletteCatalog.of(Widget.class, Coordinate.class);
+        return PaletteCatalog.of(Widget.class, Pointer.class);
     }
 
+    private static List<String> names(List<FacadeEntry> entries) {
+        return entries.stream().map(FacadeEntry::simpleName).toList();
+    }
+
+    /** Alphabetical, reached types included — an {@code order} element ranked them until 2026-09-30. */
     @Test
-    void catalogsInOrderAndReadsTheAnnotations() {
+    void catalogsAlphabeticallyAndReadsTheAnnotations() {
         PaletteCatalog catalog = demo();
         assertEquals(List.of(), catalog.problems());
-        assertEquals(List.of("Widget", "Coordinate"), catalog.facades().stream()
-                .map(FacadeEntry::simpleName).toList());
+        assertEquals(List.of("Coordinate", "Pointer", "Step", "Widget"), names(catalog.facades()));
 
         FacadeEntry widget = catalog.facade(Widget.class).orElseThrow();
         assertEquals("Demo", widget.category().label());
@@ -101,14 +133,30 @@ class PaletteCatalogTest {
         assertTrue(widget.offered());
     }
 
-    /** Hidden on the type keeps the entry and drops it from the menus — the old HIDDEN and VALUE, collapsed. */
+    /** What an offered call takes or returns is catalogued, never offered — no annotation says so. */
     @Test
-    void hiddenOnATypeIsCataloguedButNotOffered() {
+    void aReachedTypeIsCataloguedButNotOffered() {
         PaletteCatalog catalog = demo();
-        assertTrue(catalog.offers(Coordinate.class), "a hidden type is still catalogued");
-        assertFalse(catalog.facade(Coordinate.class).orElseThrow().offered());
-        assertEquals(List.of("Widget"), catalog.offeredFacades().stream()
-                .map(FacadeEntry::simpleName).toList());
+        assertEquals(List.of("Pointer", "Widget"), names(catalog.offeredFacades()));
+        FacadeEntry coordinate = catalog.facade(Coordinate.class).orElseThrow();
+        assertFalse(coordinate.offered());
+        assertEquals("demo", coordinate.category().id(), "filed where the class that reached it is");
+        assertTrue(coordinate.offers("x"), "a reached type keeps its members for a variable's submenu");
+        assertTrue(catalog.offers(Step.class), "a type argument reaches");
+    }
+
+    @Test
+    void reachStopsAtTheJarAndAtAHiddenMember() {
+        PaletteCatalog catalog = demo();
+        assertFalse(catalog.offers(Secret.class), "only a hidden member names it");
+        assertFalse(catalog.offers(List.class), "the JDK is no plugin's");
+        assertFalse(catalog.offers(String.class));
+    }
+
+    @Test
+    void categoriesAreAlphabetical() {
+        assertEquals(List.of("Alpha", "Demo"), PaletteCatalog.of(Widget.class, Early.class).categories().stream()
+                .map(Category::label).toList());
     }
 
     /**
@@ -168,9 +216,19 @@ class PaletteCatalogTest {
 
     @Test
     void mergingIsAdditiveAndTheLaterCatalogWinsTheEntry() {
-        PaletteCatalog merged = PaletteCatalog.of(Widget.class).mergedWith(PaletteCatalog.of(Coordinate.class));
-        assertEquals(List.of("Widget", "Coordinate"), merged.facades().stream()
-                .map(FacadeEntry::simpleName).toList());
+        PaletteCatalog merged = PaletteCatalog.of(Widget.class).mergedWith(PaletteCatalog.of(Pointer.class));
+        assertEquals(List.of("Coordinate", "Pointer", "Step", "Widget"), names(merged.facades()));
         assertEquals(merged, merged.mergedWith(PaletteCatalog.empty()));
+    }
+
+    /** A class one catalog offers and another only reaches is still offered, as its own catalog says. */
+    @Test
+    void mergingNeverUnoffersAClass() {
+        PaletteCatalog offered = PaletteCatalog.of(Pointer.class);
+        PaletteCatalog reachedOnly = new PaletteCatalog(List.of(new FacadeEntry(Pointer.class,
+                Category.of("other"), false, null, null, List.of())));
+        FacadeEntry pointer = offered.mergedWith(reachedOnly).facade(Pointer.class).orElseThrow();
+        assertTrue(pointer.offered());
+        assertEquals("demo", pointer.category().id());
     }
 }

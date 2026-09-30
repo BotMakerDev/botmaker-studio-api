@@ -17,9 +17,28 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
-No source changes since v0.3.0; re-released for updated upstream pins.
+**Breaking — cut as 0.4.0.** A plugin that sets `@Palette(order = …)` or puts `@Hidden` on a type no
+longer compiles; one already built keeps loading (an annotation element the host never reads is harmless).
+
+### Changed
+
+- **`@Palette` means offered; the catalogue is derived.** `PaletteCatalog.of` offers the `@Palette` classes
+  and catalogues, not offered, every public type of the same jar their offered members take or return —
+  type arguments, supertypes and public fields included, followed transitively, never through a `@Hidden`
+  member. A value type needs no annotation any more, and a public class no offered call reaches is not
+  catalogued at all.
+- **Facades and categories are alphabetical**, by label. `mergedWith` keeps the order, and never turns an
+  offered class into a merely reached one.
+
+### Removed
+
+- `@Hidden` on a type: its target is methods and constructors only. Remove `@Palette` from a class instead.
+- `@Palette.order()`.
 
 ### Added
+
+- **`SlotContext.enclosingMethodSource()`** (`default`, empty): the bot method holding a slot as
+  `Owner::method`, the text a flow links an activity body by.
 
 - **A running bot's trace, line by line**: `Runs.onTrace(Consumer<TraceLine>)`, a `default` that delivers
   nothing. `TraceLine` is a record the host builds: when, level (`DEBUG`/`INFO`/`WARN`/`ERROR`/`UNKNOWN`,

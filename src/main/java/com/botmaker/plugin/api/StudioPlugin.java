@@ -82,8 +82,8 @@ public interface StudioPlugin {
      * A palette this plugin builds by hand, overriding the one the host discovers.
      *
      * <p><b>Most plugins leave this alone.</b> The host finds every class carrying {@code @Palette} in the
-     * plugin's own jar and catalogues it, reading members off {@code @Hidden}, {@code @PaletteLabel} and
-     * {@code @PaletteDefault}. The annotations are the declaration; no plugin lists its classes. The
+     * plugin's own jar and offers it, reading members off {@code @Hidden}, {@code @PaletteLabel} and
+     * {@code @PaletteDefault}, and catalogues every type of the jar those offered members reach. The annotations are the declaration; no plugin lists its classes. The
      * default, {@link PaletteCatalog#empty()}, means "discover it".
      */
     default PaletteCatalog catalog() {

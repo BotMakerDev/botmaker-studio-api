@@ -73,6 +73,21 @@ public interface SlotContext extends ValueContext {
         return Optional.empty();
     }
 
+    /**
+     * The bot's own method whose body holds this slot, as a method reference — {@code Collect::body}, the
+     * declaring class's simple name and the method's — or empty in a field initialiser, a lambda outside any
+     * method, or anywhere the host cannot say.
+     *
+     * <p>For an editor whose choices depend on which of the bot's methods it is in: an activity's body is
+     * linked to its activity by exactly this reference in the flow, so the outcome picker lists the outcomes of
+     * the activity whose body the slot sits in rather than every activity's. Text, read-only, and the same text
+     * a flow value holds — the bot's classes are not on the plugin's loader, so there is no {@code Method} to
+     * hand over, and it is compared, never parsed. Since 2026-09-30; {@code default}, empty.
+     */
+    default Optional<String> enclosingMethodSource() {
+        return Optional.empty();
+    }
+
     // enclosingCall() and replaceEnclosingCall(String, String...) were deleted on 2026-09-23. They handed a
     // plugin the whole call as Java text to split and a way to write a new one back; their one user was the
     // SDK's duration picker turning Wait.time(x) into Wait.between(a, b), and that toggle went with them.

@@ -7,24 +7,25 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Declares a class as part of this plugin's palette. The host finds every class carrying it in the plugin's
- * jar and catalogues it ({@link com.botmaker.plugin.api.catalog.PaletteCatalog#of(Class[])
- * PaletteCatalog.of}), offering every public method it declares except the ones marked {@link Hidden}.
+ * Offers a class in the insert menus. The host finds every class carrying it in the plugin's jar and
+ * catalogues it ({@link com.botmaker.plugin.api.catalog.PaletteCatalog#of(Class[]) PaletteCatalog.of}),
+ * offering every public method it declares except the ones marked {@link Hidden}.
  *
  * <p>This annotation is the whole declaration: no list of classes is written anywhere else. The retention is
  * {@code RUNTIME} because the catalog is read off live {@code Class} objects.
  *
- * <h2>Catalogued, and offered or not</h2>
+ * <h2>Offered, and what is catalogued with it</h2>
  *
- * <p>There are two bits here, not three. A class carrying this annotation is <b>catalogued</b> — the editor
- * recognises a call into it, files it under this plugin, and can decide that {@code Point} in a bot's source
- * means this plugin's and not {@code java.awt}'s. Whether it is also <b>offered</b> in the insert menus is
- * the separate question {@link Hidden} answers on the type.
+ * <p>A class carrying this annotation is <b>offered</b>: it has its own entry in the insert menus. Everything
+ * its offered methods take or give back that lives in the same jar — {@code Point} from
+ * {@code Mouse.click(Point)}, {@code MatchResult} from {@code ImageFinder.find}, and what those reach in turn
+ * — is <b>catalogued</b> with it without an annotation: recognised as this plugin's, so {@code Point} in a
+ * bot's source means this plugin's and not {@code java.awt}'s, and its members listed on a variable of it.
+ * A public class nothing offered reaches is neither, and the editor never proposes it.
  *
- * <p>The predecessor spelled this as a three-valued {@code role} element — {@code MENU}, {@code HIDDEN} and
- * {@code VALUE} — where every consumer only ever read one bit of it and nothing distinguished the last two.
- * A value type carrying {@code @Palette} and {@code @Hidden} says the same thing more plainly, and being in
- * the recognition set is the truthful answer for it: a plugin's own value type <em>is</em> its API.
+ * <p>Until 2026-09-30 this annotation meant catalogued and a type-level {@link Hidden} beside it meant "not
+ * offered": thirty-eight SDK types carried both, and the class dropdown, which read only the first bit,
+ * listed every one of them. What a user reaches through an offered call is the catalogue by construction now.
  *
  * <h2>Why every element is a {@code String}</h2>
  *
@@ -32,6 +33,13 @@ import java.lang.annotation.Target;
  * deliberately open — a plugin defines its own — so no closed element type could express it. An annotation
  * element's type must also be resolvable wherever the annotation is applied, and the interesting application
  * sites are in modules that depend on this one.
+ *
+ * <h2>Order is the label's</h2>
+ *
+ * <p>Offered classes are listed alphabetically by their label, categories too. An {@code order} element
+ * ranked them until 2026-09-30, and a menu of thirty facades in an order only their author could read was
+ * the complaint that removed it. Member order within a class is still the author's: it is read from the order
+ * the methods appear in the compiled class file, which javac writes in source order.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
@@ -58,13 +66,4 @@ public @interface Palette {
 
     /** The class's user-visible name; blank means its simple name. */
     String label() default "";
-
-    /**
-     * Where it sits among its peers. Classes are ordered by this number and then by simple name, so a group
-     * can be laid out without every member of it being renumbered when one is inserted — leave gaps.
-     *
-     * <p>Member order within a class needs no element: it is read from the order the methods appear in the
-     * compiled class file, which javac writes in source order — the order the author already wrote.
-     */
-    int order() default 100;
 }
