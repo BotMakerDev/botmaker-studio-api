@@ -37,6 +37,8 @@ longer compiles; one already built keeps loading (an annotation element the host
 
 ### Added
 
+- **`@Untraced`** on a method or constructor: a host that traces a bot's calls into offered classes leaves
+  calls to it out (a member polled in a loop, or an entry point that holds the whole run).
 - **`SlotContext.enclosingMethodSource()`** (`default`, empty): the bot method holding a slot as
   `Owner::method`, the text a flow links an activity body by.
 
