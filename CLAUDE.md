@@ -53,8 +53,8 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
 - **A slot editor**: `SlotEditor.onParameter(Annotation.class)` | `forType(X.class)` | `when(predicate)` →
   `.draw(() -> E::draw[, () -> E::preview])` (`EditorSteps`). A value the type cannot tell apart is told apart
   by a `RUNTIME` annotation on the parameter it is passed to (`outcome(@OutcomeName String)`), matched by
-  the annotation's binary name through `SlotContext.parameter()`; an editor reads its settings off it
-  (`@Setting(label, min, max, …)`). A preview is a small, non-interactive picture of one value, for a value
+  the annotation's binary name through `SlotContext.parameter()`; an editor reads its settings off it, or
+  off a table the plugin keys by `Parameter.getDeclaringExecutable()` (the SDK's `SettingHints`). A preview is a small, non-interactive picture of one value, for a value
   shown in a list of choices rather than edited.
 - **A toolbar item**: `ToolbarItem.id(ID).label(…).tooltip(…).in(group, order)` → optional
   `.enabledWhen(…)`/`.icon(…)` → `.onPress(() -> MyWindow::open)` (`ToolbarSteps`). The press is a `Pressed`,
