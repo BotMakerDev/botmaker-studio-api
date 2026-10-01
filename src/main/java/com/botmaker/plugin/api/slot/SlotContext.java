@@ -45,9 +45,9 @@ public interface SlotContext extends ValueContext {
      * tail — or empty when the call did not resolve or the slot is not an argument.
      *
      * <p>What {@link SlotEditor#onParameter} matches, and what an editor reads its settings from: an
-     * annotation on the parameter ({@code @Setting(label = "Match confidence", max = 1)}) is the plugin's own
-     * declaration of what the argument means, so the editor takes the label and the range off it rather than
-     * keeping a table keyed on method names. Since 2026-09-28; {@code default}, derived from
+     * annotation on the parameter ({@code outcome(@OutcomeName String)}) is the plugin's own declaration of what
+     * the argument means; a plugin that keeps a table instead keys it by {@link Parameter#getDeclaringExecutable()},
+     * never by a method's name. Since 2026-09-28; {@code default}, derived from
      * {@link #enclosingExecutable()} and {@link #argIndex()}.
      */
     default Optional<Parameter> parameter() {
