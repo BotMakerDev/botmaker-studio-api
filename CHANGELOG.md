@@ -15,7 +15,7 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
-## [Unreleased]
+## [0.3.1] — 2026-10-01
 
 **Breaking — cut as 0.4.0.** A plugin that sets `@Palette(order = …)` or puts `@Hidden` on a type no
 longer compiles; one already built keeps loading (an annotation element the host never reads is harmless).
