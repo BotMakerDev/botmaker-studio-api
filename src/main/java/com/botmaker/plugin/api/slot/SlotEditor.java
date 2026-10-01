@@ -21,7 +21,7 @@ import java.util.function.Predicate;
  * {@link EditorSteps.Drawing#draw}:
  *
  * <pre>{@code
- * SlotEditor.onParameter(SteamAppId.class).draw(() -> LaunchEditors::steamGame)   // chosen by the parameter
+ * SlotEditor.onParameter(OutcomeName.class).draw(() -> ActivityEditors::outcomeName) // chosen by the parameter
  * SlotEditor.forType(Color.class).draw(() -> ColorEditors::color)                 // another plugin's type
  * SlotEditor.when(TemplateEditors::isRunOfPictures).draw(() -> TemplateEditors::group)
  * }</pre>
@@ -70,12 +70,12 @@ public interface SlotEditor {
 
     /**
      * An editor for every argument passed to a parameter carrying {@code marker} — the way to tell apart
-     * values the type cannot. A Steam app id, a program path and a launch flag are all {@code String}; the
+     * values the type cannot. An activity name, an outcome name and a label are all {@code String}; the
      * plugin says which is which where it declares the parameter:
      *
      * <pre>{@code
-     * public static void launchSteam(@SteamAppId String appId)
-     * SlotEditor.onParameter(SteamAppId.class).draw(() -> LaunchEditors::steamGame)
+     * public static Outcome outcome(@OutcomeName String name)
+     * SlotEditor.onParameter(OutcomeName.class).draw(() -> ActivityEditors::outcomeName)
      * }</pre>
      *
      * <p>Every argument of a varargs tail is passed to its last parameter, so an annotation there claims each

@@ -27,7 +27,7 @@ import java.util.OptionalInt;
  * @param text   the line itself, without a level or source prefix; never {@code null}
  * @param count  how many identical lines this one stands for, at least 1 — a bot collapses a line it repeats
  *               in a loop rather than sending it every time
- * @param writerClass  the binary name of the class that wrote it ({@code com.botmaker.sdk.api.interaction.Mouse}),
+ * @param writerClass  the binary name of the class that wrote it ({@code com.botmaker.sdk.api.input.Mouse}),
  *               what a host filters by; {@code ""} when unknown
  * @param writerMethod the method of {@code writerClass} that wrote it ({@code click}); {@code ""} when unknown
  * @param className the binary name of the bot's class whose {@code line} it is ({@code com.example.Collect}),

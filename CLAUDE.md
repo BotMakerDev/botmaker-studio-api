@@ -52,7 +52,7 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   `ManagedHandle`. **A recorded value**: `RecordedValue.of(T.class).at(Finder::find)`.
 - **A slot editor**: `SlotEditor.onParameter(Annotation.class)` | `forType(X.class)` | `when(predicate)` →
   `.draw(() -> E::draw[, () -> E::preview])` (`EditorSteps`). A value the type cannot tell apart is told apart
-  by a `RUNTIME` annotation on the parameter it is passed to (`launchSteam(@SteamAppId String)`), matched by
+  by a `RUNTIME` annotation on the parameter it is passed to (`outcome(@OutcomeName String)`), matched by
   the annotation's binary name through `SlotContext.parameter()`; an editor reads its settings off it
   (`@Setting(label, min, max, …)`). A preview is a small, non-interactive picture of one value, for a value
   shown in a list of choices rather than edited.
@@ -71,7 +71,8 @@ Both were examined on 2026-09-28 and kept; do not propose removing either withou
 
 - **`Ref.member(owner, name, params)`** names the one factory javac cannot reference: the SDK's
   `CaptureSource.region`, where a static `region(src, r)` and an instance `src.region(r)` share a name and an
-  arity. The SDK's never-delete keeps both for ever, so a new-named factory would still leave this one.
+  arity. Both are what a bot writes, and a new-named factory would still leave the chained one read through
+  this. (The SDK's never-delete, the reason first given, was retired on 2026-10-01.)
 - **The SDK's flow activity body is the text `Collect::body`** (`FlowTypes`). It is not a plugin writing
   Java: it goes through the host's own source-leaf path (Studio's `ValueWriter.ofClass`), which parses it into
   a tree, and renames follow bindings in the real `Sdk.java`. A contract `MethodName` type was considered and

@@ -20,7 +20,7 @@ import java.util.Optional;
 public interface SlotContext extends ValueContext {
 
     /**
-     * The method or constructor this slot is an argument of — {@code Game.launchSteam(String)} — resolved by
+     * The method or constructor this slot is an argument of — {@code Activities.outcome(String)} — resolved by
      * the host from the call's binding and loaded on the plugin's own classloader; empty when the call did
      * not resolve, or when the called class is not on the plugin's classpath (a method of the bot itself).
      *
