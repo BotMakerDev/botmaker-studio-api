@@ -29,6 +29,8 @@ longer compiles; one already built keeps loading (an annotation element the host
   catalogued at all.
 - **Facades and categories are alphabetical**, by label. `mergedWith` keeps the order, and never turns an
   offered class into a merely reached one.
+- **`Gesture.AWAIT` carries its timeout in milliseconds**, the unit of `PAUSE`, so a `Duration` parameter
+  fills it. It was whole seconds; a writer taking an `int` of seconds now receives milliseconds.
 
 ### Removed
 
