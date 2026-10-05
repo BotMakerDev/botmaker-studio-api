@@ -5,12 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <!--
-      groupId is com.github.LiQiyeDev, exactly as in botmaker-shared and botmaker-session and for the same
-      reason: JitPack serves this repo as com.github.LiQiyeDev:botmaker-studio-api:<tag> regardless of what
+      groupId is com.github.BotMakerDev, exactly as in botmaker-shared and botmaker-session and for the same
+      reason: JitPack serves this repo as com.github.BotMakerDev:botmaker-studio-api:<tag> regardless of what
       this pom says, so matching it here makes the reactor GAV identical to the published GAV. The version
       below is cosmetic — JitPack overrides it with the git tag.
     -->
-    <groupId>com.github.LiQiyeDev</groupId>
+    <groupId>com.github.BotMakerDev</groupId>
     <artifactId>botmaker-studio-api</artifactId>
     <version>0.0.0-SNAPSHOT</version>
 
@@ -215,7 +215,7 @@
                         <configuration>
                             <oldVersion>
                                 <dependency>
-                                    <groupId>com.github.LiQiyeDev</groupId>
+                                    <groupId>com.github.BotMakerDev</groupId>
                                     <artifactId>botmaker-studio-api</artifactId>
                                     <version>${botmaker.japicmp.baseline}</version>
                                     <type>jar</type>

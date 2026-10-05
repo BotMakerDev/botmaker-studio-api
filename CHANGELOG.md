@@ -15,6 +15,14 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Changed
+
+- Published as `com.github.BotMakerDev:botmaker-studio-api` (was `com.github.LiQiyeDev`). No type changes.
+  Tags already built under the old groupId still resolve under it, and Maven treats the two as unrelated
+  artifacts, so a plugin should name only the new one.
+
 ## [0.4.1] — 2026-10-05
 
 ### Added

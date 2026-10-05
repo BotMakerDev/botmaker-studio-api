@@ -5,7 +5,7 @@ no Studio types, no parser.
 
 ```xml
 <dependency>
-    <groupId>com.github.LiQiyeDev</groupId>
+    <groupId>com.github.BotMakerDev</groupId>
     <artifactId>botmaker-studio-api</artifactId>
     <version><!-- a tag --></version>
     <scope>provided</scope>
@@ -82,9 +82,9 @@ against an older release keeps working until a Studio **major** release explicit
 
 ```bash
 mvn test        # the catalog, PluginType/ComponentType, SlotEditor and the context defaults
-mvn install     # lands at com.github.LiQiyeDev:botmaker-studio-api:0.0.0-SNAPSHOT
+mvn install     # lands at com.github.BotMakerDev:botmaker-studio-api:0.0.0-SNAPSHOT
 ```
 
-Published via JitPack, which serves each git tag as `com.github.LiQiyeDev:botmaker-studio-api:<tag>`. The
+Published via JitPack, which serves each git tag as `com.github.BotMakerDev:botmaker-studio-api:<tag>`. The
 pom's own `<version>` is cosmetic. Releases are cut from the umbrella repository with
 `./release.sh --studio-api <version>`.

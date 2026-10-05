@@ -48,7 +48,7 @@ project:
     homepage: https://github.com/BotMakerDev/botmaker-studio-api
   languages:
     java:
-      groupId: com.github.LiQiyeDev
+      groupId: com.github.BotMakerDev
       artifactId: botmaker-studio-api
       version: '21'
 
