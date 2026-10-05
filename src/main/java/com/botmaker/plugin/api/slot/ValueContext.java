@@ -75,8 +75,24 @@ public interface ValueContext {
      * <p><b>The host owns every character of syntax around this.</b> It writes the expression into the node
      * it came from and reformats nothing else, so a file that had comments and helpers beside the value
      * still has them afterwards.
+     *
+     * <p>A value the host cannot write is told to the user on the status line. An editor that wants to know
+     * itself — to keep the old value shown, or to say why — calls {@link #write} instead.
      */
     void set(Object value);
+
+    /**
+     * {@link #set}, answering whether it happened: empty when {@code value} was written, else the sentence
+     * saying why not — a value of a type no loaded plugin writes, or none at all. A refused value leaves what
+     * the file held untouched.
+     *
+     * <p>{@code default} for a host older than this method, which answers empty after an ordinary
+     * {@link #set}: it cannot say more, and an editor written against this one must still run there.
+     */
+    default Optional<String> write(Object value) {
+        set(value);
+        return Optional.empty();
+    }
 
     /**
      * The value exactly as the bot's Java writes it — never {@code null}, {@code ""} when there is none.

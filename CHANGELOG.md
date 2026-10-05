@@ -17,10 +17,15 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
-No source changes since v0.3.1; re-released for updated upstream pins.
-
 **Breaking — cut as 0.4.0.** A plugin that sets `@Palette(order = …)` or puts `@Hidden` on a type no
 longer compiles; one already built keeps loading (an annotation element the host never reads is harmless).
+
+### Added
+
+- **`ValueContext.write(Object)`** — `set`, answering whether it happened: empty when written, else the
+  sentence saying why not (a value no loaded plugin says how to write, or none). `set` stays, and a host now
+  shows its refusal on the status line instead of dropping the value silently. `default`: on an older host it
+  calls `set` and answers empty.
 
 ### Changed
 

@@ -124,6 +124,22 @@ class ContextDefaultsTest {
         assertEquals(10, reversed.max());
     }
 
+    /** A host older than {@code write} still writes through it: the call is its {@code set}, answered as done. */
+    @Test
+    void anOlderHostWritesThroughSetAndReportsNothing() {
+        List<Object> set = new java.util.ArrayList<>();
+        ValueContext older = new ValueContext() {
+            @Override public TypeRef type() { return STRING; }
+            @Override public <T> Optional<T> value(Class<T> type) { return Optional.empty(); }
+            @Override public void set(Object value) { set.add(value); }
+            @Override public String source() { return ""; }
+            @Override public StudioServices services() { return null; }
+        };
+
+        assertTrue(older.write("y").isEmpty());
+        assertEquals(List.of("y"), set);
+    }
+
     @Test
     void aValueCarriesItsTypedValueAndTheSourceItWasWrittenAs() {
         ValueContext value = row();
