@@ -72,6 +72,27 @@ public interface StyleClasses {
     /** The caption under a {@link #TILE}. */
     String TILE_NAME = "template-tile-name";
 
+    /** Text at full weight: a name, a count, the label of a row. */
+    String STRONG_TEXT = "text-strong";
+
+    /** Text that warns: something is missing, offline, or not yet done. In the theme's warning colour. */
+    String WARNING_TEXT = "text-warning";
+
+    /** Text that reports a failure: it did not work, and why. In the theme's error colour. */
+    String ERROR_TEXT = "text-error";
+
+    /** Text that confirms: connected, saved, found. In the theme's success colour. */
+    String OK_TEXT = "text-ok";
+
+    /** Secondary text, dimmed in whatever colour the theme gives text. */
+    String MUTED_TEXT = "text-muted";
+
+    /** Text one step smaller than the body: a detail under a control. */
+    String SMALL_TEXT = "text-small";
+
+    /** Fixed-width text: a path, an id, a log line. */
+    String MONO_TEXT = "text-mono";
+
     /**
      * On the root of a window that must <em>not</em> acquire the host's chrome — a translucent surface drawn
      * over a live game, where the shell's background, border and radius are the one thing that would ruin it.

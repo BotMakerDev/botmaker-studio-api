@@ -22,6 +22,9 @@ longer compiles; one already built keeps loading (an annotation element the host
 
 ### Added
 
+- **Text roles in `StyleClasses`**: `STRONG_TEXT`, `WARNING_TEXT`, `ERROR_TEXT`, `OK_TEXT`, `MUTED_TEXT`,
+  `SMALL_TEXT`, `MONO_TEXT`, so a plugin's status and detail lines follow the user's theme instead of a
+  hard-coded colour. Constants only: a plugin built with them still loads in an older Studio, unstyled.
 - **`ManagedValue.Shape`** (`METHOD`, `OPEN_SET`) and `shape()`: which of the two a value is, said rather
   than inferred from a missing type.
 
