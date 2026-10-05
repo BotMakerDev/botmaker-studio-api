@@ -22,14 +22,17 @@ is allowed to make. Additions arrive as `default` methods.
 - **An overlay editor surface** (`com.botmaker.plugin.api.overlay`), declared with
   `PluginDeclaration.overlay(() -> PART)` or `StudioPlugin.overlayPart()`. One `OverlayPart.of()` per plugin
   says:
-  - `targets(…)`: where blocks go, as `OverlayTarget.method(className, method).labelled(…).in(group)`;
+  - `targets(ActivityBody.class, "Activities")`: where blocks go. The host offers every bot method passed by
+    reference where that functional interface is expected, read off the compiler's bindings, so no method
+    name crosses as text;
   - `watched(…)`: which screen the bot watches, as `Watched.window/region/session`. `changeWatched(…)` opens
     the plugin's own picker for it;
   - `tool(OverlayTool.id(…).named(…).pane(…))`: a pane in the panel's tool tabs. Its
-    `OverlayToolContext` offers the frame, region and point picks, `insert(Call::ref, args…)` at the caret,
-    and `Marks`;
+    `OverlayToolContext` offers the frame, region and point picks, `insert(Call::ref, args…)` at the caret
+    (`insertVoid` for a `void` call, through the new `Ref.Void0`–`Void4`), and `Marks`;
   - `probe(Call::ref, Param.class…, Probe)`: what a call would answer now, on the live frame, as a `ProbeResult`. Declaring
-    one says the call is read-only.
+    one says the call is read-only. For a call that acts, such as a click, wrap the probe in
+    `Probe.acting(…)`: the probe then shows what the call would do, and Try never computes a local from it.
 - **Tools for the AI assistant** (`com.botmaker.plugin.api.assist`), declared with
   `PluginDeclaration.assistant(() -> ALL)` or `StudioPlugin.assistantTools()`:
   `AssistantTool.named("crop_picture").describedAs(…).takes(Crop.class).handledBy(Owner::crop)`.

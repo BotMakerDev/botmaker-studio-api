@@ -14,16 +14,22 @@ import java.util.Optional;
  *
  * <pre>{@code
  * static final OverlayPart PART = OverlayPart.of()
- *         .targets(SdkOverlay::targets)
+ *         .targets(ActivityBody.class, "Activities")
  *         .watched(SdkOverlay::watched).changeWatched(() -> SdkOverlay::changeWatched)
  *         .tool(SdkTools.PICTURE).tool(SdkTools.POINT)
  *         .probe(ImageFinder::find, ImageTemplate.class, SdkProbes::find)
- *         .probe(ImageClicker::click, ImageTemplate.class, SdkProbes::wouldClick);
+ *         .probe(ImageClicker::click, ImageTemplate.class, Probe.acting(SdkProbes::wouldClick));
  * }</pre>
  *
  * <p>Declared through {@code PluginDeclaration.overlay(() -> SdkOverlay.PART)}, one per plugin. Every step is
- * optional and answers a copy. {@link #targetsFor} and {@link #watchedFor} are asked again whenever the bot's code
- * changes, on the FX thread, and must be quick: read the plugin's own values, never the screen.
+ * optional and answers a copy. {@link #watchedFor} is asked again whenever the bot's code changes, on the FX
+ * thread, and must be quick: read the plugin's own values, never the screen.
+ *
+ * <p><b>Targets are found by type, not named.</b> {@link #targets(Class, String)} names a functional interface
+ * of the plugin's — the SDK's {@code ActivityBody} — and the host offers, in source order, every method of the
+ * bot that its Java passes by method reference where that type is expected: {@code Flow.activity(COLLECT,
+ * Collect::body, …)} makes {@code Collect.body()} a chip labelled {@code Collect}. The host reads it off the
+ * compiler's bindings, so no method name crosses as text and the plugin parses nothing.
  *
  * <p><b>A probe is keyed by the call it probes</b>, named by method reference plus the class of each of its
  * parameters (a receiver counts as the first). The classes are what pick an overloaded call: a bare
@@ -33,10 +39,14 @@ import java.util.Optional;
  */
 public final class OverlayPart {
 
-    /** The bot methods worth editing from the overlay, in chip order. A method reference. */
-    @FunctionalInterface
-    public interface Targets {
-        List<OverlayTarget> targets(OverlayContext context);
+    /**
+     * One kind of target: the bot methods passed where {@code typeName}'s interface is expected, gathered under
+     * the heading {@code group}.
+     *
+     * @param typeName the functional interface's binary name: {@code com.botmaker.sdk.api.flow.ActivityBody}
+     * @param group    the heading its chips sit under: {@code "Activities"}
+     */
+    public record TargetType(String typeName, String group) {
     }
 
     /** The screen the bot watches, empty when the plugin cannot say. A method reference. */
@@ -49,17 +59,17 @@ public final class OverlayPart {
     public record ProbedCall(Executable call, Probe probe) {
     }
 
-    private static final OverlayPart EMPTY = new OverlayPart(null, null, null, List.of(), List.of());
+    private static final OverlayPart EMPTY = new OverlayPart(List.of(), null, null, List.of(), List.of());
 
-    private final Targets targets;
+    private final List<TargetType> targets;
     private final WatchedBy watched;
     private final Pressed changeWatched;
     private final List<OverlayTool> tools;
     private final List<ProbedCall> probes;
 
-    private OverlayPart(Targets targets, WatchedBy watched, Pressed changeWatched, List<OverlayTool> tools,
+    private OverlayPart(List<TargetType> targets, WatchedBy watched, Pressed changeWatched, List<OverlayTool> tools,
                         List<ProbedCall> probes) {
-        this.targets = targets;
+        this.targets = List.copyOf(targets);
         this.watched = watched;
         this.changeWatched = changeWatched;
         this.tools = List.copyOf(tools);
@@ -71,9 +81,22 @@ public final class OverlayPart {
         return EMPTY;
     }
 
-    /** Where blocks go. */
-    public OverlayPart targets(Targets targets) {
-        return new OverlayPart(Objects.requireNonNull(targets, "targets"), watched, changeWatched, tools, probes);
+    /**
+     * Where blocks go: every bot method passed by reference where a {@code type} is expected, under the
+     * heading {@code group}. {@code type} is one of the plugin's functional interfaces; it may be named once.
+     */
+    public OverlayPart targets(Class<?> type, String group) {
+        Objects.requireNonNull(type, "type");
+        if (!type.isInterface()) throw new IllegalArgumentException(type.getName() + " is not an interface");
+        if (group == null || group.isBlank()) throw new IllegalArgumentException(type.getName() + ": a target needs a group");
+        for (TargetType declared : targets) {
+            if (declared.typeName().equals(type.getName())) {
+                throw new IllegalArgumentException(type.getName() + " is declared as a target twice");
+            }
+        }
+        List<TargetType> more = new ArrayList<>(targets);
+        more.add(new TargetType(type.getName(), group.trim()));
+        return new OverlayPart(more, watched, changeWatched, tools, probes);
     }
 
     /** Which screen the bot watches. */
@@ -144,10 +167,9 @@ public final class OverlayPart {
         return new OverlayPart(targets, watched, changeWatched, tools, more);
     }
 
-    /** The targets for the open project; empty when none are declared or the plugin answers {@code null}. */
-    public List<OverlayTarget> targetsFor(OverlayContext context) {
-        List<OverlayTarget> answered = targets == null ? null : targets.targets(context);
-        return answered == null ? List.of() : answered.stream().filter(Objects::nonNull).toList();
+    /** The kinds of target, in declared order — the order their groups are shown in. */
+    public List<TargetType> targets() {
+        return targets;
     }
 
     /** The watched screen for the open project; empty when not declared or the plugin cannot say. */
@@ -182,7 +204,7 @@ public final class OverlayPart {
 
     /** Nothing declared at all. */
     public boolean isEmpty() {
-        return targets == null && watched == null && changeWatched == null && tools.isEmpty() && probes.isEmpty();
+        return targets.isEmpty() && watched == null && changeWatched == null && tools.isEmpty() && probes.isEmpty();
     }
 
     private static boolean sameCall(Executable a, Executable b) {

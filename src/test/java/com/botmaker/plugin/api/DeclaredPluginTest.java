@@ -54,7 +54,7 @@ class DeclaredPluginTest {
     @Test
     void anOverlayPartIsAskedForOnlyWhenTheHostAsks() {
         AtomicInteger asked = new AtomicInteger();
-        OverlayPart part = OverlayPart.of().targets(ctx -> List.of());
+        OverlayPart part = OverlayPart.of().targets(Runnable.class, "Home");
         StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.o").named("O")
                 .overlay(() -> {
                     asked.incrementAndGet();

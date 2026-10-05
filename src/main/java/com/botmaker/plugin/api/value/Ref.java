@@ -107,6 +107,41 @@ public interface Ref extends Serializable {
     }
 
     /**
+     * A method that returns nothing, with no argument — for a step that names a {@code void} call, which an
+     * {@code Of} cannot: {@code Mouse::click} is not an {@code Of1<Point, R>} for any {@code R}. A step taking
+     * these has a name of its own rather than an {@code Of} overload, because javac cannot choose between the
+     * two for an overloaded method.
+     */
+    @FunctionalInterface
+    interface Void0 extends Ref {
+        void call();
+    }
+
+    /** A {@code void} method of one argument, or a receiver: {@code Mouse::click}. See {@link Void0}. */
+    @FunctionalInterface
+    interface Void1<A> extends Ref {
+        void call(A a);
+    }
+
+    /** A {@code void} method of two. */
+    @FunctionalInterface
+    interface Void2<A, B> extends Ref {
+        void call(A a, B b);
+    }
+
+    /** A {@code void} method of three. */
+    @FunctionalInterface
+    interface Void3<A, B, C> extends Ref {
+        void call(A a, B b, C c);
+    }
+
+    /** A {@code void} method of four. */
+    @FunctionalInterface
+    interface Void4<A, B, C, D> extends Ref {
+        void call(A a, B b, C c, D d);
+    }
+
+    /**
      * The method or constructor {@code ref} names.
      *
      * @throws IllegalArgumentException when {@code ref} is a lambda rather than a method reference, or its

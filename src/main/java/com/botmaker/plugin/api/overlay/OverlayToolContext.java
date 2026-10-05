@@ -72,4 +72,33 @@ public interface OverlayToolContext extends OverlayContext {
     default <A, B, C, D, R> Optional<String> insert(Ref.Of4<A, B, C, D, R> call, A a, B b, C c, D d) {
         return insertMember(Ref.resolve(call), a, b, c, d);
     }
+
+    /**
+     * {@link #insertMember} of the {@code void} method {@code call} names. Its own name rather than an
+     * {@code insert} overload, because javac cannot tell an overloaded {@code void} method's reference from
+     * a returning one's: {@code insertVoid(Mouse::click, point)}.
+     */
+    default Optional<String> insertVoid(Ref.Void0 call) {
+        return insertMember(Ref.resolve(call));
+    }
+
+    /** {@link #insertVoid(Ref.Void0)}, one argument. */
+    default <A> Optional<String> insertVoid(Ref.Void1<A> call, A a) {
+        return insertMember(Ref.resolve(call), a);
+    }
+
+    /** {@link #insertVoid(Ref.Void0)}, two arguments. */
+    default <A, B> Optional<String> insertVoid(Ref.Void2<A, B> call, A a, B b) {
+        return insertMember(Ref.resolve(call), a, b);
+    }
+
+    /** {@link #insertVoid(Ref.Void0)}, three arguments. */
+    default <A, B, C> Optional<String> insertVoid(Ref.Void3<A, B, C> call, A a, B b, C c) {
+        return insertMember(Ref.resolve(call), a, b, c);
+    }
+
+    /** {@link #insertVoid(Ref.Void0)}, four arguments. */
+    default <A, B, C, D> Optional<String> insertVoid(Ref.Void4<A, B, C, D> call, A a, B b, C c, D d) {
+        return insertMember(Ref.resolve(call), a, b, c, d);
+    }
 }

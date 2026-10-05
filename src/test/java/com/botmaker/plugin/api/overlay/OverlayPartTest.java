@@ -42,6 +42,12 @@ class OverlayPartTest {
         public static Boolean click(Integer match) {
             return Boolean.TRUE;
         }
+
+        public static void press(String key) {
+        }
+
+        public static void press(String key, Integer times) {
+        }
     }
 
     static ProbeResult found(ProbeContext context) {
@@ -56,10 +62,8 @@ class OverlayPartTest {
 
     @Test
     void aPartAnswersWhatItDeclared() {
-        OverlayTarget collect = OverlayTarget.method("com.example.bot.Collect", "body").labelled("Collect")
-                .in("Activities");
         OverlayPart part = OverlayPart.of()
-                .targets(ctx -> List.of(collect))
+                .targets(Body.class, "Activities")
                 .watched(ctx -> Optional.of(Watched.window("Game")))
                 .changeWatched(() -> ctx -> { })
                 .tool(PICTURE)
@@ -67,7 +71,7 @@ class OverlayPartTest {
                 .probe(Finder::near, String.class, Integer.class, OverlayPartTest::missing);
 
         assertFalse(part.isEmpty());
-        assertEquals(List.of(collect), part.targetsFor(null));
+        assertEquals("Activities", part.targets().getFirst().group());
         assertEquals(Optional.of(Watched.window("Game")), part.watchedFor(null));
         assertTrue(part.changeWatched().isPresent());
         assertEquals(List.of(PICTURE), part.tools());
@@ -94,11 +98,20 @@ class OverlayPartTest {
     }
 
     @Test
+    void aProbeReadsOnlyUnlessDeclaredActing() {
+        Probe reads = OverlayPartTest::found;
+        Probe acts = Probe.acting(OverlayPartTest::found);
+        assertTrue(reads.readsOnly());
+        assertFalse(acts.readsOnly());
+        assertEquals(ProbeResult.State.FOUND, acts.probe(null).state());
+        assertThrows(IllegalArgumentException.class, () -> Probe.acting(null));
+    }
+
+    @Test
     void anEmptyPartAnswersNothingAndNullAnswersAreNothing() {
         assertTrue(OverlayPart.of().isEmpty());
-        assertEquals(List.of(), OverlayPart.of().targetsFor(null));
-        OverlayPart careless = OverlayPart.of().targets(ctx -> null).watched(ctx -> null);
-        assertEquals(List.of(), careless.targetsFor(null));
+        assertEquals(List.of(), OverlayPart.of().targets());
+        OverlayPart careless = OverlayPart.of().watched(ctx -> null);
         assertEquals(Optional.empty(), careless.watchedFor(null));
     }
 
@@ -147,21 +160,27 @@ class OverlayPartTest {
 
         assertEquals(Optional.empty(), context.insert(Finder::click, 7));
         assertEquals(Optional.empty(), context.insert(Finder::find, "ore", 3));
+        assertEquals(Optional.empty(), context.insertVoid(Finder::press, "a", 2));
         assertEquals(List.of(Finder.class.getMethod("click", Integer.class), 7,
-                Finder.class.getMethod("find", String.class, Integer.class), "ore", 3), inserted);
+                Finder.class.getMethod("find", String.class, Integer.class), "ore", 3,
+                Finder.class.getMethod("press", String.class, Integer.class), "a", 2), inserted);
         assertSame(Marks.NONE, context.marks());
     }
 
+    /** Stands in for the SDK's {@code ActivityBody}. */
+    @FunctionalInterface
+    public interface Body {
+        String run();
+    }
+
     @Test
-    void aTargetIsItsMethod() {
-        OverlayTarget target = OverlayTarget.method("com.example.bot.Gamebot$Collect", "body");
-        assertEquals("body", target.label(), "labelled by its method until told otherwise");
-        assertEquals("", target.group());
-        assertEquals("Collect::body", target.methodSource());
-        assertEquals(target, target.labelled("Collect").in("Activities"));
-        assertSame(target, target.labelled(" "));
-        assertThrows(IllegalArgumentException.class, () -> OverlayTarget.method(" ", "body"));
-        assertThrows(IllegalArgumentException.class, () -> OverlayTarget.method("a.B", null));
+    void targetsAreATypeAndItsHeading() {
+        OverlayPart part = OverlayPart.of().targets(Body.class, " Activities ").targets(Runnable.class, "Home");
+        assertEquals(List.of(new OverlayPart.TargetType(Body.class.getName(), "Activities"),
+                new OverlayPart.TargetType("java.lang.Runnable", "Home")), part.targets());
+        assertThrows(IllegalArgumentException.class, () -> part.targets(Body.class, "Again"));
+        assertThrows(IllegalArgumentException.class, () -> OverlayPart.of().targets(String.class, "Text"));
+        assertThrows(IllegalArgumentException.class, () -> OverlayPart.of().targets(Body.class, " "));
     }
 
     @Test

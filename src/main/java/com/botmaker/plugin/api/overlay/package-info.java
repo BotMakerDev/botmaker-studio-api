@@ -7,15 +7,17 @@
  *
  * <ul>
  *   <li><b>targets</b> — where blocks go: the bot methods worth editing from the overlay, such as a game
- *       bot's activities ({@link com.botmaker.plugin.api.overlay.OverlayTarget}). The host holds no list of
- *       its own.</li>
+ *       bot's activities. The plugin names a functional interface of its own, and the host offers every bot
+ *       method passed by reference where that interface is expected
+ *       ({@link com.botmaker.plugin.api.overlay.OverlayPart#targets(Class, String)}). No method name crosses
+ *       as text.</li>
  *   <li><b>watched</b> — which screen the bot looks at, so the panel opens over it without asking
  *       ({@link com.botmaker.plugin.api.overlay.Watched}), and the plugin's own picker to change it.</li>
  *   <li><b>tools</b> — panes in the panel's tool tabs ({@link com.botmaker.plugin.api.overlay.OverlayTool}):
  *       cut a picture, place a point.</li>
  *   <li><b>probes</b> — for a call the plugin declares, what the call would answer now, on the live frame,
  *       without running the bot ({@link com.botmaker.plugin.api.overlay.Probe}). A probed call is
- *       read-only by declaration.</li>
+ *       read-only by declaration, unless its probe is {@link com.botmaker.plugin.api.overlay.Probe#acting}.</li>
  * </ul>
  *
  * <p>The host owns the panel, the script view, the caret and every edit: a plugin never writes Java, and what
