@@ -1,5 +1,6 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.assist.AssistantTool;
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.record.RecordedValue;
@@ -10,6 +11,7 @@ import com.botmaker.plugin.api.toolbar.ToolbarItem;
 import com.botmaker.plugin.api.value.ComponentType;
 import com.botmaker.plugin.api.value.PluginType;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 
@@ -219,6 +221,24 @@ public interface StudioPlugin {
      * window to open over.
      */
     default Optional<OverlayPart> overlayPart() {
+        return Optional.empty();
+    }
+
+    /**
+     * The tools this plugin offers the AI assistant that drives Studio — see {@link AssistantTool}. The host
+     * serves each under a name prefixed with the plugin's. Called once when a project's plugins are bound; links
+     * no JavaFX.
+     */
+    default List<AssistantTool<?>> assistantTools() {
+        return List.of();
+    }
+
+    /**
+     * The static method Studio's ▶ Try runs one statement through, {@code (Runnable body, Class<?>... values)}
+     * — see {@link com.botmaker.plugin.api.assist.TrialEntry}. Empty: this plugin's bots cannot try a
+     * statement on its own, only run whole.
+     */
+    default Optional<Method> trialEntry() {
         return Optional.empty();
     }
 

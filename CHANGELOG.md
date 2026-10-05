@@ -30,6 +30,18 @@ is allowed to make. Additions arrive as `default` methods.
     and `Marks`;
   - `probe(Call::ref, Param.class…, Probe)`: what a call would answer now, on the live frame, as a `ProbeResult`. Declaring
     one says the call is read-only.
+- **Tools for the AI assistant** (`com.botmaker.plugin.api.assist`), declared with
+  `PluginDeclaration.assistant(() -> ALL)` or `StudioPlugin.assistantTools()`:
+  `AssistantTool.named("crop_picture").describedAs(…).takes(Crop.class).handledBy(Owner::crop)`.
+  - The parameter record's components are the input schema (`ToolParam`). A component may be `String`,
+    `boolean`, `int`, `long`, `double`, an enum or `List<String>`, and `@Describe` says what it means. Any
+    other type is refused when the tool is declared.
+  - `invoke` builds the record from what the assistant sent. A bad argument comes back as a refusal and
+    never throws.
+  - A handler gets an `AgentContext` (the watched frame and `Marks`) and answers an `AgentReply`: text, an
+    image, or a refusal.
+- **A trial entry**: `PluginDeclaration.trial(Bot::trial)` or `StudioPlugin.trialEntry()`. It names the
+  public static `(Runnable body, Class<?>... values)` method that Studio's ▶ Try runs one statement through.
 - `RunOverlayContext.mode()` (`RUNNING`/`EDITING`): the run overlay's layer also opens while the overlay
   editor is open. The default is `RUNNING`.
 

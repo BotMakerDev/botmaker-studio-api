@@ -40,6 +40,11 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   `.probe(Call::ref, Param.class…, Owner::probe)` (the parameter classes pick an overloaded call, which a bare
   reference cannot; `probeMember` for `Ref.member`). One per
   plugin, through `.overlay(() -> PART)`; a part declaring nothing is no part.
+- **An assistant tool**: `AssistantTool.named("snake_name").describedAs(…)` → `.takes(Params.class)` (a
+  record; its components are the schema, checked here) | `.takesNothing()` → `.handledBy(Owner::handle)`.
+  Listed through `.assistant(() -> ALL)`. **The trial entry**: `.trial(Bot::trial)`, a `TrialEntry`. It is
+  resolved and checked to be a public static `(Runnable, Class<?>...)` in the step itself, so a bad one fails
+  the plugin's own construction.
 
 Implementing the interfaces by hand still works and the host cannot tell the two apart; the steps are how
 nobody has to know which methods to override, which may answer `null`, or how to name a factory without a

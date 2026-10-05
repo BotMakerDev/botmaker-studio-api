@@ -1,5 +1,7 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.assist.AssistantTool;
+import com.botmaker.plugin.api.assist.TrialEntry;
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.record.RecordedValue;
@@ -10,7 +12,9 @@ import com.botmaker.plugin.api.toolbar.ToolbarItem;
 import com.botmaker.plugin.api.value.ComponentType;
 import com.botmaker.plugin.api.value.PluginType;
 
+import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -28,7 +32,9 @@ import java.util.function.Supplier;
  *                 .toolbar(() -> SdkToolbarItems.ALL)
  *                 .recorded(() -> SdkRecorded.ALL)
  *                 .runOverlay(() -> SdkRunOverlay.ALL)
- *                 .overlay(() -> SdkOverlay.PART));
+ *                 .overlay(() -> SdkOverlay.PART)
+ *                 .assistant(() -> SdkAssist.ALL)
+ *                 .trial(Bot::trial));
  *     }
  * }
  * }</pre>
@@ -62,7 +68,7 @@ public final class PluginDeclaration {
         /** The name shown in Manage Plugins and wherever a contribution is attributed. */
         public PluginDeclaration named(String displayName) {
             String shown = displayName == null || displayName.isBlank() ? id : displayName;
-            return new PluginDeclaration(id, shown, null, null, null, null, null, null, null, null, null);
+            return new PluginDeclaration(id, shown, null, null, null, null, null, null, null, null, null, null, null);
         }
     }
 
@@ -77,6 +83,8 @@ public final class PluginDeclaration {
     private final Supplier<? extends List<? extends RecordedValue<?>>> recorded;
     private final Supplier<? extends List<? extends RunOverlayPart>> runOverlay;
     private final Supplier<OverlayPart> overlay;
+    private final Supplier<? extends List<? extends AssistantTool<?>>> assistant;
+    private final Method trial;
 
     private PluginDeclaration(String id, String displayName, Supplier<PaletteCatalog> catalog,
                               Supplier<? extends List<? extends PluginType<?>>> types,
@@ -86,7 +94,9 @@ public final class PluginDeclaration {
                               Supplier<? extends List<? extends ToolbarItem>> toolbar,
                               Supplier<? extends List<? extends RecordedValue<?>>> recorded,
                               Supplier<? extends List<? extends RunOverlayPart>> runOverlay,
-                              Supplier<OverlayPart> overlay) {
+                              Supplier<OverlayPart> overlay,
+                              Supplier<? extends List<? extends AssistantTool<?>>> assistant,
+                              Method trial) {
         this.id = id;
         this.displayName = displayName;
         this.catalog = catalog;
@@ -98,60 +108,82 @@ public final class PluginDeclaration {
         this.recorded = recorded;
         this.runOverlay = runOverlay;
         this.overlay = overlay;
+        this.assistant = assistant;
+        this.trial = trial;
     }
 
     /** The types this plugin owns — {@link StudioPlugin#types()}. */
     public PluginDeclaration types(Supplier<? extends List<? extends PluginType<?>>> types) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay);
+                runOverlay, overlay, assistant, trial);
     }
 
     /** The calls inside its values that are not types of their own — {@link StudioPlugin#componentTypes()}. */
     public PluginDeclaration parts(Supplier<? extends List<? extends ComponentType<?>>> parts) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay);
+                runOverlay, overlay, assistant, trial);
     }
 
     /** The editors a type cannot choose for itself — {@link StudioPlugin#slotEditors()}. */
     public PluginDeclaration editors(Supplier<? extends List<? extends SlotEditor>> editors) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay);
+                runOverlay, overlay, assistant, trial);
     }
 
     /** The {@code @Managed} values its windows keep — {@link StudioPlugin#managedValues()}. */
     public PluginDeclaration values(Supplier<? extends List<? extends ManagedValue<?>>> values) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay);
+                runOverlay, overlay, assistant, trial);
     }
 
     /** Its toolbar buttons — {@link StudioPlugin#toolbarItems()}. */
     public PluginDeclaration toolbar(Supplier<? extends List<? extends ToolbarItem>> toolbar) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay);
+                runOverlay, overlay, assistant, trial);
     }
 
     /** What only it can read off the screen for a recording — {@link StudioPlugin#recordedValues()}. */
     public PluginDeclaration recorded(Supplier<? extends List<? extends RecordedValue<?>>> recorded) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay);
+                runOverlay, overlay, assistant, trial);
     }
 
     /** What it shows in the host's run overlay while the bot runs — {@link StudioPlugin#runOverlayParts()}. */
     public PluginDeclaration runOverlay(Supplier<? extends List<? extends RunOverlayPart>> runOverlay) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay);
+                runOverlay, overlay, assistant, trial);
     }
 
     /** Its part of the overlay editor: targets, watched screen, tools, probes — {@link StudioPlugin#overlayPart()}. */
     public PluginDeclaration overlay(Supplier<OverlayPart> overlay) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay);
+                runOverlay, overlay, assistant, trial);
+    }
+
+    /** The tools it offers the AI assistant — {@link StudioPlugin#assistantTools()}. */
+    public PluginDeclaration assistant(Supplier<? extends List<? extends AssistantTool<?>>> assistant) {
+        return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
+                runOverlay, overlay, assistant, trial);
+    }
+
+    /**
+     * The static method ▶ Try runs one statement through, by method reference: {@code .trial(Bot::trial)} —
+     * {@link StudioPlugin#trialEntry()}. Resolved and checked here, so a lambda or a method of the wrong
+     * shape fails the plugin's own construction and tests, never the user's ▶ Try. Resolving loads the
+     * entry's class without initialising it.
+     *
+     * @throws IllegalArgumentException when {@code trial} is a lambda, or not a public static
+     *                                  {@code (Runnable, Class<?>...)}
+     */
+    public PluginDeclaration trial(TrialEntry trial) {
+        return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
+                runOverlay, overlay, assistant, TrialEntry.resolve(Objects.requireNonNull(trial, "trial")));
     }
 
     /** A palette built by hand, overriding the one the host discovers — rarely wanted; see {@link StudioPlugin#catalog()}. */
     public PluginDeclaration catalog(Supplier<PaletteCatalog> catalog) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay);
+                runOverlay, overlay, assistant, trial);
     }
 
     String id() {
@@ -198,6 +230,14 @@ public final class PluginDeclaration {
     Optional<OverlayPart> overlay() {
         OverlayPart built = overlay == null ? null : overlay.get();
         return built == null || built.isEmpty() ? Optional.empty() : Optional.of(built);
+    }
+
+    List<AssistantTool<?>> assistant() {
+        return list(assistant);
+    }
+
+    Optional<Method> trial() {
+        return Optional.ofNullable(trial);
     }
 
     private static <E> List<E> list(Supplier<? extends List<? extends E>> surface) {

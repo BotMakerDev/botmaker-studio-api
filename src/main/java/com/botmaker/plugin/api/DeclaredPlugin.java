@@ -1,5 +1,6 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.assist.AssistantTool;
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.record.RecordedValue;
@@ -10,6 +11,7 @@ import com.botmaker.plugin.api.toolbar.ToolbarItem;
 import com.botmaker.plugin.api.value.ComponentType;
 import com.botmaker.plugin.api.value.PluginType;
 
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 
@@ -97,5 +99,15 @@ public class DeclaredPlugin implements StudioPlugin {
     @Override
     public final Optional<OverlayPart> overlayPart() {
         return declaration.overlay();
+    }
+
+    @Override
+    public final List<AssistantTool<?>> assistantTools() {
+        return declaration.assistant();
+    }
+
+    @Override
+    public final Optional<Method> trialEntry() {
+        return declaration.trial();
     }
 }
