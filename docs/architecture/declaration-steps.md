@@ -35,6 +35,11 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   `.enabledWhen(…)`/`.icon(…)` → `.onPress(() -> MyWindow::open)` (`ToolbarSteps`). The press is a `Pressed`,
   a supplier of the handler, for `Drawn`'s reason: the item list is built headless.
   `DeclaredPlugin.toolbarItems()` is `final`.
+- **An overlay part**: `OverlayPart.of()` → any of `.targets(Owner::targets)`, `.watched(Owner::watched)`,
+  `.changeWatched(() -> Owner::change)`, `.tool(OverlayTool.id(ID).named(LABEL).pane(Owner::pane))`,
+  `.probe(Call::ref, Param.class…, Owner::probe)` (the parameter classes pick an overloaded call, which a bare
+  reference cannot; `probeMember` for `Ref.member`). One per
+  plugin, through `.overlay(() -> PART)`; a part declaring nothing is no part.
 
 Implementing the interfaces by hand still works and the host cannot tell the two apart; the steps are how
 nobody has to know which methods to override, which may answer `null`, or how to name a factory without a

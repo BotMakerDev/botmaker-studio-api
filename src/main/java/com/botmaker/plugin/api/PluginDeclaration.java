@@ -1,6 +1,7 @@
 package com.botmaker.plugin.api;
 
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
+import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.record.RecordedValue;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
@@ -10,6 +11,7 @@ import com.botmaker.plugin.api.value.ComponentType;
 import com.botmaker.plugin.api.value.PluginType;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -25,7 +27,8 @@ import java.util.function.Supplier;
  *                 .values(() -> SdkValues.ALL)
  *                 .toolbar(() -> SdkToolbarItems.ALL)
  *                 .recorded(() -> SdkRecorded.ALL)
- *                 .runOverlay(() -> SdkRunOverlay.ALL));
+ *                 .runOverlay(() -> SdkRunOverlay.ALL)
+ *                 .overlay(() -> SdkOverlay.PART));
  *     }
  * }
  * }</pre>
@@ -59,7 +62,7 @@ public final class PluginDeclaration {
         /** The name shown in Manage Plugins and wherever a contribution is attributed. */
         public PluginDeclaration named(String displayName) {
             String shown = displayName == null || displayName.isBlank() ? id : displayName;
-            return new PluginDeclaration(id, shown, null, null, null, null, null, null, null, null);
+            return new PluginDeclaration(id, shown, null, null, null, null, null, null, null, null, null);
         }
     }
 
@@ -73,6 +76,7 @@ public final class PluginDeclaration {
     private final Supplier<? extends List<? extends ToolbarItem>> toolbar;
     private final Supplier<? extends List<? extends RecordedValue<?>>> recorded;
     private final Supplier<? extends List<? extends RunOverlayPart>> runOverlay;
+    private final Supplier<OverlayPart> overlay;
 
     private PluginDeclaration(String id, String displayName, Supplier<PaletteCatalog> catalog,
                               Supplier<? extends List<? extends PluginType<?>>> types,
@@ -81,7 +85,8 @@ public final class PluginDeclaration {
                               Supplier<? extends List<? extends ManagedValue<?>>> values,
                               Supplier<? extends List<? extends ToolbarItem>> toolbar,
                               Supplier<? extends List<? extends RecordedValue<?>>> recorded,
-                              Supplier<? extends List<? extends RunOverlayPart>> runOverlay) {
+                              Supplier<? extends List<? extends RunOverlayPart>> runOverlay,
+                              Supplier<OverlayPart> overlay) {
         this.id = id;
         this.displayName = displayName;
         this.catalog = catalog;
@@ -92,54 +97,61 @@ public final class PluginDeclaration {
         this.toolbar = toolbar;
         this.recorded = recorded;
         this.runOverlay = runOverlay;
+        this.overlay = overlay;
     }
 
     /** The types this plugin owns — {@link StudioPlugin#types()}. */
     public PluginDeclaration types(Supplier<? extends List<? extends PluginType<?>>> types) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay);
+                runOverlay, overlay);
     }
 
     /** The calls inside its values that are not types of their own — {@link StudioPlugin#componentTypes()}. */
     public PluginDeclaration parts(Supplier<? extends List<? extends ComponentType<?>>> parts) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay);
+                runOverlay, overlay);
     }
 
     /** The editors a type cannot choose for itself — {@link StudioPlugin#slotEditors()}. */
     public PluginDeclaration editors(Supplier<? extends List<? extends SlotEditor>> editors) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay);
+                runOverlay, overlay);
     }
 
     /** The {@code @Managed} values its windows keep — {@link StudioPlugin#managedValues()}. */
     public PluginDeclaration values(Supplier<? extends List<? extends ManagedValue<?>>> values) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay);
+                runOverlay, overlay);
     }
 
     /** Its toolbar buttons — {@link StudioPlugin#toolbarItems()}. */
     public PluginDeclaration toolbar(Supplier<? extends List<? extends ToolbarItem>> toolbar) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay);
+                runOverlay, overlay);
     }
 
     /** What only it can read off the screen for a recording — {@link StudioPlugin#recordedValues()}. */
     public PluginDeclaration recorded(Supplier<? extends List<? extends RecordedValue<?>>> recorded) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay);
+                runOverlay, overlay);
     }
 
     /** What it shows in the host's run overlay while the bot runs — {@link StudioPlugin#runOverlayParts()}. */
     public PluginDeclaration runOverlay(Supplier<? extends List<? extends RunOverlayPart>> runOverlay) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay);
+                runOverlay, overlay);
+    }
+
+    /** Its part of the overlay editor: targets, watched screen, tools, probes — {@link StudioPlugin#overlayPart()}. */
+    public PluginDeclaration overlay(Supplier<OverlayPart> overlay) {
+        return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
+                runOverlay, overlay);
     }
 
     /** A palette built by hand, overriding the one the host discovers — rarely wanted; see {@link StudioPlugin#catalog()}. */
     public PluginDeclaration catalog(Supplier<PaletteCatalog> catalog) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay);
+                runOverlay, overlay);
     }
 
     String id() {
@@ -181,6 +193,11 @@ public final class PluginDeclaration {
 
     List<RunOverlayPart> runOverlay() {
         return list(runOverlay);
+    }
+
+    Optional<OverlayPart> overlay() {
+        OverlayPart built = overlay == null ? null : overlay.get();
+        return built == null || built.isEmpty() ? Optional.empty() : Optional.of(built);
     }
 
     private static <E> List<E> list(Supplier<? extends List<? extends E>> surface) {

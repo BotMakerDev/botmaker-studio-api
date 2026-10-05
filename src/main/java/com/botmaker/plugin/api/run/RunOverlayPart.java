@@ -33,6 +33,11 @@ import java.util.Optional;
  * run, with a fresh {@link RunOverlayContext}; what it registers it closes in
  * {@link RunOverlayContext#onClosed}. A factory that throws costs its own part only.
  *
+ * <p><b>The layer opens while editing too.</b> When the overlay editor is open the host opens each part's
+ * {@link #layer} over the watched screen with {@link RunOverlayContext#mode()} {@code EDITING}, and keeps it
+ * through any run started from the panel, so a plugin draws one layer for both. The {@link #bar} is shown in
+ * the editor panel's header then, instead of the floating run bar.
+ *
  * <p><b>A part links JavaFX</b>: a factory returns a {@link Node}, so building the list of parts loads it. Keep
  * the list behind {@code PluginDeclaration.runOverlay}'s supplier, which constructing the plugin never calls;
  * a host without JavaFX must not call {@link com.botmaker.plugin.api.StudioPlugin#runOverlayParts()}.

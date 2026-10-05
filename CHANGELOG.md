@@ -17,6 +17,22 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
+### Added
+
+- **An overlay editor surface** (`com.botmaker.plugin.api.overlay`), declared with
+  `PluginDeclaration.overlay(() -> PART)` or `StudioPlugin.overlayPart()`. One `OverlayPart.of()` per plugin
+  says:
+  - `targets(…)`: where blocks go, as `OverlayTarget.method(className, method).labelled(…).in(group)`;
+  - `watched(…)`: which screen the bot watches, as `Watched.window/region/session`. `changeWatched(…)` opens
+    the plugin's own picker for it;
+  - `tool(OverlayTool.id(…).named(…).pane(…))`: a pane in the panel's tool tabs. Its
+    `OverlayToolContext` offers the frame, region and point picks, `insert(Call::ref, args…)` at the caret,
+    and `Marks`;
+  - `probe(Call::ref, Param.class…, Probe)`: what a call would answer now, on the live frame, as a `ProbeResult`. Declaring
+    one says the call is read-only.
+- `RunOverlayContext.mode()` (`RUNNING`/`EDITING`): the run overlay's layer also opens while the overlay
+  editor is open. The default is `RUNNING`.
+
 ### Changed
 
 - Published as `com.github.BotMakerDev:botmaker-studio-api` (was `com.github.LiQiyeDev`). No type changes.

@@ -1,6 +1,7 @@
 package com.botmaker.plugin.api;
 
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
+import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.record.RecordedValue;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
@@ -10,6 +11,7 @@ import com.botmaker.plugin.api.value.ComponentType;
 import com.botmaker.plugin.api.value.PluginType;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * What a BotMaker Studio plugin is, from the host's side: an id and a set of contributions.
@@ -206,6 +208,18 @@ public interface StudioPlugin {
      */
     default List<RunOverlayPart> runOverlayParts() {
         return List.of();
+    }
+
+    /**
+     * This plugin's part of the overlay editor — where blocks go, which screen the bot watches, the tool
+     * panes, and the probes that say what a call would answer now. See {@link OverlayPart}.
+     *
+     * <p>Called once when a project's plugins are bound. Links JavaFX (a tool pane is a {@code Node}), so a
+     * host without JavaFX must not call it. Empty: the overlay shows the open file's methods and asks which
+     * window to open over.
+     */
+    default Optional<OverlayPart> overlayPart() {
+        return Optional.empty();
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.botmaker.plugin.api;
 
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
+import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.record.RecordedValue;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
@@ -10,6 +11,7 @@ import com.botmaker.plugin.api.value.ComponentType;
 import com.botmaker.plugin.api.value.PluginType;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * A plugin stated as one {@link PluginDeclaration}. Extend it with a public no-argument constructor — the
@@ -90,5 +92,10 @@ public class DeclaredPlugin implements StudioPlugin {
     @Override
     public final List<RunOverlayPart> runOverlayParts() {
         return declaration.runOverlay();
+    }
+
+    @Override
+    public final Optional<OverlayPart> overlayPart() {
+        return declaration.overlay();
     }
 }

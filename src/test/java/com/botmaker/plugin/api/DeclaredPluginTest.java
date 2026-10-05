@@ -1,11 +1,13 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.source.ManagedValue;
 import com.botmaker.plugin.api.value.PluginType;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,6 +49,23 @@ class DeclaredPluginTest {
         StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.z").named("Z")
                 .runOverlay(() -> List.of(part))) {};
         assertEquals(List.of(part), plugin.runOverlayParts());
+    }
+
+    @Test
+    void anOverlayPartIsAskedForOnlyWhenTheHostAsks() {
+        AtomicInteger asked = new AtomicInteger();
+        OverlayPart part = OverlayPart.of().targets(ctx -> List.of());
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.o").named("O")
+                .overlay(() -> {
+                    asked.incrementAndGet();
+                    return part;
+                })) {};
+        assertEquals(0, asked.get());
+        assertEquals(Optional.of(part), plugin.overlayPart());
+        assertEquals(1, asked.get());
+        assertTrue(new Declared(new AtomicInteger()).overlayPart().isEmpty());
+        assertTrue(new DeclaredPlugin(StudioPlugin.id("com.example.e").named("E")
+                .overlay(OverlayPart::of)) {}.overlayPart().isEmpty(), "a part declaring nothing is no part");
     }
 
     @Test

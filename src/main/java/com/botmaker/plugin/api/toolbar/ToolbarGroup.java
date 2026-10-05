@@ -41,8 +41,9 @@ public enum ToolbarGroup {
      *
      * <p>Separate from {@link #TOOLS}, which is where the instruments are <em>opened</em> from. This is what
      * is offered once one is open and a user is looking at the running target rather than at the code: point
-     * the bot at this window, cut a picture out of it, drop a recorded click into the program. An item here is
-     * drawn by {@code ProgramShapeOverlay} and never appears on the main bar.
+     * the bot at this window, cut a picture out of it. An item here is drawn in the overlay editor's Actions
+     * tab and never appears on the main bar. A pane rather than a button is an
+     * {@link com.botmaker.plugin.api.overlay.OverlayTool}.
      *
      * <p>It is the one group whose items are handed a context that answers
      * {@link ActionContext#overWindowTitle()} — which is the whole reason it is a group of its own rather

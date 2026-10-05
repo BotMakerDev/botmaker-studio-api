@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The versioning rule of the whole platform, in one test: a plugin compiled against an earlier contract
@@ -30,6 +31,7 @@ class StudioPluginDefaultsTest {
         assertEquals(List.of(), older.managedValues());
         assertEquals(List.of(), older.recordedValues());
         assertEquals(List.of(), older.runOverlayParts());
+        assertTrue(older.overlayPart().isEmpty());
         // The lifecycle half is a default too, and both ends of it: a host that tells every plugin which
         // project it has must not need to know which of them have heard of the idea.
         older.projectOpened(null);
