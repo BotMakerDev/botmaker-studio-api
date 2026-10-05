@@ -2,7 +2,7 @@ package com.botmaker.plugin.api.slot;
 
 /**
  * The inclusive range a number being edited is declared to stay within — {@code @Param(min = 0, max = 1)} —
- * as {@link ValueContext#bounds()} hands it to an editor (2026-09-27).
+ * as {@link ValueContext#bounds()} hands it to an editor.
  *
  * <p>Either end may be open: {@link Double#NEGATIVE_INFINITY} and {@link Double#POSITIVE_INFINITY} mean no
  * limit on that side, because "at most 10" is a sentence a person says. The ends are advice to a widget and a

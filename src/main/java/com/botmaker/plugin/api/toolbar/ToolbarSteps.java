@@ -13,8 +13,8 @@ import java.util.function.Supplier;
  *         .onPress(() -> BotSettingsWindow::open);
  * }</pre>
  *
- * <p>The label, the tooltip and the place are required and named, where the positional factory they replace
- * (2026-09-28) took three strings in a row. When it may be pressed and its icon are optional, and sit between
+ * <p>The label, the tooltip and the place are required and named, rather than three strings in a row. When it
+ * may be pressed and its icon are optional, and sit between
  * the place and the press.
  */
 public final class ToolbarSteps {

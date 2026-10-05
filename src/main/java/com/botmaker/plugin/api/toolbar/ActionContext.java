@@ -13,15 +13,10 @@ import java.util.Optional;
  * and everything else a toolbar action might want are things a plugin does for itself, because
  * {@code botmaker-shared} is published and any plugin may depend on it.
  *
- * <p>That rule was learned rather than assumed: the contract grew an {@code Assets} and a
- * {@code SourceChoice} in 2026-08-27 and both were deleted the same day, because the host owned those
- * policies only by accident of having been written first. Add nothing here that a plugin could answer alone.
+ * <p>A host that answers something only because it was written first owns that policy by accident. Add
+ * nothing here that a plugin could answer alone.
  */
 public interface ActionContext {
-
-    // openProjectName() and pinnedVersion() stood here until 2026-09-28. No plugin read either: the project is
-    // services().projectDir(), and the host always answered "" for the pin, since it cannot know which plugin's
-    // item is about to be pressed.
 
     /** The host capabilities — the open project, dialogs, theme. The same object a slot editor is given. */
     StudioServices services();
@@ -53,8 +48,4 @@ public interface ActionContext {
     default Optional<Area> overBounds() {
         return Optional.empty();
     }
-
-    // insertAtCursor(String...) stood here from 2026-09-12 to 2026-09-23: a plugin's recorder handed the host
-    // Java statements as text. Recording is the host's now (com.botmaker.plugin.api.record), and the host writes
-    // the call, so no Java text crosses this interface.
 }

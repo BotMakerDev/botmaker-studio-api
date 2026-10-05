@@ -32,10 +32,9 @@ import java.util.Optional;
  * undoable, what refers to a constant, whether the bot still compiles — is the host's, and a plugin asking
  * about any of it would be asking about the editor rather than about its own data.
  *
- * <p><b>By binding, never by spelling</b> (2026-09-28). These replace {@code Sources}, a find-and-replace over
- * token needles that a plugin built from how it guessed its names were spelled: a qualified use, a static
- * import or a class the user renamed was missed, and a rename changed the uses but not the declaration. A
- * constant's uses are what javac resolves to it, and a rename or repoint that would stop the bot compiling
+ * <p><b>By binding, never by spelling.</b> A find-and-replace over how a plugin guesses its names are spelled
+ * misses a qualified use, a static import or a class the user renamed, and renames the uses but not the
+ * declaration. A constant's uses are what javac resolves to it, and a rename or repoint that would stop the bot compiling
  * is refused. A path literal a user wrote in their own code is theirs and nothing matches it.
  *
  * <p><b>Reading may fail, and that is ordinary.</b> A user may hand-edit a {@code @Managed} body into

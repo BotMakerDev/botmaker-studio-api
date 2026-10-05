@@ -24,14 +24,11 @@ import java.lang.annotation.Target;
  * moment: nothing regenerates it. BotMaker rewrites the expression a {@code @Managed} method returns and
  * nothing else, so comments, helper methods and anything else you write around them survive untouched.
  *
- * <h2>What this replaced, and why it is not a JSON file any more</h2>
+ * <h2>Why it is Java, not a data file</h2>
  *
- * <p>Until 2026-09-20 a plugin's own data lived in {@code plugins/<id prefix>/<last segment>/<name>.json}
- * and the bot read it back by name at run time. A name renamed in Java was then a silently empty value
- * three screens into a run, where the same rename here is a compile error — and a value in the bot's source
- * is one a developer with no BotMaker installed can read, grep, refactor and hand to a compiler. That is
- * the whole point of the change. {@code Settings} stays for a plugin's flags and its own files; the values
- * a plugin's window edits are methods now.
+ * <p>A value read back by name from a file beside the bot turns a rename into a silently empty value three
+ * screens into a run, where the same rename here is a compile error — and a value in the bot's source is one
+ * a developer with no BotMaker installed can read, grep, refactor and hand to a compiler.
  *
  * <h2>The rules BotMaker applies to a method</h2>
  *
@@ -48,7 +45,7 @@ import java.lang.annotation.Target;
  *
  * <p>So the one method a host ever writes, rewrites or a bot's runtime installs is
  * {@code public static T id() { return <expression>; }}. A plugin's side is held to it before it is published:
- * {@code botmaker plugin validate}'s {@code managed} check (2026-09-27) writes each declared value's first
+ * {@code botmaker plugin validate}'s {@code managed} check writes each declared value's first
  * expression the way a host would and reads it back, so a value no host could write never reaches a bot.
  *
  * <h2>On a type instead: an open set</h2>
@@ -67,8 +64,7 @@ import java.lang.annotation.Target;
  * {@code Class} objects silently answers false. An id no loaded plugin claims is an ordinary method,
  * editable on the canvas like any other.
  *
- * <p>It lived in {@code botmaker-plugin-basics} until 2026-09-22, because this module was {@code provided}
- * on the SDK and so absent from a bot's classpath. The SDK declares it at {@code compile} now — see
+ * <p>A bot has it because the SDK declares this module at {@code compile} — see
  * {@link com.botmaker.plugin.api.params.Param} for what that does and does not change.
  *
  * @see com.botmaker.plugin.api.params.Param the same idea for a value the bot's <em>user</em> changes

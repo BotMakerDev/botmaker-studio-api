@@ -13,11 +13,8 @@ import java.util.Objects;
  * differ in it — and it is the spelling every consumer of the catalog has used to tell one overload from
  * another, via {@link #signature()}.
  *
- * <p>Until 2026-08-27 there was a second route in: a {@code MemberRef} method reference, read through its
- * {@code SerializedLambda}, which let a catalog be written as {@code .add(Mouse::click)} and checked by
- * javac. It went with the hand-written builder. A catalog is now built by reflecting the classes named in
- * {@link PaletteCatalog#of(Class[])}, so members are discovered rather than named and there is nothing left
- * for javac to check about them.
+ * <p>A catalog is built by reflecting the classes named in {@link PaletteCatalog#of(Class[])}, so members
+ * are discovered rather than named and there is nothing for javac to check about them.
  *
  * <p><b>Constructors</b> report {@link #name()} as {@code <init>}; {@link #isConstructor()} says so.
  */
@@ -96,8 +93,8 @@ public record MemberId(Class<?> declaringClass, String name, String descriptor) 
      * {@code int}, {@code java.lang.String[]}), in declaration order.
      *
      * <p>For an instance-method reference the receiver is <em>not</em> among them: the descriptor is the
-     * method's own, so {@code ImageTemplate::width} reports no parameters even though its {@link M1} shape
-     * has one type argument.
+     * method's own, so {@code ImageTemplate::width} reports no parameters even though as a
+     * function it takes one argument.
      */
     public List<String> parameterTypeNames() {
         List<String> names = new ArrayList<>();

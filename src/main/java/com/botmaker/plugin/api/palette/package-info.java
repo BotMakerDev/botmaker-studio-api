@@ -29,25 +29,22 @@
  * <p>{@link com.botmaker.plugin.api.palette.Palette} means <b>offered</b>: the class has its own entry in the
  * insert menus. Every type of the same jar an offered call takes or returns, transitively, is
  * <b>catalogued</b> with it — recognised as this plugin's, its members listed on a variable of it — with no
- * annotation at all. A type-level {@link com.botmaker.plugin.api.palette.Hidden} said "catalogued, not
- * offered" until 2026-09-30, and a three-valued {@code role} element before that.
+ * annotation at all.
  *
  * <h2>Runtime retention, and why all four are alike now</h2>
  *
  * <p>All four annotations here are {@code RUNTIME}-retained, because the plugin reflects its own classes to
- * build the catalog. {@code @Palette} was {@code CLASS}-retained while an annotation processor read it at
- * compile time and generated the catalog into the plugin's jar; the processor was deleted on 2026-08-27,
- * along with the module it lived in.
+ * build the catalog, rather than an annotation processor generating it at compile time.
  *
- * <p>It went because its one defended property does not need defending. A generated catalog <em>named</em>
- * members, so javac refusing a name that no longer compiled was what kept it honest — but reflection
- * <em>discovers</em> them, and an annotation cannot be attached to a method that does not exist. It also cost
- * something real: a plugin whose pom forgot {@code <annotationProcessorPaths>} silently got no catalog at
- * all, with nothing to tell its author why.
+ * <p>A processor's one defended property does not need defending. A generated catalog <em>names</em>
+ * members, so javac refusing a name that no longer compiles is what keeps it honest — but reflection
+ * <em>discovers</em> them, and an annotation cannot be attached to a method that does not exist. A processor
+ * also costs something real: a plugin whose pom forgets {@code <annotationProcessorPaths>} silently gets no
+ * catalog at all, with nothing to tell its author why.
  *
- * <p>Runtime retention on classes a bot loads is safe. A bot does not depend on this module (the SDK's
- * dependency on it is {@code optional}, so it is never transitive), and the JVM parses annotations lazily and
- * silently omits any whose type cannot be resolved. A bot that never reflects over its own facades never
- * looks; a bot that does gets the facade's methods without these.
+ * <p>Runtime retention on classes a bot loads is safe. A bot that has this module on its classpath (through
+ * a plugin that brings it at {@code compile}) carries them at no cost; one that does not still loads, because
+ * the JVM parses annotations lazily and silently omits any whose type cannot be resolved. A bot that never
+ * reflects over its own facades never looks.
  */
 package com.botmaker.plugin.api.palette;

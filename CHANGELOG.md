@@ -35,6 +35,10 @@ longer compiles; one already built keeps loading (an annotation element the host
 
 ### Changed
 
+- **The javadoc says what is true now.** Dated history (*since*, *until*, deleted members' tombstones) is cut,
+  `source/package-info` no longer names the deleted `SourceSeed` nor places `@Managed` in basics, and the
+  broken `{@link}`s are fixed, so `javadoc` runs clean. What was cut is indexed in
+  `docs/refactor/31-umbrella-history.md`.
 - **An open set names the class of its constants**: `ManagedValue.openSet(id).of(E.class).in(holder)`, typed
   `ManagedValue<E>`, with `type()` the element class. A host refuses `PluginValues.add` of a value that is
   not an `E`. A primitive element class is refused when the set is declared.

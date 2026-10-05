@@ -16,8 +16,7 @@ import java.util.Optional;
  * <p><b>Elements cross as values, like every other value.</b> The host reads each argument through the
  * grammar it reads a slot with — a constant of a {@code @Managed} type included — and writes each value
  * back the same way. What the host contributes is what only the host has: that these arguments are one
- * list, and what the surrounding code will still accept. Until 2026-09-23 every element was Java text the
- * plugin split and wrote itself.
+ * list, and what the surrounding code will still accept.
  *
  * <p>Reached through {@link SlotContext#siblingRun()}, which is empty for a slot that stands alone. An editor
  * that does not care simply never asks.

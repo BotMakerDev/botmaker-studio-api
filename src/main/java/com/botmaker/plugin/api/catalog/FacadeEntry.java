@@ -19,7 +19,7 @@ import java.util.Optional;
  *
  * <p><b>Catalogued and offered are two bits, not one.</b> Every entry here is catalogued; {@link #offered()}
  * says whether the insert menus also list it — true for a {@code @Palette} class, false for a type one of
- * them reaches (since 2026-09-30, when the type-level {@code @Hidden} that used to say it was deleted).
+ * them reaches.
  *
  * @param type     the class
  * @param category the group it is filed under

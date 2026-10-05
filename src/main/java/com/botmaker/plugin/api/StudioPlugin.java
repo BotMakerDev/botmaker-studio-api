@@ -94,9 +94,9 @@ public interface StudioPlugin {
      * The types this plugin declares — one {@link PluginType} each, in the order a picker should offer
      * them.
      *
-     * <p>This is the surface that makes the vocabulary <b>open</b>. It was a closed enum in the SDK until
-     * 2026-08-27, which is right for one plugin and wrong for two: a plugin wanting a {@code Channel} value
-     * would have needed a constant granted in somebody else's enum.
+     * <p>This is the surface that makes the vocabulary <b>open</b>. A closed enum is right for one plugin and
+     * wrong for two: a plugin wanting a {@code Channel} value would need a constant granted in somebody else's
+     * enum.
      *
      * <p><b>The type is the identity, and it is the Java type the user's file writes.</b> The host indexes
      * every plugin's declarations by {@link PluginType#type()}'s canonical name and refuses two plugins
@@ -108,10 +108,8 @@ public interface StudioPlugin {
      * renders read-only and is never rewritten, so uninstalling a plugin costs the user nothing but the
      * ability to edit.
      *
-     * <p><b>It replaced three surfaces on 2026-09-22</b> — {@code valueTypes()} with {@code ValueType} and
-     * {@code ValueCodec}, and {@code sourceSeeds()} with {@code SourceSeed}. Those described one type in
-     * four places that nothing checked against each other, two of which were strings: the id in a file and
-     * the fresh value as Java text. Here the compiler asks for all of it at once.
+     * <p>One declaration says all of a type — what it is and what a fresh one is — so the compiler asks for
+     * all of it at once, and nothing about a type is a string the compiler never looks at.
      */
     default List<PluginType<?>> types() {
         return List.of();
@@ -125,11 +123,9 @@ public interface StudioPlugin {
      * {@code Limits} are written as calls inside the one call that writes a flow, so the host has to read
      * each of them back, and none of them is a type anybody declares a parameter of. A
      * {@link ComponentType} that is also a {@link PluginType} need not be listed here — the host finds it
-     * among {@link #types()} — though listing it twice is harmless.
-     *
-     * <p><b>Added on 2026-09-23, because {@link ComponentType} was independent of {@link PluginType} with no
-     * way to reach the host on its own.</b> The five flow declarations existed and nothing registered them,
-     * so a {@code @Managed} flow could never be decoded.
+     * among {@link #types()} — though listing it twice is harmless. A {@link ComponentType} that is not also a
+     * {@link PluginType} has no other way to reach the host: unlisted, a value built of it could never be
+     * decoded.
      */
     default List<ComponentType<?>> componentTypes() {
         return List.of();
@@ -161,7 +157,7 @@ public interface StudioPlugin {
      * code canvas edit — see {@link ManagedValue}.
      *
      * <p>Each one names an id a {@code @Managed} method or type in the bot's Java carries, and the sentence
-     * to show when the canvas refuses an edit to it. These are also the ids {@link PluginValues#open} will
+     * to show when the canvas refuses an edit to it. These are also the ids {@link com.botmaker.plugin.api.source.PluginValues#open} will
      * answer for: what the plugin declares here is what it may read and write.
      *
      * <p>Read once per project bind, like the toolbar. A plugin that throws here costs only its own entries.
@@ -181,60 +177,6 @@ public interface StudioPlugin {
         return List.of();
     }
 
-    // valueTypes() and sourceSeeds() stood here until 2026-09-22, with ValueType, ValueCodec, ValueCatalog
-    // and SourceSeed behind them. types() replaced both, and the reason is the reason pluginSources() went
-    // below: the half nobody is forced to write is the half that rots.
-    //
-    // A type needed four declarations that nothing checked against each other — a ValueType carrying a
-    // persisted id, a ValueCodec with parse/store/literal/valueOfLiteral, a SourceSeed carrying the fresh
-    // value as Java TEXT, and a SlotEditor predicate naming the type a third time. For Point those sat in
-    // three files. Two of the four were strings the compiler never looked at.
-    //
-    // The parsing half was dead before it was deleted: storage stopped being text when a user parameter
-    // became a @Param field (2026-09-17) and a plugin's values became @Managed methods (2026-09-21), so
-    // parse, store and defaultWire had no caller outside their own plumbing. What was still wired was
-    // wrong — a leaf round-tripped Java through wire text through literal(parse(java)), and a java.awt.Color
-    // parameter opened and closed with no edit came back rewritten.
-
-    // pluginSources() stood here from 2026-09-20 to 2026-09-21, with PluginSource beside it: a plugin handed
-    // over a class's whole text and the host copied it into the project on the next bind. It is deleted, and
-    // the reason is worth keeping because the surface was defended at length the day before.
-    //
-    // What it was for survived intact — a plugin's values ARE compiled Java in the bot's own source, and the
-    // host still rewrites nothing but the expression a @Managed method returns. What went is the belief that
-    // the host had to put the first copy of that file there. A project gets one by being created from a
-    // template, which already carries it; and the skeleton the SDK was shipping shrank to two @Managed
-    // methods the moment Bot.run made install() unnecessary, which is too little to be worth a contract
-    // surface, a copy-on-every-bind and a package rewriter.
-    //
-    // The cost is real and was accepted: adding a plugin to a project that has no file for it brings none.
-    // The fix for that is the plugin's own window offering to write one, at a click — one write, by the
-    // thing that wants it, rather than the host copying files it was handed.
-
-    // parameters(String), parameterRows(String) and parameterEdited(ParameterEdit) stood here from
-    // 2026-09-10 to 2026-09-22, with ParameterGroup and ParameterEdit beside ParameterRow. They are deleted,
-    // and the reason is the one this file already applies to pluginSources() above: the half nobody writes is
-    // the half that rots.
-    //
-    // A plugin declared a section and the host asked it for that section's rows. Nothing ever declared one.
-    // The SDK's group was the only implementation in existence, it declared no rows, and basics'
-    // ParameterStore.declare — the call that would have put a row in a plugin's file — had no caller
-    // anywhere. So parameterRows answered out of a pre-2026-09-17 project's JSON and empty for every project
-    // created since: a second reader of a format nothing writes, which is the thing the umbrella CLAUDE.md
-    // forbids by name.
-    //
-    // What replaced it had already replaced it. A user's parameter is a @Param static field in the bot's own
-    // Java (2026-09-17), read and written off the syntax tree; a plugin that wants a row of its own puts a
-    // @Param field in the file it ships, and the host's ordinary walk of the bot's sources finds it with no
-    // surface at all. ParameterRow stayed here until 2026-09-28 and then went to Studio, the only thing that
-    // ever built or read one; the window still draws a row's value with the slot editor the canvas uses.
-
-    // parameterDeclared(ParameterDeclaration) stood here from 2026-09-10 to 2026-09-17: the declaration half
-    // of the parameters window, one call carrying the row as wanted rather than a verb. It went first, with
-    // the record it took; the reading half above went five days later, for the reason written there. The rule
-    // both were instances of still stands: state the desired end value and let the owner reconcile it, rather
-    // than adding a verb.
-
     /**
      * The toolbar buttons this plugin contributes.
      *
@@ -242,13 +184,13 @@ public interface StudioPlugin {
      * a button may say what the project currently holds. The host groups, orders, packs, overflows and
      * themes them; this decides only what is offered and what a press does.
      *
-     * <p>{@link ToolbarGroup#STUDIO} is <b>refused</b>, with the plugin named. It is the host's own section,
+     * <p>{@link com.botmaker.plugin.api.toolbar.ToolbarGroup#STUDIO} is <b>refused</b>, with the plugin named. It is the host's own section,
      * for the things that would still make sense with every plugin uninstalled, and an item quietly re-homed
      * out of it would be worse than a refusal: a user reads that part of the bar as the application rather
      * than as their project.
      *
      * <p>Called once when a project's plugins are bound, not on every layout. A plugin whose set of items
-     * depends on state should return them all and let a supplier or an {@link EnabledWhen} say which apply.
+     * depends on state should return them all and let a supplier or an {@link com.botmaker.plugin.api.toolbar.EnabledWhen} say which apply.
      */
     default List<ToolbarItem> toolbarItems() {
         return List.of();

@@ -45,7 +45,7 @@ public enum Gesture {
     /**
      * A pause that ended in a click on something the host could name through a {@link RecordedValue} — waiting
      * for it to appear. Values: {@code timeoutMilliseconds}, the unit of {@link #PAUSE}, so a {@code Duration}
-     * timeout fills (until 2026-10-01 it was whole seconds); the thing waited for is resolved at the click's spot.
+     * timeout fills; the thing waited for is resolved at the click's spot.
      */
     AWAIT
 }

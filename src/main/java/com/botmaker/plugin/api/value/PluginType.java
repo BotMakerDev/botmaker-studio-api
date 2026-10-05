@@ -5,22 +5,18 @@ import javafx.scene.Node;
 
 /**
  * A type this plugin owns: what it is and what a fresh one is. How a person edits one is
- * {@link EditableType}'s, since 2026-09-27: a type its owner draws implements that too, and a plain
- * {@code PluginType} says in its class that somebody else draws it.
+ * {@link EditableType}'s: a type its owner draws implements that too, and a plain {@code PluginType} says in
+ * its class that somebody else draws it.
  *
  * <p><b>One declaration per type, and every method abstract.</b> That is the whole reason this interface
- * exists. A type used to need four separate declarations that nothing checked against each other — a
- * {@code ValueType} with an id, a {@code ValueCodec} with its four string methods, a {@code SourceSeed} with
- * the fresh expression as text, and a {@code SlotEditor} with a predicate naming the type a third time. For
- * {@code Point} those lived in three files, and the id, the class literal and the seed expression agreed
- * only because somebody kept them agreeing. Here the compiler asks for all four at once, in one class, and
- * {@link #type()} is the only place the type is named.
+ * exists: the compiler asks for everything about a type at once, in one class, and {@link #type()} is the
+ * only place the type is named — nothing about it is an id or an expression somebody keeps agreeing by hand.
  *
  * <h2>{@link #fresh()} returns a {@code T}, not a string</h2>
  *
- * <p>A default value used to be a Java expression the plugin wrote as text ({@code "new Point(0, 0)"}),
- * which javac never looked at: a renamed class, a removed constructor or a typo produced a seed the host
- * wrote into somebody's file and then could not compile. A real {@code T} cannot be any of those. The host
+ * <p>A default written as Java text ({@code "new Point(0, 0)"}) is something javac never looks at: a renamed
+ * class, a removed constructor or a typo produces a seed the host writes into somebody's file and then cannot
+ * compile. A real {@code T} cannot be any of those. The host
  * writes it out through this plugin's own {@link ComponentType}, or as a JDK literal, or as the enum
  * constant it is — see {@link ComponentType} for the grammar.
  *
@@ -85,12 +81,10 @@ public interface PluginType<T> {
      * host writes {@code Owner.method()} with the import itself — the plugin hands over the method, never
      * the Java that calls it, so a renamed method is a compile error in the plugin rather than a seed the
      * host writes into somebody's file and then cannot compile. {@code botmaker plugin validate} checks the
-     * shape. It was {@code String freshSource()}, the last Java text a plugin handed the host, until
-     * 2026-09-23.
+     * shape.
      *
-     * <p>Answering this is what makes a type <em>declarable</em> without making it editable. It is the one
-     * thing the deleted {@code SourceSeed} said that {@link #fresh()} cannot, and the reason the deletion
-     * kept it rather than dropping four of the SDK's fourteen declarable types.
+     * <p>Answering this is what makes a type <em>declarable</em> without making it editable: a fresh value
+     * that must be a call, which {@link #fresh()} cannot say.
      */
     default java.lang.reflect.Method freshCall() {
         return null;

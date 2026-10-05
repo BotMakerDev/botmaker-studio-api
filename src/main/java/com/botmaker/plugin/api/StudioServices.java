@@ -15,13 +15,11 @@ import java.nio.file.Path;
  * reading a launcher's installed-game library — and because the files under {@link #resourcesDir()} are
  * ordinary files.
  *
- * <p><b>The rule this replaced, and why.</b> Until 2026-08-27 the test was "a real editor needed it", and it
- * grew an {@code Assets} service (the project's named pictures), a {@code Capture.SourceChoice} vocabulary and
- * a {@code Frame}/{@code Sample} pair — every one of them a concept belonging to the SDK's <em>own</em> API:
- * a named picture is {@code ImageTemplate}'s, a capture source is {@code CaptureSource}'s, a launcher is
- * {@code Game}'s. Putting them here let plugin #1 reach through the contract for its own vocabulary, which no
- * second plugin could do — the back door this module exists to close. They were deleted rather than
- * generalised, because generalising them would only have moved the same privilege behind a wider name.
+ * <p><b>Not "a real editor needed it".</b> That test lets a plugin's own vocabulary in — a named picture, a
+ * capture source, a launcher — so plugin #1 reaches through the contract for what no second plugin could:
+ * the back door this module exists to close. Generalising such a member only moves the same privilege behind
+ * a wider name. A full-screen pick over a running game is the plugin's too: it grabs its own pixels through
+ * {@code botmaker-shared}, and the toolkit's screen-pick widgets take them from {@code ScreenPicks}.
  */
 public interface StudioServices {
 
@@ -38,15 +36,6 @@ public interface StudioServices {
 
     /** Applying the host's current look to a window, dialog or scene a plugin creates. */
     Theme theme();
-
-    // capture() was here until 2026-08-31, serving a Capture with selectRegion, pickPoint, sampleColor,
-    // grabFrame and toFxImage. Its defence was that only a host can put a surface over its own windows —
-    // true, and not the point. A full-screen overlay over a running game, asking the user to point at
-    // something in it, is about what a bot sees from end to end, and the editor's part in it was only ever
-    // that the editor was written first. So a plugin draws its own, over pixels it grabs itself through
-    // botmaker-shared, and the toolkit's screen-pick widgets take theirs from ScreenPicks. The last member,
-    // grabFrame, was capture-target vocabulary written so as not to say the word: see Capture's own history
-    // in the deleted file, and the 2026-08-27 Assets/chooseSource reversal recorded above.
 
     /** Native file and directory choosers, and the window a plugin's own dialog should be owned by. */
     Dialogs dialogs();

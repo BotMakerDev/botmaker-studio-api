@@ -9,9 +9,8 @@ import java.lang.annotation.Target;
 /**
  * Keep this out of the palette. It exists, it is public, it is supported — it is simply never proposed.
  *
- * <p>This is the exact claim the annotation makes, and it is worth stating because it has been both wider and
- * narrower before. It began as {@code @NotInPalette}, became {@code @Internal} on 2026-08-27 with the wider
- * meaning <em>not versioned surface</em>, and came back to this on the same day's rework. Versioning is
+ * <p>This is the exact claim the annotation makes, and no wider: it does not mean <em>not versioned
+ * surface</em>. Versioning is
  * {@link com.botmaker.plugin.api.meta.ReplacedBy}'s business and {@code @Deprecated}'s; a package called
  * {@code internal} is how a module says what is freely breakable. Neither needs an annotation whose real job
  * is a menu.
@@ -21,8 +20,7 @@ import java.lang.annotation.Target;
  *
  * <h2>Not on a type</h2>
  *
- * <p>It sat on thirty-eight types until 2026-09-30, beside {@link Palette}, to mean "catalogued, never
- * offered". A type that should not be offered now simply carries no {@code @Palette}: if an offered call
+ * <p>A type that should not be offered simply carries no {@code @Palette}: if an offered call
  * takes or returns it, it is catalogued anyway ({@link Palette} says how), and if none does, nothing in the
  * editor should name it. A hidden member is still left out of that reach — a type only a hidden member names
  * is not catalogued by it.

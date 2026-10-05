@@ -5,7 +5,7 @@ import com.botmaker.plugin.api.meta.ReplacedBy;
 /**
  * One value this plugin keeps up to date through its own window, named by the id it is annotated with.
  *
- * <p><b>Declare each one once, as a constant, and use the constant everywhere</b> (2026-09-28): in
+ * <p><b>Declare each one once, as a constant, and use the constant everywhere</b>: in
  * {@code StudioPlugin.managedValues()}, in the plugin's runtime half through
  * {@link com.botmaker.plugin.api.managed.ManagedValues#claim}, and in its own window to open the value. The id
  * then exists in exactly one place, and {@link #type()} is what lets the runtime hand the sink a {@code T} and
@@ -22,7 +22,7 @@ import com.botmaker.plugin.api.meta.ReplacedBy;
  * delete from it. There {@link #type()} is the class of each constant: see {@link #openSet}. Which of the two
  * a value is, is its {@link #shape()}.
  *
- * <p><b>Where it goes when it is missing</b> (2026-09-25). A project that never had the plugin's file has no
+ * <p><b>Where it goes when it is missing.</b> A project that never had the plugin's file has no
  * {@code @Managed} method to open, and nothing else would ever write one. {@code holder} and {@code type} are
  * what the host needs to write it once ({@link PluginValues#create}, or on every bind): the class the value
  * lives in, under {@code plugins/<last id segment>/}, and the type the method returns. What the method first
@@ -33,7 +33,7 @@ import com.botmaker.plugin.api.meta.ReplacedBy;
  * <p>Plain data, like every other contribution: the host reads the id as text and does the matching itself,
  * so no plugin code runs while a file is drawn.
  *
- * <p><b>A class, not a record</b> (2026-09-28): only {@link #method} and {@link #openSet}'s steps build one.
+ * <p><b>A class, not a record</b>: only {@link #method} and {@link #openSet}'s steps build one.
  * A record's public canonical constructor changes when a component is added, and every plugin compiled
  * against the old one would throw {@code NoSuchMethodError}; through the steps a new component is a new step.
  *

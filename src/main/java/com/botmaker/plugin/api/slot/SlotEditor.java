@@ -87,8 +87,7 @@ public interface SlotEditor {
      *
      * <p><b>Checked when it is built</b>: an annotation without {@code @Retention(RUNTIME)}, or whose
      * {@code @Target} excludes parameters, throws {@link IllegalArgumentException}, since no parameter could
-     * ever be seen to carry it. Since 2026-09-28; it replaced {@code forCall(calls(Owner.class, "name"), index,
-     * …)}, which named methods by string and arguments by position.
+     * ever be seen to carry it. A method is never named by string here, nor an argument by position.
      */
     static EditorSteps.Drawing onParameter(Class<? extends Annotation> marker) {
         return EditorSteps.onParameter(marker);

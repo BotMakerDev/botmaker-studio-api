@@ -23,13 +23,12 @@ import java.lang.annotation.Target;
  * type is the type. Studio reads the same fields off the syntax tree and draws the Parameters window from
  * them; editing a value there rewrites the initializer, and adding a row writes a new field.
  *
- * <h2>What this replaced, and why it is not a name any more</h2>
+ * <h2>Why it is a field, not a name</h2>
  *
- * <p>Until 2026-09-17 a user parameter was a row in a plugin's JSON file, read back by name
- * ({@code Settings.load("maxAttempts", int.class)}). The name was a string on both sides, so a typo
- * compiled and answered the type's fallback, the declaration lived where the author could not see it, and
- * the editor had to own a vocabulary of parameter kinds. {@code Settings.load} stays — it is never-delete,
- * and a <em>plugin's</em> own rows are still read that way — but a <b>user</b> parameter is a field now.
+ * <p>A parameter read back by name ({@code load("maxAttempts", int.class)}) is a string on both sides: a typo
+ * compiles and answers the type's fallback, the declaration lives where the author cannot see it, and the
+ * editor has to own a vocabulary of parameter kinds. A field is checked by javac and sits in the author's own
+ * file.
  *
  * <h2>The rules Studio applies</h2>
  *
@@ -49,17 +48,15 @@ import java.lang.annotation.Target;
  *       call, an expression over another field) is kept, shown, and never rewritten.
  * </ul>
  *
- * <h2>Why it is here, and why it took until 2026-09-22</h2>
+ * <h2>Why it is in the contract</h2>
  *
- * <p>It lived in {@code botmaker-plugin-basics} because this module was {@code provided} on the SDK, which
- * is not transitive, so a bot had no contract jar — and this annotation sits on a <b>bot's</b> own fields.
- * The SDK declares this module at {@code compile} now, so a bot has one. Nothing about rule 2 changes:
+ * <p>This annotation sits on a <b>bot's</b> own fields, and a bot has the contract jar because the SDK
+ * declares this module at {@code compile}. Nothing about rule 2 changes:
  * {@code PluginLoader} is parent-first for {@code com.botmaker.plugin.api.**}, so a plugin still links
  * against the <em>host's</em> copy however many are on a bot's classpath.
  *
- * <p>Being here is what let {@link #min} and {@link #max} become numbers. They were strings so a duration
- * bound could be written the way a duration is ({@code "30s"}) and a plugin's codec would parse it — and no
- * plugin parses anything now.
+ * <p>{@link #min} and {@link #max} are numbers, not strings a plugin's codec would parse: no plugin parses
+ * anything.
  *
  * @see com.botmaker.plugin.api.managed.Managed the same idea for a value a <em>plugin's</em> window keeps
  */

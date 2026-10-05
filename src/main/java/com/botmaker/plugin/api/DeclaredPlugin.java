@@ -30,9 +30,7 @@ import java.util.List;
  * because they are not lists — a plugin holding something the operating system counts releases it in the
  * second.
  *
- * <p>It replaces the toolkit's {@code AbstractStudioPlugin} (2026-09-28), whose five {@code build…} hooks each
- * memoised a list that was already a constant; its one live property, that nothing is built while the plugin
- * is constructed, is what the suppliers keep.
+ * <p>Each list is a supplier, so nothing is built while the plugin is constructed.
  */
 public class DeclaredPlugin implements StudioPlugin {
 

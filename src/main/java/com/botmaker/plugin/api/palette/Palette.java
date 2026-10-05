@@ -23,9 +23,8 @@ import java.lang.annotation.Target;
  * bot's source means this plugin's and not {@code java.awt}'s, and its members listed on a variable of it.
  * A public class nothing offered reaches is neither, and the editor never proposes it.
  *
- * <p>Until 2026-09-30 this annotation meant catalogued and a type-level {@link Hidden} beside it meant "not
- * offered": thirty-eight SDK types carried both, and the class dropdown, which read only the first bit,
- * listed every one of them. What a user reaches through an offered call is the catalogue by construction now.
+ * <p>What a user reaches through an offered call is the catalogue by construction; no second annotation
+ * says "catalogued, not offered".
  *
  * <h2>Why every element is a {@code String}</h2>
  *
@@ -36,9 +35,8 @@ import java.lang.annotation.Target;
  *
  * <h2>Order is the label's</h2>
  *
- * <p>Offered classes are listed alphabetically by their label, categories too. An {@code order} element
- * ranked them until 2026-09-30, and a menu of thirty facades in an order only their author could read was
- * the complaint that removed it. Member order within a class is still the author's: it is read from the order
+ * <p>Offered classes are listed alphabetically by their label, categories too: a menu of thirty facades in an
+ * order only their author could read is worse than none. Member order within a class is still the author's: it is read from the order
  * the methods appear in the compiled class file, which javac writes in source order.
  */
 @Documented

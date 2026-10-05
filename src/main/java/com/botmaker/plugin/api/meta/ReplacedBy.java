@@ -29,9 +29,8 @@ import java.lang.annotation.Target;
  *
  * <h2>Why there is no back edge, and what pays for that</h2>
  *
- * <p>There was one until 2026-08-27 — {@code @Replaces}, written on the survivor, naming what it took over.
- * It existed because Studio holds only two jars at an upgrade, the bot's pin and the target, so a bot jumping
- * 1.0 → 3.0 could not see a pointer added in 2.0 on an element deleted in 3.0: neither jar has it.
+ * <p>Studio holds only two jars at an upgrade, the bot's pin and the target, so a bot jumping 1.0 → 3.0
+ * cannot see a pointer added in 2.0 on an element deleted in 3.0: neither jar has it.
  *
  * <p>That gap closes the moment a deprecated element is <b>never deleted</b>. The target jar then still
  * carries the old member and its forward pointer, so one end answers every upgrade, chained renames

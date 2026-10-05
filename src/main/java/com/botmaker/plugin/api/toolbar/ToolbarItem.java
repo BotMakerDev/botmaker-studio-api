@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 /**
  * One button on the toolbar, contributed as <b>data</b>: the host builds the {@code Node}.
  *
- * <p>Deliberately unlike {@link SlotEditor}, which hands back a {@code Node} the plugin built itself. The
+ * <p>Deliberately unlike {@link com.botmaker.plugin.api.slot.SlotEditor}, which hands back a {@code Node} the plugin built itself. The
  * difference is not consistency but expressiveness: a bespoke image picker cannot be described as data and a
  * button can, and describing it as data is what lets the host own the things a shared bar has to own —
  * grouping, ordering, separators, packing, the overflow menu, the icon box and the theme. A plugin returning
@@ -77,9 +77,8 @@ public final class ToolbarItem {
 
     /**
      * Declares an item, one named step at a time ({@link ToolbarSteps}): {@code ToolbarItem.id(ID).label(…)
-     * .tooltip(…).in(group, order).onPress(() -> MyWindow::open)}. The positional {@code of} and
-     * {@code whenStopped} went on 2026-09-28; {@code .enabledWhen(…)} and {@code .icon(…)} are the optional
-     * steps before the press.
+     * .tooltip(…).in(group, order).onPress(() -> MyWindow::open)}; {@code .enabledWhen(…)} and
+     * {@code .icon(…)} are the optional steps before the press.
      */
     public static ToolbarSteps.Labelling id(String id) {
         return new ToolbarSteps.Labelling(id);

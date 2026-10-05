@@ -25,9 +25,8 @@ import java.lang.annotation.Target;
  * the host lists those. Marking it reviewed sets {@code done = true} rather than deleting it, so the record of
  * what happened stays with the code until the user removes the annotation themselves.
  *
- * <p><b>In the contract, not generated into the bot.</b> Until 2026-09-27 a host wrote its own
- * {@code NeedsReview} annotation into the bot's package the first time it marked anything — one more file
- * the user never asked for, whose shape the host then matched by simple name. A bot that compiles the
+ * <p><b>In the contract, not generated into the bot</b>, where it would be one more file the user never asked
+ * for, whose shape the host would match by simple name. A bot that compiles the
  * contract's annotations ({@code @Param}, {@code @Managed}) compiles this one too, and the host finds it by
  * class. A host writes it only where the classpath carries it, and otherwise makes the change unmarked.
  *

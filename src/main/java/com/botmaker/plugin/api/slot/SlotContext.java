@@ -47,7 +47,7 @@ public interface SlotContext extends ValueContext {
      * <p>What {@link SlotEditor#onParameter} matches, and what an editor reads its settings from: an
      * annotation on the parameter ({@code outcome(@OutcomeName String)}) is the plugin's own declaration of what
      * the argument means; a plugin that keeps a table instead keys it by {@link Parameter#getDeclaringExecutable()},
-     * never by a method's name. Since 2026-09-28; {@code default}, derived from
+     * never by a method's name. {@code default}, derived from
      * {@link #enclosingExecutable()} and {@link #argIndex()}.
      */
     default Optional<Parameter> parameter() {
@@ -82,15 +82,11 @@ public interface SlotContext extends ValueContext {
      * linked to its activity by exactly this reference in the flow, so the outcome picker lists the outcomes of
      * the activity whose body the slot sits in rather than every activity's. Text, read-only, and the same text
      * a flow value holds — the bot's classes are not on the plugin's loader, so there is no {@code Method} to
-     * hand over, and it is compared, never parsed. Since 2026-09-30; {@code default}, empty.
+     * hand over, and it is compared, never parsed. {@code default}, empty.
      */
     default Optional<String> enclosingMethodSource() {
         return Optional.empty();
     }
-
-    // enclosingCall() and replaceEnclosingCall(String, String...) were deleted on 2026-09-23. They handed a
-    // plugin the whole call as Java text to split and a way to write a new one back; their one user was the
-    // SDK's duration picker turning Wait.time(x) into Wait.between(a, b), and that toggle went with them.
 
     /**
      * The run of sibling slots this one belongs to, or empty when it stands alone.

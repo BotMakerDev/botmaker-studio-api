@@ -121,7 +121,7 @@ public interface Runs {
 
     /**
      * The value of the system property every run of this bot <b>on this machine</b> is started with, or
-     * {@code null} when none is set (2026-09-27).
+     * {@code null} when none is set.
      *
      * <p>For a fact about running the bot here rather than about the bot — which game this computer launches,
      * say — so it must never be committed with the project, never be published with it, and still reach the
@@ -144,12 +144,10 @@ public interface Runs {
     default void setProperty(String name, String value) {
     }
 
-    // withPid(LongConsumer) stood here until 2026-09-28, a convenience over pid() that no plugin called.
-
     /**
      * The run property that turns a bot's debug output on: every run on this machine is started with
-     * {@code -Dbotmaker.debug=true} while the host's own toggle is on, and {@code false} while it is off
-     * (2026-09-29). Unset means the bot decides for itself.
+     * {@code -Dbotmaker.debug=true} while the host's own toggle is on, and {@code false} while it is off.
+     * Unset means the bot decides for itself.
      *
      * <p>The one property the host names rather than a plugin, because the toggle is the host's: showing a run's
      * log is what hosting a run is. A plugin reads and sets it through {@link #property}/{@link #setProperty}
@@ -159,7 +157,7 @@ public interface Runs {
 
     /**
      * Registers {@code listener} for the running bot's trace, one {@link TraceLine} at a time, and returns the
-     * way to unregister it (2026-09-29).
+     * way to unregister it.
      *
      * <p>The host reads each line off the bot's own output channel and hands over what it read; a line this
      * host could not read is not delivered. Unlike {@link #onTelemetry}, the value is a shape — see

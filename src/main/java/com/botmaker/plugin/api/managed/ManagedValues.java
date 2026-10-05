@@ -26,9 +26,7 @@ import java.util.function.Consumer;
  * <h2>Why it is here, the one class in this module that is not an interface or a record</h2>
  *
  * <p>It is the other half of {@link Managed}: the annotation says which method holds a value, and this says
- * who takes it when the bot starts. Until 2026-09-28 it was {@code botmaker-plugin-basics}' — which meant a
- * plugin needing its value at run time had to depend on basics for thirty lines, and basics had to stay safe
- * to load in a bot for nothing else. Every plugin that puts {@code @Managed} in a bot already brings this
+ * who takes it when the bot starts. Every plugin that puts {@code @Managed} in a bot already brings this
  * module at {@code compile}, so here the runtime costs nobody a dependency.
  *
  * <p>The bot still <b>names</b> each values class, because that is a fact only the bot has and one javac can

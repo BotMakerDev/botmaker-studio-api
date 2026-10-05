@@ -4,7 +4,7 @@ import com.botmaker.plugin.api.slot.ValueContext;
 import javafx.scene.Node;
 
 /**
- * A declared type its owner draws. The only place {@code editor} lives since 2026-09-27: a plain
+ * A declared type its owner draws. The only place {@code editor} lives: a plain
  * {@link PluginType} says, in its class, that its owner does not draw it — another plugin's
  * {@code SlotEditor.forType} does, or the host's fallback — and {@code botmaker plugin validate} reads that
  * without starting JavaFX.

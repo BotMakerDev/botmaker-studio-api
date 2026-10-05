@@ -7,7 +7,6 @@
  * {@link com.botmaker.plugin.api.source.ManagedValue} and
  * {@link com.botmaker.plugin.api.source.PluginValues}, paired by the id.
  *
- * <p>It moved here from {@code botmaker-plugin-basics} on 2026-09-22, with
- * {@link com.botmaker.plugin.api.params.Param}, for the reason given there.
+ * <p>It is here, beside {@link com.botmaker.plugin.api.params.Param}, for the reason given there.
  */
 package com.botmaker.plugin.api.managed;

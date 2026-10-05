@@ -91,7 +91,7 @@ public interface ComponentType<T> {
      *       {@code CaptureSource.window("Game").region(r)}. The host reads it, and an edited value is written
      *       through the declaration that owns the class name. So such a type is listed in
      *       {@code StudioPlugin.componentTypes()} beside that declaration and never claims the class.
-     *       <b>The one time the host writes a chain</b> (2026-09-27) is a value that declaration's own parts
+     *       <b>The one time the host writes a chain</b> is a value that declaration's own parts
      *       do not build back equal — {@code Combo.of(keys)} has no hold — when a chain's parts do, and its
      *       part 0 is a different value the declaration writes whole: {@code Combo.of(Key.CTRL, Key.S)
      *       .held(Duration.ofMillis(200))}. One link deep; a chain whose part 0 is the value itself (a

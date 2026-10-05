@@ -3,9 +3,9 @@
  *
  * <p>One annotation lives here: {@link com.botmaker.plugin.api.meta.ReplacedBy}, the forward pointer a
  * renamed or retired element carries to whatever takes its place. It is the whole compatibility vocabulary,
- * and that is a deliberate narrowing — as of 2026-08-27 this package held three.
+ * and that is a deliberate narrowing.
  *
- * <p>Since 2026-09-27 it holds a second, facing the other way: {@link com.botmaker.plugin.api.meta.Refactor} is
+ * <p>A second faces the other way: {@link com.botmaker.plugin.api.meta.Refactor} is
  * what a host writes on a <em>bot's</em> function when a refactor had to guess there — a plugin upgrade, a
  * signature change, a plugin's own rewrite — so the user can find and review it.
  *

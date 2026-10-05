@@ -20,15 +20,10 @@ import java.util.Optional;
  * directions</b>: it reads the expression through the {@link com.botmaker.plugin.api.value.ComponentType}
  * the owning plugin registered and writes it back the same way.
  *
- * <p><b>It was a {@code String} of Java source until 2026-09-22</b>, and every plugin that wanted a typed
- * value parsed it. That produced three numeric-literal strippers, two argument splitters and one string
- * unescaper across two modules, none agreeing; and the host, holding only text, round-tripped a value
- * through a decode it could not verify — a {@code java.awt.Color} parameter opened and closed with no edit
- * came back rewritten. There is one reader now and it is the host's.
- *
- * <p><b>It was a {@code List<String>} before that</b> (until 2026-09-20), the wire form a JSON file held.
- * That form could say a leaf and a flat list of leaves and nothing else, so an editor could never be handed
- * {@code Map<String, List<Point>>}, even though a bot may perfectly well declare such a field.
+ * <p><b>A value, not Java text.</b> Text would have every plugin that wants a typed value parse it, each
+ * parser disagreeing with the next, and the host round-tripping a value through a decode it cannot verify.
+ * There is one reader and it is the host's, and it reads any shape a bot declares —
+ * {@code Map<String, List<Point>>} included.
  *
  * <h2>The type crosses as a name, never as a {@code Class}</h2>
  *
@@ -103,9 +98,6 @@ public interface ValueContext {
      */
     String source();
 
-    // setSource(String, Class<?>...) was deleted on 2026-09-23: it was a plugin writing Java text the compiler
-    // never looked at. A value is written with set(Object) and nothing else.
-
     /** The host services an editor may use: theming, dialogs, the open project and its values. */
     StudioServices services();
 
@@ -125,8 +117,7 @@ public interface ValueContext {
     }
 
     /**
-     * The range the value is declared to stay within, {@link Bounds#NONE} when nothing is declared
-     * (2026-09-27).
+     * The range the value is declared to stay within, {@link Bounds#NONE} when nothing is declared.
      *
      * <p>A capability only the host has: the limit is a rule about the <em>field</em>, written as
      * {@code @Param(min = …, max = …)} on the bot's own declaration, and the value alone does not carry it. A

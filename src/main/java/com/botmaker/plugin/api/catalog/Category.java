@@ -9,13 +9,9 @@ import java.util.Objects;
  * plugin's contributions land in {@code OTHER} until this module is released again, which is exactly the
  * versioning tax the contract exists to avoid.
  *
- * <p><b>Eight constants — {@code VISION}, {@code INTERACTION}, {@code CAPTURE}, {@code LAUNCH},
- * {@code EMULATOR}, {@code GEOMETRY}, {@code BOT}, {@code UTIL} — stood here until 2026-09-07 and are
- * deleted.</b> They were offered so two plugins naming one group would agree on its {@link #id()} rather
- * than on its spelling, and nothing could ever reference them: {@code @Palette(category = …)} takes a
- * {@code String}, so a facade names its group as text and never as a constant. They were plugin #1's menu
- * sitting in the artifact every plugin must agree on for ever. A plugin joining an existing group writes
- * the id, which is what the annotation makes it write anyway.
+ * <p><b>No constants here.</b> {@code @Palette(category = …)} takes a {@code String}, so a facade names its
+ * group as text and never as a constant, and constants here would be one plugin's menu in the artifact every
+ * plugin must agree on for ever. A plugin joining an existing group writes its id.
  *
  * @param id    a stable identifier, compared for equality and never shown
  * @param label the name the user reads
