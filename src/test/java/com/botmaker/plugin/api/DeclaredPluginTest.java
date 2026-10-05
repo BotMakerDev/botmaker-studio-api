@@ -1,5 +1,6 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.source.ManagedValue;
 import com.botmaker.plugin.api.value.PluginType;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,16 @@ class DeclaredPluginTest {
         assertTrue(plugin.slotEditors().isEmpty());
         assertTrue(plugin.toolbarItems().isEmpty());
         assertTrue(plugin.recordedValues().isEmpty());
+        assertTrue(plugin.runOverlayParts().isEmpty());
         assertTrue(plugin.catalog().isEmpty());
+    }
+
+    @Test
+    void runOverlayPartsAreDeclaredLikeTheToolbar() {
+        RunOverlayPart part = RunOverlayPart.id("notes.run").bar(ctx -> null);
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.z").named("Z")
+                .runOverlay(() -> List.of(part))) {};
+        assertEquals(List.of(part), plugin.runOverlayParts());
     }
 
     @Test

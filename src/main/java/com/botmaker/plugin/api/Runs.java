@@ -171,4 +171,34 @@ public interface Runs {
         return () -> {
         };
     }
+
+    /**
+     * Whether this host can freeze the running bot ({@link #pause()}) here.
+     *
+     * <p>Pausing a process is a capability of whoever launched it, not of what the bot is built on, so it is
+     * the host's. A host that cannot — no running bot, a platform with no way to suspend a process — answers
+     * {@code false}, and {@link #pause()} and {@link #resume()} do nothing.
+     */
+    default boolean canPause() {
+        return false;
+    }
+
+    /**
+     * Freezes the running bot where it is, until {@link #resume()} or {@link #stop()}.
+     *
+     * <p>The whole process stops, mid-action if that is where it was: a key held down stays down for whatever
+     * receives it, and any wall-clock timing the bot keeps skews across the pause. Advisory, like
+     * {@link #start()}; nothing happens when {@link #canPause()} is false or nothing runs.
+     */
+    default void pause() {
+    }
+
+    /** Lets a {@link #pause() paused} bot carry on. Nothing happens when it is not paused. */
+    default void resume() {
+    }
+
+    /** Whether the running bot is paused right now. {@code false} when nothing runs. */
+    default boolean isPaused() {
+        return false;
+    }
 }

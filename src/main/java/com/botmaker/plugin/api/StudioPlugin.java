@@ -2,6 +2,7 @@ package com.botmaker.plugin.api;
 
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.record.RecordedValue;
+import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
 import com.botmaker.plugin.api.toolbar.ToolbarItem;
@@ -193,6 +194,17 @@ public interface StudioPlugin {
      * depends on state should return them all and let a supplier or an {@link com.botmaker.plugin.api.toolbar.EnabledWhen} say which apply.
      */
     default List<ToolbarItem> toolbarItems() {
+        return List.of();
+    }
+
+    /**
+     * What this plugin shows in the host's run overlay while the project's bot runs — see
+     * {@link RunOverlayPart} for the two places a part draws and the coordinates it draws in.
+     *
+     * <p>Called once when a project's plugins are bound; each part's factories are called each time an
+     * overlay opens. A part's id is unique within the plugin.
+     */
+    default List<RunOverlayPart> runOverlayParts() {
         return List.of();
     }
 

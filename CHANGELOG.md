@@ -15,6 +15,18 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Added
+
+- **A run overlay surface** (`com.botmaker.plugin.api.run`): `RunOverlayPart.id(…).bar(…)` and/or
+  `.layer(…)`, declared with `PluginDeclaration.runOverlay(…)` or `StudioPlugin.runOverlayParts()`. The bar
+  part sits in the host's run bar; the layer part is drawn over the desktop in desktop pixels and takes no
+  clicks. `RunOverlayContext.onClosed` is where a part closes what it registered.
+- **Pausing a run**: `Runs.canPause()`, `pause()`, `resume()`, `isPaused()` — defaults answer "cannot", so
+  a plugin built before them keeps loading in a host that has them. A plugin that calls them, or declares a
+  run overlay part, needs a Studio with this contract: an older one skips it as built for a newer Studio.
+
 ## [0.4.0] — 2026-10-05
 
 **Breaking — cut as 0.4.0.** A plugin that sets `@Palette(order = …)` or puts `@Hidden` on a type no
