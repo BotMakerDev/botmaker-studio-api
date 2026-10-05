@@ -19,7 +19,7 @@ public interface AgentContext extends OverlayContext {
     /** The watched screen now — the plugin's {@code OverlayPart.watched} — empty when it cannot be captured. */
     Optional<BufferedImage> frame();
 
-    /** Where {@link #frame()} sits on the desktop, in desktop pixels. */
+    /** Where {@link #frame()} sits, in the bot's pixels ({@code com.botmaker.plugin.api.overlay}'s package comment). */
     Optional<Area> watchedArea();
 
     /** Boxes over the watched screen, shown while the overlay is open; a host without one draws nothing. */

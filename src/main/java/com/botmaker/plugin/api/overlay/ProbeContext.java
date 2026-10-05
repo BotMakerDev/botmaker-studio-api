@@ -27,6 +27,6 @@ public interface ProbeContext extends OverlayContext {
     /** The watched screen now, empty when it cannot be captured. */
     Optional<BufferedImage> frame();
 
-    /** Where {@link #frame()} sits on the desktop, in desktop pixels. */
+    /** Where {@link #frame()} sits, in the bot's pixels (see the package comment). */
     Optional<Area> watchedArea();
 }

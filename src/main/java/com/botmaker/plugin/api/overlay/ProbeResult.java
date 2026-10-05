@@ -21,7 +21,7 @@ public final class ProbeResult {
         this.area = area;
     }
 
-    /** It is there, at {@code area} in desktop pixels; {@code text} is one line: {@code "found 0.94 at 412,230"}. */
+    /** It is there, at {@code area} in the bot's pixels;{@code text} is one line: {@code "found 0.94 at 412,230"}. */
     public static ProbeResult found(String text, Area area) {
         return new ProbeResult(State.FOUND, text, area);
     }
@@ -45,7 +45,7 @@ public final class ProbeResult {
         return text;
     }
 
-    /** Where, in desktop pixels; the host draws it as a {@link Marks} box. */
+    /** Where, in the bot's pixels; the host draws it as a {@link Marks} box. */
     public Optional<Area> area() {
         return Optional.ofNullable(area);
     }

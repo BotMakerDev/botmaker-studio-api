@@ -25,7 +25,7 @@ public interface Marks {
         }
     };
 
-    /** Draws a {@code kind} box over {@code area}, captioned {@code label}, until {@link #clear()} or the overlay closes. Any thread. */
+    /** Draws a {@code kind} box over {@code area}, in the bot's pixels, captioned {@code label}, until {@link #clear()} or the overlay closes. Any thread. */
     void show(Area area, Kind kind, String label);
 
     /** Removes every mark this handle drew. Any thread. */

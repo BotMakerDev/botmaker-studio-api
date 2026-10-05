@@ -28,6 +28,12 @@
  * {@link com.botmaker.plugin.api.run.RunOverlayContext#mode()}. Boxes the host draws for a probe or a tool are
  * {@link com.botmaker.plugin.api.overlay.Marks}.
  *
+ * <p><b>Every position here is in the bot's pixels</b>, the space its clicks land in: the desktop's for a bot
+ * that watches a window or a part of the desktop, and a private display session's own when it watches the
+ * session — that display is not the desktop, and the window showing it may be moved, clipped or scaled. A
+ * frame, its {@code watchedArea}, a pick, a probe's area and a mark all use it; the host maps a mark onto the
+ * desktop to draw it.
+ *
  * <p><b>A part links JavaFX</b> (a tool's pane is a {@code Node}): keep it behind
  * {@code PluginDeclaration.overlay}'s supplier. A host without JavaFX never asks for it.
  */

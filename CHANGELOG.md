@@ -33,6 +33,8 @@ is allowed to make. Additions arrive as `default` methods.
   - `probe(Call::ref, Param.class…, Probe)`: what a call would answer now, on the live frame, as a `ProbeResult`. Declaring
     one says the call is read-only. For a call that acts, such as a click, wrap the probe in
     `Probe.acting(…)`: the probe then shows what the call would do, and Try never computes a local from it.
+  - Every position on these surfaces is in the bot's pixels, the space its clicks land in: the desktop's, or a
+    private display session's own when the bot watches the session. The host maps a mark onto the desktop.
 - **Tools for the AI assistant** (`com.botmaker.plugin.api.assist`), declared with
   `PluginDeclaration.assistant(() -> ALL)` or `StudioPlugin.assistantTools()`:
   `AssistantTool.named("crop_picture").describedAs(…).takes(Crop.class).handledBy(Owner::crop)`.

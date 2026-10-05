@@ -20,7 +20,7 @@ public interface OverlayToolContext extends OverlayContext {
     /** The watched screen now, empty when it cannot be captured. Any thread. */
     Optional<BufferedImage> frame();
 
-    /** Where {@link #frame()} sits on the desktop, in desktop pixels. */
+    /** Where {@link #frame()} sits, in the bot's pixels (see the package comment). */
     Optional<Area> watchedArea();
 
     /** Lets the user drag a box over the watched screen; empty when cancelled. Completes on the FX thread. */
