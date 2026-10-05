@@ -1,5 +1,7 @@
 package com.botmaker.plugin.api.source;
 
+import com.botmaker.plugin.api.meta.ReplacedBy;
+
 /**
  * One value this plugin keeps up to date through its own window, named by the id it is annotated with.
  *
@@ -17,7 +19,8 @@ package com.botmaker.plugin.api.source;
  * for — the host rewrites the expression that method returns and never adds or removes a method. On a
  * <b>type</b> it is an open set the user grows — a class of constants the rest of the bot names at its use
  * sites — and the whole class is the plugin's window's, so the canvas may not add to it, rename in it or
- * delete from it. That one has no {@link #type()}: see {@link #openSet}.
+ * delete from it. There {@link #type()} is the class of each constant: see {@link #openSet}. Which of the two
+ * a value is, is its {@link #shape()}.
  *
  * <p><b>Where it goes when it is missing</b> (2026-09-25). A project that never had the plugin's file has no
  * {@code @Managed} method to open, and nothing else would ever write one. {@code holder} and {@code type} are
@@ -38,16 +41,44 @@ package com.botmaker.plugin.api.source;
  */
 public final class ManagedValue<T> {
 
+    /** Where the {@code @Managed} annotation goes, and so what the host may change. */
+    public enum Shape {
+        /** On a method: one value, the expression the method returns. */
+        METHOD("method", "a managed value"),
+        /** On a type: a class of constants the plugin adds to, renames in and removes from. */
+        OPEN_SET("open-set", "a managed set");
+
+        private final String id;
+        private final String displayName;
+
+        Shape(String id, String displayName) {
+            this.id = id;
+            this.displayName = displayName;
+        }
+
+        /** The stable key: {@code "method"}, {@code "open-set"}. */
+        public String id() {
+            return id;
+        }
+
+        /** For a sentence: {@code "a managed set"}. */
+        public String displayName() {
+            return displayName;
+        }
+    }
+
     private final String id;
     private final String reason;
     private final String holder;
+    private final Shape shape;
     private final Class<T> type;
     private final T initial;
 
-    private ManagedValue(String id, String reason, String holder, Class<T> type, T initial) {
+    private ManagedValue(String id, String reason, String holder, Shape shape, Class<T> type, T initial) {
         this.id = id;
         this.reason = reason;
         this.holder = holder;
+        this.shape = shape;
         this.type = type;
         this.initial = initial;
     }
@@ -70,7 +101,15 @@ public final class ManagedValue<T> {
         return holder;
     }
 
-    /** The class the {@code @Managed} method returns, or null for an open set, whose annotation goes on the holder. */
+    /** Whether the annotation goes on a method or on the holder. */
+    public Shape shape() {
+        return shape;
+    }
+
+    /**
+     * The class the {@code @Managed} method returns, or — for an open set — the class of each constant. Null
+     * only for a value declared through a deprecated untyped step by a plugin built against contract 0.3.
+     */
     public Class<T> type() {
         return type;
     }
@@ -85,7 +124,7 @@ public final class ManagedValue<T> {
      *
      * <pre>{@code
      * public static final ManagedValue<Flow> FLOW = ManagedValue.method("flow")
-     *         .in("Sdk")                              // the class that holds it | .notCreated()
+     *         .in("Sdk")                              // the class that holds it | .openedOnly()
      *         .holds(Flow.class, Flow.NONE)           // what it returns, and what a created one starts as
      *         .because("This is the bot's activity flow. Draw it in 🔀 Activity Flow.");
      * }</pre>
@@ -96,7 +135,14 @@ public final class ManagedValue<T> {
 
     /**
      * <b>The way to declare an open set</b> — a class of constants the user grows, {@code @Managed} on the
-     * type: {@code ManagedValue.openSet("pictures").in("Pictures").because("…")}. Created empty in the holder.
+     * type, created empty in the holder:
+     *
+     * <pre>{@code
+     * public static final ManagedValue<ImageTemplate> PICTURES = ManagedValue.openSet("pictures")
+     *         .of(ImageTemplate.class)                // the class of each constant
+     *         .in("Pictures")
+     *         .because("Picture constants are managed in 🖼 Manage Pictures.");
+     * }</pre>
      */
     public static SetSteps openSet(String id) {
         return new SetSteps(id);
@@ -116,9 +162,35 @@ public final class ManagedValue<T> {
             return new TypeStep(id, requireText(holder, "holder"));
         }
 
-        /** Somewhere the host may open and never create. */
+        /** Somewhere the host may open and never create: {@code .openedOnly().holds(T.class)}. */
+        public OpenedStep openedOnly() {
+            return new OpenedStep(id);
+        }
+
+        /**
+         * @deprecated untyped — the value it builds has no {@link #type()}, so the runtime never claims it. Kept
+         *             so a plugin built against contract 0.3 still links; use {@link #openedOnly()}.
+         */
+        @Deprecated
+        @ReplacedBy(note = "Declare what the method returns: .openedOnly().holds(T.class).")
         public Reason<Void> notCreated() {
-            return new Reason<>(id, null, null, null);
+            return new Reason<>(id, null, Shape.METHOD, null, null);
+        }
+    }
+
+    /** After {@link MethodSteps#openedOnly}: what the method returns. */
+    public static final class OpenedStep {
+
+        private final String id;
+
+        private OpenedStep(String id) {
+            this.id = id;
+        }
+
+        /** A method returning a {@code type}, which the host opens and never writes. */
+        public <T> Reason<T> holds(Class<T> type) {
+            if (type == null) throw new IllegalArgumentException(id + ": no type given");
+            return new Reason<>(id, null, Shape.METHOD, type, null);
         }
     }
 
@@ -139,11 +211,11 @@ public final class ManagedValue<T> {
          */
         public <T> Reason<T> holds(Class<T> type, T initial) {
             if (type == null) throw new IllegalArgumentException(id + ": no type given");
-            return new Reason<>(id, holder, type, initial);
+            return new Reason<>(id, holder, Shape.METHOD, type, initial);
         }
     }
 
-    /** After {@link #openSet}: the class that is the set. */
+    /** After {@link #openSet}: what each constant is. */
     public static final class SetSteps {
 
         private final String id;
@@ -152,9 +224,44 @@ public final class ManagedValue<T> {
             this.id = requireText(id, "id");
         }
 
-        /** The class {@code holder} — {@code "Pictures"} — created empty when a project has none. */
+        /**
+         * Constants of the class {@code element} — what {@link PluginValues#add} accepts for this set, and what
+         * a constant's initialiser reads as.
+         */
+        public <E> SetHolderStep<E> of(Class<E> element) {
+            if (element == null) throw new IllegalArgumentException(id + ": no element type given");
+            if (element.isPrimitive()) {
+                throw new IllegalArgumentException(id + ": a constant is an object; use the boxed class of "
+                        + element.getName());
+            }
+            return new SetHolderStep<>(id, element);
+        }
+
+        /**
+         * @deprecated untyped, kept so a plugin built against contract 0.3 still links; a host checks nothing
+         *             it adds. Say what each constant is with {@link #of} first.
+         */
+        @Deprecated
+        @ReplacedBy(note = "Declare what each constant is: .of(E.class).in(holder).")
         public Reason<Void> in(String holder) {
-            return new Reason<>(id, requireText(holder, "holder"), null, null);
+            return new Reason<>(id, requireText(holder, "holder"), Shape.OPEN_SET, null, null);
+        }
+    }
+
+    /** After {@link SetSteps#of}: the class that is the set. */
+    public static final class SetHolderStep<E> {
+
+        private final String id;
+        private final Class<E> element;
+
+        private SetHolderStep(String id, Class<E> element) {
+            this.id = id;
+            this.element = element;
+        }
+
+        /** The class {@code holder} — {@code "Pictures"} — created empty when a project has none. */
+        public Reason<E> in(String holder) {
+            return new Reason<>(id, requireText(holder, "holder"), Shape.OPEN_SET, element, null);
         }
     }
 
@@ -163,19 +270,21 @@ public final class ManagedValue<T> {
 
         private final String id;
         private final String holder;
+        private final Shape shape;
         private final Class<T> type;
         private final T initial;
 
-        private Reason(String id, String holder, Class<T> type, T initial) {
+        private Reason(String id, String holder, Shape shape, Class<T> type, T initial) {
             this.id = id;
             this.holder = holder;
+            this.shape = shape;
             this.type = type;
             this.initial = initial;
         }
 
         /** What owns this value and where to change it instead. */
         public ManagedValue<T> because(String reason) {
-            return new ManagedValue<>(id, requireText(reason, "reason"), holder, type, initial);
+            return new ManagedValue<>(id, requireText(reason, "reason"), holder, shape, type, initial);
         }
     }
 
@@ -186,12 +295,12 @@ public final class ManagedValue<T> {
 
     /** Whether this is an open set — {@code @Managed} on a type — rather than one method's value. */
     public boolean isOpenSet() {
-        return type == null;
+        return shape == Shape.OPEN_SET;
     }
 
     /**
-     * {@code value} as this value's type, or null when it is not one — how a sink or a window reads what the
-     * host or the bot handed over without writing a cast of its own.
+     * {@code value} as this value's type — for an open set, one constant's — or null when it is not one: how a
+     * sink or a window reads what the host or the bot handed over without writing a cast of its own.
      */
     public T cast(Object value) {
         return type != null && type.isInstance(value) ? type.cast(value) : null;

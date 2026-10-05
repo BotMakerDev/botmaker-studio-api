@@ -22,6 +22,9 @@ longer compiles; one already built keeps loading (an annotation element the host
 
 ### Added
 
+- **`ManagedValue.Shape`** (`METHOD`, `OPEN_SET`) and `shape()`: which of the two a value is, said rather
+  than inferred from a missing type.
+
 - **`ValueContext.write(Object)`** — `set`, answering whether it happened: empty when written, else the
   sentence saying why not (a value no loaded plugin says how to write, or none). `set` stays, and a host now
   shows its refusal on the status line instead of dropping the value silently. `default`: on an older host it
@@ -29,6 +32,20 @@ longer compiles; one already built keeps loading (an annotation element the host
 
 ### Changed
 
+- **An open set names the class of its constants**: `ManagedValue.openSet(id).of(E.class).in(holder)`, typed
+  `ManagedValue<E>`, with `type()` the element class. A host refuses `PluginValues.add` of a value that is
+  not an `E`. A primitive element class is refused when the set is declared.
+- **`ManagedValue.method(id).openedOnly().holds(T.class)`** declares a value the host opens and never
+  creates. `notCreated()` built an untyped `ManagedValue<Void>` that every host took for an open set, so the
+  runtime never handed it to its sink.
+
+### Deprecated
+
+- `ManagedValue.openSet(id).in(holder)` and `ManagedValue.method(id).notCreated()`: untyped. Both still link,
+  so a plugin built against 0.3 (SDK 1.2.x builds its `Pictures` set this way) loads unchanged; a host
+  checks nothing added to such a set, and never claims such a value.
+- **`DeclaredCall.constants` and `DeclaredCallType.constants` take `T...`**, not `Object...`: a constant of
+  another type is a compile error rather than a refusal when the declaration is built. Binary compatible.
 - **`@Palette` means offered; the catalogue is derived.** `PaletteCatalog.of` offers the `@Palette` classes
   and catalogues, not offered, every public type of the same jar their offered members take or return —
   type arguments, supertypes and public fields included, followed transitively, never through a `@Hidden`

@@ -51,10 +51,12 @@ public final class ManagedValues {
      * Says that {@code sink} takes the value of every {@code @Managed(value.id())} method a bot declares.
      *
      * <p>Typed by the declaration: a value that is not a {@code T} never reaches the sink and is reported by
-     * {@link #install} instead. An open set ({@link ManagedValue#isOpenSet()}) has no value and is ignored.
+     * {@link #install} instead. An open set ({@link ManagedValue#isOpenSet()}) has no value and is ignored, as
+     * is a value declared with no type by a plugin built against an older contract.
      */
     public static <T> void claim(ManagedValue<T> value, Consumer<? super T> sink) {
-        if (value == null || value.isOpenSet() || value.id() == null || value.id().isBlank() || sink == null) {
+        if (value == null || value.isOpenSet() || value.type() == null || value.id() == null
+                || value.id().isBlank() || sink == null) {
             return;
         }
         SINKS.put(value.id().strip(), held -> {

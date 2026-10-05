@@ -22,9 +22,11 @@ public final class DeclaredCall<T> implements ComponentType<T> {
 
     /**
      * This call, plus the {@code public static final} constants of its type that a value equal to one is
-     * written as: {@code .constants(FlowLayout.NONE)}. Named by value, so a renamed constant is a compile error.
+     * written as: {@code .constants(FlowLayout.NONE)}. Named by value and typed, so a renamed constant or one of
+     * another type is a compile error.
      */
-    public DeclaredCall<T> constants(Object... values) {
+    @SafeVarargs
+    public final DeclaredCall<T> constants(T... values) {
         return new DeclaredCall<>(shape.withConstants(values));
     }
 

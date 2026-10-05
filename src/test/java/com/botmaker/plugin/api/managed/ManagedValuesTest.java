@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -122,12 +124,67 @@ class ManagedValuesTest {
     @Test
     void managedOnATypeInstallsNothingAndAnOpenSetCannotBeClaimed() {
         List<Object> taken = new ArrayList<>();
-        ManagedValues.claim(ManagedValue.openSet("test.pictures").in("Pictures").because("Mine."), taken::add);
+        ManagedValues.claim(ManagedValue.openSet("test.pictures").of(String.class).in("Pictures").because("Mine."),
+                taken::add);
         ManagedValues.claim(text("test.pictures"), taken::add);
 
         ManagedValues.install(Pictures.class);
 
         assertTrue(taken.isEmpty(), () -> "installed a type-level @Managed: " + taken);
+    }
+
+    static final class Opened {
+
+        @Managed("test.opened")
+        public static String opened() {
+            return "opened, never created";
+        }
+    }
+
+    /** A value the host may only open is still a method's value: it was taken for an open set until 2026-10-05. */
+    @Test
+    void aValueTheHostNeverCreatesIsStillClaimed() {
+        ManagedValue<String> opened = ManagedValue.method("test.opened").openedOnly().holds(String.class)
+                .because("Mine.");
+        List<String> taken = new ArrayList<>();
+        ManagedValues.claim(opened, taken::add);
+
+        ManagedValues.install(Opened.class);
+
+        assertEquals(ManagedValue.Shape.METHOD, opened.shape());
+        assertEquals(List.of("opened, never created"), taken);
+    }
+
+    /** The 0.3 steps a released plugin's static initialiser calls still link, untyped and never claimed. */
+    @Test
+    @SuppressWarnings("deprecation")
+    void theUntypedStepsOfAnOlderContractStillBuildAValue() {
+        ManagedValue<Void> set = ManagedValue.openSet("test.old-set").in("Old").because("Mine.");
+        ManagedValue<Void> opened = ManagedValue.method("test.old-opened").notCreated().because("Mine.");
+        List<Object> taken = new ArrayList<>();
+        ManagedValues.claim(opened, taken::add);
+
+        assertTrue(set.isOpenSet());
+        assertNull(set.type());
+        assertNull(set.cast("x"));
+        assertEquals(ManagedValue.Shape.METHOD, opened.shape());
+        assertNull(opened.type());
+        assertTrue(taken.isEmpty());
+    }
+
+    @Test
+    void aSetOfPrimitivesIsRefusedAsItIsDeclared() {
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet("test.ints").of(int.class));
+    }
+
+    @Test
+    void anOpenSetKnowsWhatEachConstantIs() {
+        ManagedValue<String> set = ManagedValue.openSet("test.set").of(String.class).in("Set").because("Mine.");
+
+        assertTrue(set.isOpenSet());
+        assertEquals(String.class, set.type());
+        assertEquals("x", set.cast("x"));
+        assertNull(set.cast(3));
     }
 
     static final class OneThrows {

@@ -21,10 +21,10 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   uses `writtenAs(Ref, Function...)`. `build` is invoking the factory on the parts coerced to its parameters,
   `null` when they do not fit or it throws.
 - **A managed value**: `ManagedValue.method(id).in(holder).holds(T.class, initial).because(reason)`,
-  `.notCreated()` instead of `in` for one the host may open and never create, and
-  `ManagedValue.openSet(id).in(holder).because(reason)`. It is typed and declared once: a plugin keeps one
-  constant per value and uses it in `managedValues()`, in `ManagedValues.claim`, and through the toolkit's
-  `ManagedHandle`. **A recorded value**: `RecordedValue.of(T.class).at(Finder::find)`.
+  `.openedOnly().holds(T.class)` instead of `in` for one the host may open and never create, and
+  `ManagedValue.openSet(id).of(E.class).in(holder).because(reason)`, `E` being the class of each constant. It
+  is typed and declared once: a plugin keeps one constant per value and uses it in `managedValues()`, in
+  `ManagedValues.claim`, and through the toolkit's `ManagedHandle` or, for an open set, `ManagedSet`. **A recorded value**: `RecordedValue.of(T.class).at(Finder::find)`.
 - **A slot editor**: `SlotEditor.onParameter(Annotation.class)` | `forType(X.class)` | `when(predicate)` →
   `.draw(() -> E::draw[, () -> E::preview])` (`EditorSteps`). A value the type cannot tell apart is told apart
   by a `RUNTIME` annotation on the parameter it is passed to (`outcome(@OutcomeName String)`), matched by

@@ -27,7 +27,8 @@ public final class DeclaredCallType<T> implements EditableType<T>, ComponentType
     }
 
     /** This type, plus the constants a value equal to one is written as. See {@link DeclaredCall#constants}. */
-    public DeclaredCallType<T> constants(Object... values) {
+    @SafeVarargs
+    public final DeclaredCallType<T> constants(T... values) {
         return new DeclaredCallType<>(declared, call.constants(values));
     }
 

@@ -121,7 +121,8 @@ public interface PluginValues {
     /**
      * Declares {@code public static final <T> member = <value>;} in the open set's class, {@code T} being the
      * value's class and the initialiser written by the grammar. Refused when the name is not a Java name, is
-     * already taken, or the value is one no loaded plugin declares.
+     * already taken, the value is not of the set's {@link ManagedValue#type() element type}, or it is one no
+     * loaded plugin declares.
      */
     default Optional<String> add(String id, String member, Object value) {
         return Optional.of(NO_SOURCE_TREE);
