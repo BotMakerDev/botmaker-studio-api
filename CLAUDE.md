@@ -72,13 +72,12 @@ no back door. If the SDK needs something this module does not expose, the contra
 mvn test        # the step tests, PaletteCatalogTest, SlotEditorTest, TypeRefTest, ManagedValuesTest,
                 # StudioPluginDefaultsTest, the context defaults tests — the module's only behaviour
 mvn verify      # the above plus japicmp against botmaker.japicmp.baseline (docs/architecture/japicmp.md)
-mvn install     # com.github.BotMakerDev:botmaker-studio-api:0.0.0-SNAPSHOT
+mvn install     # com.github.BotMakerDev:botmaker-studio-api at the pom's main -SNAPSHOT
 ```
 
-Published through JitPack, which serves each git tag under `com.github.BotMakerDev` regardless of this pom's
-`groupId`/`version` (so the version is cosmetic). **The maintainer owns the publish** — releases are cut
+Published through JitPack, which serves each git tag under `com.github.BotMakerDev`; a tag's pom carries its
+release version and `main` a `-SNAPSHOT` (umbrella doc 43). **The maintainer owns the publish** — releases are cut
 from the umbrella with `../release.sh --studio-api <version>`.
 
-Unlike `botmaker-session` and `botmaker-sdk` this module runs **no `flatten-maven-plugin` and has no
-`.deps.env`**: flatten exists to bake a `-D`-injected `${botmaker.*.version}` into the published pom, and
-this module pins no BotMaker upstream to inject. Its `jitpack.yml` is a plain `mvn install`.
+Unlike `botmaker-session` and `botmaker-sdk` this module runs **no `flatten-maven-plugin`**: flatten exists to
+bake a `${botmaker.*.version}` into the published pom, and this module pins no BotMaker upstream. Its `jitpack.yml` is a plain `mvn install`.

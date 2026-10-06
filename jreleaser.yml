@@ -21,9 +21,9 @@
 #     repository, which would attach this release to the wrong repo entirely. A CI checkout is standalone,
 #     so the problem does not exist there.
 #   * jreleaser-maven-plugin is not used either. It ignores this file completely — its model comes from an
-#     XML block inside the pom — and it takes the version from <version>, which in this project is the
-#     cosmetic 0.0.0-SNAPSHOT that JitPack overrides. The tag is the version here, so the pom can never
-#     supply it.
+#     XML block inside the pom — and it takes the version from <version>, which was a cosmetic
+#     0.0.0-SNAPSHOT until 2026-10-06 (umbrella doc 43). The tag stays the version here; the pom on a tag
+#     agrees with it.
 #
 # THE VERSION ARRIVES AS JRELEASER_PROJECT_VERSION, set by the workflow from the tag that triggered it.
 #

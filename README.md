@@ -82,9 +82,9 @@ against an older release keeps working until a Studio **major** release explicit
 
 ```bash
 mvn test        # the catalog, PluginType/ComponentType, SlotEditor and the context defaults
-mvn install     # lands at com.github.BotMakerDev:botmaker-studio-api:0.0.0-SNAPSHOT
+mvn install     # lands at com.github.BotMakerDev:botmaker-studio-api, the pom's main -SNAPSHOT
 ```
 
 Published via JitPack, which serves each git tag as `com.github.BotMakerDev:botmaker-studio-api:<tag>`. The
-pom's own `<version>` is cosmetic. Releases are cut from the umbrella repository with
+pom's `<version>` is the release version on a tag and a `-SNAPSHOT` on `main`. Releases are cut from the umbrella repository with
 `./release.sh --studio-api <version>`.

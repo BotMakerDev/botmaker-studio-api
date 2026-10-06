@@ -1,8 +1,8 @@
 jdk:
   - openjdk25
 install:
-  # No -D injection and no .deps.env, unlike botmaker-session and botmaker-sdk: this module pins no BotMaker
-  # upstream. Its only dependency is javafx-controls at a literal version in `provided` scope, so the
+  # A plain `mvn install`, as in every module since 2026-10-06 (umbrella doc 43). This module also pins no
+  # BotMaker upstream. Its only dependency is javafx-controls at a literal version in `provided` scope, so the
   # committed pom is already the pom a consumer resolves and there is nothing for flatten to bake in.
   #
   # -Dbotmaker.japicmp.skip=true deactivates the `api-gate` profile, so the japicmp plugin is not even

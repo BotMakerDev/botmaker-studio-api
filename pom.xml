@@ -27,8 +27,7 @@
       property-driven dependency to bake. Its one dependency is javafx-controls at a literal version, in
       `provided` scope, so the committed pom is already the pom a consumer needs.
 
-      It also has no .deps.env for the same reason: it pins no BotMaker upstream, so there is nothing for a
-      release to record and nothing for jitpack.yml to source.
+      For the same reason a release commit moves only its own <version> here: it pins no BotMaker upstream.
     -->
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
