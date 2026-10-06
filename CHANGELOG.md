@@ -27,6 +27,9 @@ is allowed to make. Additions arrive as `default` methods.
     name crosses as text;
   - `watched(…)`: which screen the bot watches, as `Watched.window/region/session`. `changeWatched(…)` opens
     the plugin's own picker for it;
+  - `frames(…)`: where the bot's frames come from, an `OverlayPart.FrameSource` that grabs an `OverlayFrame`
+    (the image and where it sits in the bot's pixels) off the FX thread. The host's probes, tools and
+    assistant then read the bot's own frame, and grab the watched screen only when it answers nothing;
   - `tool(OverlayTool.id(…).named(…).pane(…))`: a pane in the panel's tool tabs. Its
     `OverlayToolContext` offers the frame, region and point picks, `insert(Call::ref, args…)` at the caret
     (`insertVoid` for a `void` call, through the new `Ref.Void0`–`Void4`), and `Marks`;

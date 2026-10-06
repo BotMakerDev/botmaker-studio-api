@@ -3,7 +3,7 @@
  * user builds the bot while looking at what it sees.
  *
  * <p>{@link com.botmaker.plugin.api.overlay.OverlayPart} is the part, one per plugin, declared by steps. It
- * answers four questions only a plugin can:
+ * answers five questions only a plugin can:
  *
  * <ul>
  *   <li><b>targets</b> — where blocks go: the bot methods worth editing from the overlay, such as a game
@@ -13,6 +13,9 @@
  *       as text.</li>
  *   <li><b>watched</b> — which screen the bot looks at, so the panel opens over it without asking
  *       ({@link com.botmaker.plugin.api.overlay.Watched}), and the plugin's own picker to change it.</li>
+ *   <li><b>frames</b> — what the bot sees there, grabbed the way the bot grabs it
+ *       ({@link com.botmaker.plugin.api.overlay.OverlayPart.FrameSource}), so a probe, a tool and the assistant
+ *       read the bot's own frame. The watched screen then only says where the panel docks.</li>
  *   <li><b>tools</b> — panes in the panel's tool tabs ({@link com.botmaker.plugin.api.overlay.OverlayTool}):
  *       cut a picture, place a point.</li>
  *   <li><b>probes</b> — for a call the plugin declares, what the call would answer now, on the live frame,

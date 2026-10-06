@@ -111,8 +111,22 @@ class OverlayPartTest {
     void anEmptyPartAnswersNothingAndNullAnswersAreNothing() {
         assertTrue(OverlayPart.of().isEmpty());
         assertEquals(List.of(), OverlayPart.of().targets());
-        OverlayPart careless = OverlayPart.of().watched(ctx -> null);
+        OverlayPart careless = OverlayPart.of().watched(ctx -> null).frames(ctx -> null);
         assertEquals(Optional.empty(), careless.watchedFor(null));
+        assertEquals(Optional.empty(), careless.framesFor(null));
+        assertEquals(Optional.empty(), OverlayPart.of().framesFor(null));
+    }
+
+    @Test
+    void aFrameIsTheImageAndWhereItSits() {
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(30, 20,
+                java.awt.image.BufferedImage.TYPE_INT_RGB);
+        OverlayPart part = OverlayPart.of().frames(ctx -> Optional.of(() -> Optional.of(OverlayFrame.at(image, 5, 7))));
+        assertFalse(part.isEmpty());
+        OverlayFrame frame = part.framesFor(null).orElseThrow().grab().orElseThrow();
+        assertSame(image, frame.image());
+        assertEquals(new Area(5, 7, 30, 20), frame.area());
+        assertThrows(NullPointerException.class, () -> OverlayFrame.at(null, 0, 0));
     }
 
     @Test
