@@ -13,7 +13,7 @@
     -->
     <groupId>com.github.BotMakerDev</groupId>
     <artifactId>botmaker-studio-api</artifactId>
-    <version>0.4.3-SNAPSHOT</version>
+    <version>0.5.0</version>
 
     <name>BotMaker Studio Plugin API</name>
     <description>
@@ -62,7 +62,7 @@
              v0.3.0 the same way on 2026-09-24: TypeRef lost its three name members and SlotContext its two
              enclosing names for an Executable, and SlotEditor.forCall takes a Predicate<Executable>. Pinned
              ahead of the tag, which does not exist yet. -->
-        <botmaker.japicmp.baseline>v0.4.1</botmaker.japicmp.baseline>
+        <botmaker.japicmp.baseline>v0.4.2</botmaker.japicmp.baseline>
         <botmaker.japicmp.skip>false</botmaker.japicmp.skip>
     </properties>
 
