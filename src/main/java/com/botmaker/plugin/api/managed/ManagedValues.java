@@ -2,6 +2,8 @@ package com.botmaker.plugin.api.managed;
 
 import com.botmaker.plugin.api.source.ManagedValue;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -46,7 +48,8 @@ public final class ManagedValues {
     private ManagedValues() {}
 
     /**
-     * Says that {@code sink} takes the value of every {@code @Managed(value.id())} method a bot declares.
+     * Says that {@code sink} takes the value of every method a bot marks with {@code value}'s id —
+     * {@code @SdkValue(SdkValue.Id.FLOW)} for a typed one, {@code @Managed("<id>")} otherwise.
      *
      * <p>Typed by the declaration: a value that is not a {@code T} never reaches the sink and is reported by
      * {@link #install} instead. An open set ({@link ManagedValue#isOpenSet()}) has no value and is ignored, as
@@ -68,10 +71,11 @@ public final class ManagedValues {
     }
 
     /**
-     * Invokes every {@code @Managed} method on each class and gives what it returns to whoever claimed its id.
+     * Invokes every managed method on each class — marked {@code @Managed} or with a plugin's
+     * {@link ManagedMarker} annotation — and gives what it returns to whoever claimed its id.
      *
      * <p>Only a {@code public static} method taking no arguments is a value, which is {@link Managed}'s own
-     * rule. {@code @Managed} on a type is not installed: it marks constants the bot names where it uses them.
+     * rule. A marked type is not installed: it holds constants the bot names where it uses them.
      *
      * <p><b>Nothing here throws.</b> An unclaimed id means that plugin is not on this bot's classpath, and a
      * method that throws is the bot author's own code failing; both are one line on {@code System.err} naming
@@ -86,15 +90,18 @@ public final class ManagedValues {
             if (type == null) {
                 continue;
             }
-            for (Method method : managedMethods(type)) {
-                installOne(type, method);
+            for (Found found : managedMethods(type)) {
+                installOne(type, found.method(), found.id());
             }
         }
     }
 
-    /** Every {@code public static} no-argument {@code @Managed} method of {@code type}, in name order. */
-    private static List<Method> managedMethods(Class<?> type) {
-        List<Method> found = new ArrayList<>();
+    /** A managed method and the id it is marked with. */
+    private record Found(Method method, String id) {}
+
+    /** Every {@code public static} no-argument managed method of {@code type}, in name order. */
+    private static List<Found> managedMethods(Class<?> type) {
+        List<Found> found = new ArrayList<>();
         Method[] declared;
         try {
             declared = type.getDeclaredMethods();
@@ -103,25 +110,54 @@ public final class ManagedValues {
             return List.of();
         }
         for (Method method : declared) {
-            if (!method.isAnnotationPresent(Managed.class)) {
-                continue;
-            }
             int modifiers = method.getModifiers();
             if (!Modifier.isPublic(modifiers) || !Modifier.isStatic(modifiers)
                     || method.getParameterCount() != 0) {
                 continue;
             }
-            found.add(method);
+            String id = idOn(method);
+            if (id != null) {
+                found.add(new Found(method, id));
+            }
         }
-        found.sort(Comparator.comparing(Method::getName));
+        found.sort(Comparator.comparing(each -> each.method().getName()));
         return found;
     }
 
-    private static void installOne(Class<?> type, Method method) {
-        String id = method.getAnnotation(Managed.class).value();
-        if (id == null || id.isBlank()) {
-            return;
+    /**
+     * The id {@code element} is marked with, or null: a plugin's {@link ManagedMarker} annotation answers
+     * {@link ManagedValue#idOf} its constant, and only without one does {@code @Managed} answer its text.
+     */
+    static String idOn(AnnotatedElement element) {
+        String typed = typedIdOn(element);
+        if (typed != null) {
+            return typed;
         }
+        Managed managed = element.getAnnotation(Managed.class);
+        return managed == null || managed.value() == null || managed.value().isBlank() ? null
+                : managed.value().strip();
+    }
+
+    private static String typedIdOn(AnnotatedElement element) {
+        for (Annotation annotation : element.getAnnotations()) {
+            Class<? extends Annotation> marker = annotation.annotationType();
+            if (!marker.isAnnotationPresent(ManagedMarker.class)) {
+                continue;
+            }
+            try {
+                Method value = marker.getDeclaredMethod("value");
+                value.trySetAccessible();
+                if (value.invoke(annotation) instanceof Enum<?> constant) {
+                    return ManagedValue.idOf(constant);
+                }
+            } catch (ReflectiveOperationException | RuntimeException unreadable) {
+                System.err.println("[values] " + marker.getName() + " could not be read: " + unreadable);
+            }
+        }
+        return null;
+    }
+
+    private static void installOne(Class<?> type, Method method, String id) {
         Object value;
         try {
             value = method.invoke(null);

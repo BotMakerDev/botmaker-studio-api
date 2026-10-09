@@ -17,7 +17,15 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
-No source changes since v0.5.0; re-released for updated upstream pins.
+### Added
+
+- **Typed managed ids.** `@ManagedMarker` makes a plugin's own annotation the marker of its managed values:
+  its `value()` is an enum nested in it, one constant per value, so a bot writes
+  `@SdkValue(SdkValue.Id.FLOW)` and a misspelt id no longer compiles. `ManagedValue.method(Enum)` and
+  `openSet(Enum)` declare one (refused unless the enum sits in such an annotation); its `id()` is
+  `ManagedValue.idOf(constant)` — the enum's binary name and the constant — and `marker()` names the
+  annotation. `ManagedValues.install` hands a method marked either way to its claimer. `@Managed("<id>")`
+  is still read; it goes when the plugins have moved.
 
 ### Changed
 

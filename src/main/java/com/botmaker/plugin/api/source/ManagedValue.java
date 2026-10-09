@@ -1,6 +1,13 @@
 package com.botmaker.plugin.api.source;
 
+import com.botmaker.plugin.api.managed.ManagedMarker;
 import com.botmaker.plugin.api.meta.ReplacedBy;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.util.Arrays;
 
 /**
  * One value this plugin keeps up to date through its own window, named by the id it is annotated with.
@@ -11,9 +18,11 @@ import com.botmaker.plugin.api.meta.ReplacedBy;
  * then exists in exactly one place, and {@link #type()} is what lets the runtime hand the sink a {@code T} and
  * the window read one without a cast.
  *
- * <p><b>What matches</b>: a {@code @Managed("<id>")} method or type in the bot's own Java, where the id is
- * this record's. The annotation is {@code com.botmaker.plugin.api.managed.Managed}, which a bot has on its
- * classpath through the plugin that brings the contract at {@code compile}.
+ * <p><b>What matches</b>: a method or type in the bot's own Java marked with this value's id. A typed id —
+ * {@link #method(Enum)}, {@link #openSet(Enum)} — is the plugin's own {@link ManagedMarker} annotation,
+ * {@code @SdkValue(SdkValue.Id.FLOW)}, which javac checks; a string id is
+ * {@code @Managed("<id>")} ({@code com.botmaker.plugin.api.managed.Managed}), which it does not. A bot has
+ * either on its classpath through the plugin that brings it at {@code compile}.
  *
  * <p><b>Two shapes, one marker.</b> On a <b>method</b> it is a fixed value the plugin shipped a declaration
  * for — the host rewrites the expression that method returns and never adds or removes a method. On a
@@ -67,15 +76,28 @@ public final class ManagedValue<T> {
         }
     }
 
-    private final String id;
+    /** The id and, for a typed one, the binary name of the plugin's marker annotation. */
+    private record Key(String id, String marker) {
+
+        static Key of(String id) {
+            return new Key(requireText(id, "id"), null);
+        }
+
+        static Key of(Enum<?> constant, ElementType on) {
+            if (constant == null) throw new IllegalArgumentException("A managed value needs an id");
+            return new Key(idOf(constant), markerOf(constant, on));
+        }
+    }
+
+    private final Key key;
     private final String reason;
     private final String holder;
     private final Shape shape;
     private final Class<T> type;
     private final T initial;
 
-    private ManagedValue(String id, String reason, String holder, Shape shape, Class<T> type, T initial) {
-        this.id = id;
+    private ManagedValue(Key key, String reason, String holder, Shape shape, Class<T> type, T initial) {
+        this.key = key;
         this.reason = reason;
         this.holder = holder;
         this.shape = shape;
@@ -83,9 +105,67 @@ public final class ManagedValue<T> {
         this.initial = initial;
     }
 
-    /** The annotation's id — {@code "flow"}, {@code "capture"}, {@code "pictures"}. */
+    /**
+     * The id: for a typed value {@link #idOf} its constant — {@code "com.botmaker.sdk.api.bot.SdkValue$Id.FLOW"} —
+     * and otherwise the string given — {@code "flow"}.
+     */
     public String id() {
-        return id;
+        return key.id();
+    }
+
+    /**
+     * The binary name of the plugin's {@link ManagedMarker} annotation a bot marks this value with —
+     * {@code "com.botmaker.sdk.api.bot.SdkValue"} — or null for a value declared by a string id, which a bot
+     * marks {@code @Managed("<id>")}.
+     */
+    public String marker() {
+        return key.marker();
+    }
+
+    /**
+     * The id of a typed value: the binary name of {@code constant}'s enum, a dot, and the constant's name —
+     * {@code "com.botmaker.sdk.api.bot.SdkValue$Id.FLOW"}. The enum's name is the <b>binary</b> one, with
+     * {@code $} before a nested class: a host reading a bot's annotation off JDT takes the constant's
+     * declaring type's {@code getBinaryName()}, never its {@code getQualifiedName()}, and the runtime reads the
+     * same through reflection.
+     */
+    public static String idOf(Enum<?> constant) {
+        return constant.getDeclaringClass().getName() + "." + constant.name();
+    }
+
+    /**
+     * The binary name of the annotation {@code constant}'s enum is nested in, refused unless that annotation
+     * has the shape {@link ManagedMarker} asks for — marked, runtime-retained, placeable {@code on} a method or
+     * a type as the value's shape needs, its {@code value()} that enum — checked once, when the plugin
+     * declares the value.
+     */
+    private static String markerOf(Enum<?> constant, ElementType on) {
+        Class<?> ids = constant.getDeclaringClass();
+        Class<?> marker = ids.getEnclosingClass();
+        String where = ids.getName() + "." + constant.name();
+        if (marker == null || !marker.isAnnotation() || !marker.isAnnotationPresent(ManagedMarker.class)) {
+            throw new IllegalArgumentException(where + ": the enum must be nested in an annotation marked "
+                    + "@ManagedMarker");
+        }
+        Retention retention = marker.getAnnotation(Retention.class);
+        if (retention == null || retention.value() != RetentionPolicy.RUNTIME) {
+            throw new IllegalArgumentException(where + ": " + marker.getName() + " needs "
+                    + "@Retention(RetentionPolicy.RUNTIME), or a bot's runtime never sees it");
+        }
+        Target target = marker.getAnnotation(Target.class);
+        if (target != null && !Arrays.asList(target.value()).contains(on)) {
+            throw new IllegalArgumentException(where + ": " + marker.getName() + "'s @Target must include "
+                    + "ElementType." + on + ", where a bot puts it");
+        }
+        try {
+            if (marker.getDeclaredMethod("value").getReturnType() != ids) {
+                throw new IllegalArgumentException(where + ": " + marker.getName() + ".value() must be "
+                        + ids.getSimpleName());
+            }
+        } catch (NoSuchMethodException none) {
+            throw new IllegalArgumentException(where + ": " + marker.getName() + " has no value()");
+        }
+        return marker.getName();
     }
 
     /** The sentence the host shows when it refuses an edit: what owns this and where to go instead. */
@@ -130,7 +210,18 @@ public final class ManagedValue<T> {
      * }</pre>
      */
     public static MethodSteps method(String id) {
-        return new MethodSteps(id);
+        return new MethodSteps(Key.of(id));
+    }
+
+    /**
+     * A method-shaped value with a typed id: a constant of the enum nested in the plugin's
+     * {@link ManagedMarker} annotation, which a bot marks the method with — {@code @SdkValue(SdkValue.Id.FLOW)}.
+     * Otherwise as {@link #method(String)}.
+     *
+     * @throws IllegalArgumentException when the enum is not nested in such an annotation
+     */
+    public static MethodSteps method(Enum<?> id) {
+        return new MethodSteps(Key.of(id, ElementType.METHOD));
     }
 
     /**
@@ -145,26 +236,36 @@ public final class ManagedValue<T> {
      * }</pre>
      */
     public static SetSteps openSet(String id) {
-        return new SetSteps(id);
+        return new SetSteps(Key.of(id));
+    }
+
+    /**
+     * An open set with a typed id, which a bot marks the holder class with —
+     * {@code @SdkValue(SdkValue.Id.PICTURES)}. Otherwise as {@link #openSet(String)}.
+     *
+     * @throws IllegalArgumentException when the enum is not nested in a {@link ManagedMarker} annotation
+     */
+    public static SetSteps openSet(Enum<?> id) {
+        return new SetSteps(Key.of(id, ElementType.TYPE));
     }
 
     /** After {@link #method}: where the value lives. */
     public static final class MethodSteps {
 
-        private final String id;
+        private final Key key;
 
-        private MethodSteps(String id) {
-            this.id = requireText(id, "id");
+        private MethodSteps(Key key) {
+            this.key = key;
         }
 
         /** In the class {@code holder} — {@code "Sdk"} — which the host writes when a project has none. */
         public TypeStep in(String holder) {
-            return new TypeStep(id, requireText(holder, "holder"));
+            return new TypeStep(key, requireText(holder, "holder"));
         }
 
         /** Somewhere the host may open and never create: {@code .openedOnly().holds(T.class)}. */
         public OpenedStep openedOnly() {
-            return new OpenedStep(id);
+            return new OpenedStep(key);
         }
 
         /**
@@ -174,34 +275,34 @@ public final class ManagedValue<T> {
         @Deprecated
         @ReplacedBy(note = "Declare what the method returns: .openedOnly().holds(T.class).")
         public Reason<Void> notCreated() {
-            return new Reason<>(id, null, Shape.METHOD, null, null);
+            return new Reason<>(key, null, Shape.METHOD, null, null);
         }
     }
 
     /** After {@link MethodSteps#openedOnly}: what the method returns. */
     public static final class OpenedStep {
 
-        private final String id;
+        private final Key key;
 
-        private OpenedStep(String id) {
-            this.id = id;
+        private OpenedStep(Key key) {
+            this.key = key;
         }
 
         /** A method returning a {@code type}, which the host opens and never writes. */
         public <T> Reason<T> holds(Class<T> type) {
-            if (type == null) throw new IllegalArgumentException(id + ": no type given");
-            return new Reason<>(id, null, Shape.METHOD, type, null);
+            if (type == null) throw new IllegalArgumentException(key.id() + ": no type given");
+            return new Reason<>(key, null, Shape.METHOD, type, null);
         }
     }
 
     /** After {@link MethodSteps#in}: what the method returns. */
     public static final class TypeStep {
 
-        private final String id;
+        private final Key key;
         private final String holder;
 
-        private TypeStep(String id, String holder) {
-            this.id = id;
+        private TypeStep(Key key, String holder) {
+            this.key = key;
             this.holder = holder;
         }
 
@@ -210,18 +311,18 @@ public final class ManagedValue<T> {
          * with {@code null}, the type's own fresh value.
          */
         public <T> Reason<T> holds(Class<T> type, T initial) {
-            if (type == null) throw new IllegalArgumentException(id + ": no type given");
-            return new Reason<>(id, holder, Shape.METHOD, type, initial);
+            if (type == null) throw new IllegalArgumentException(key.id() + ": no type given");
+            return new Reason<>(key, holder, Shape.METHOD, type, initial);
         }
     }
 
     /** After {@link #openSet}: what each constant is. */
     public static final class SetSteps {
 
-        private final String id;
+        private final Key key;
 
-        private SetSteps(String id) {
-            this.id = requireText(id, "id");
+        private SetSteps(Key key) {
+            this.key = key;
         }
 
         /**
@@ -229,12 +330,12 @@ public final class ManagedValue<T> {
          * a constant's initialiser reads as.
          */
         public <E> SetHolderStep<E> of(Class<E> element) {
-            if (element == null) throw new IllegalArgumentException(id + ": no element type given");
+            if (element == null) throw new IllegalArgumentException(key.id() + ": no element type given");
             if (element.isPrimitive()) {
-                throw new IllegalArgumentException(id + ": a constant is an object; use the boxed class of "
+                throw new IllegalArgumentException(key.id() + ": a constant is an object; use the boxed class of "
                         + element.getName());
             }
-            return new SetHolderStep<>(id, element);
+            return new SetHolderStep<>(key, element);
         }
 
         /**
@@ -244,38 +345,38 @@ public final class ManagedValue<T> {
         @Deprecated
         @ReplacedBy(note = "Declare what each constant is: .of(E.class).in(holder).")
         public Reason<Void> in(String holder) {
-            return new Reason<>(id, requireText(holder, "holder"), Shape.OPEN_SET, null, null);
+            return new Reason<>(key, requireText(holder, "holder"), Shape.OPEN_SET, null, null);
         }
     }
 
     /** After {@link SetSteps#of}: the class that is the set. */
     public static final class SetHolderStep<E> {
 
-        private final String id;
+        private final Key key;
         private final Class<E> element;
 
-        private SetHolderStep(String id, Class<E> element) {
-            this.id = id;
+        private SetHolderStep(Key key, Class<E> element) {
+            this.key = key;
             this.element = element;
         }
 
         /** The class {@code holder} — {@code "Pictures"} — created empty when a project has none. */
         public Reason<E> in(String holder) {
-            return new Reason<>(id, requireText(holder, "holder"), Shape.OPEN_SET, element, null);
+            return new Reason<>(key, requireText(holder, "holder"), Shape.OPEN_SET, element, null);
         }
     }
 
     /** The last step: the sentence shown when the canvas refuses an edit. */
     public static final class Reason<T> {
 
-        private final String id;
+        private final Key key;
         private final String holder;
         private final Shape shape;
         private final Class<T> type;
         private final T initial;
 
-        private Reason(String id, String holder, Shape shape, Class<T> type, T initial) {
-            this.id = id;
+        private Reason(Key key, String holder, Shape shape, Class<T> type, T initial) {
+            this.key = key;
             this.holder = holder;
             this.shape = shape;
             this.type = type;
@@ -284,7 +385,7 @@ public final class ManagedValue<T> {
 
         /** What owns this value and where to change it instead. */
         public ManagedValue<T> because(String reason) {
-            return new ManagedValue<>(id, requireText(reason, "reason"), holder, shape, type, initial);
+            return new ManagedValue<>(key, requireText(reason, "reason"), holder, shape, type, initial);
         }
     }
 
@@ -308,6 +409,6 @@ public final class ManagedValue<T> {
 
     @Override
     public String toString() {
-        return "ManagedValue[" + id + (holder == null ? "" : " in " + holder) + "]";
+        return "ManagedValue[" + key.id() + (holder == null ? "" : " in " + holder) + "]";
     }
 }

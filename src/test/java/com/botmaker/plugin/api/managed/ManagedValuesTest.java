@@ -3,6 +3,10 @@ package com.botmaker.plugin.api.managed;
 import com.botmaker.plugin.api.source.ManagedValue;
 import org.junit.jupiter.api.Test;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -209,6 +213,127 @@ class ManagedValuesTest {
         ManagedValues.install(OneThrows.class);
 
         assertEquals(List.of("survives=installed anyway"), taken);
+    }
+
+    /** A plugin's own marker, as {@link ManagedMarker} asks for it: its {@code value()} an enum nested in it. */
+    @ManagedMarker
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.METHOD})
+    public @interface TestValue {
+
+        Id value();
+
+        enum Id { GREETING, FAREWELL, SET }
+    }
+
+    static final class Typed {
+
+        @TestValue(TestValue.Id.GREETING)
+        public static String greeting() {
+            return "hello";
+        }
+
+        @TestValue(TestValue.Id.FAREWELL)
+        public static String farewell() {
+            return "bye";
+        }
+    }
+
+    @Test
+    void aTypedIdIsTheEnumsBinaryNameAndTheConstant() {
+        ManagedValue<String> greeting = ManagedValue.method(TestValue.Id.GREETING).in("Values")
+                .holds(String.class, "").because("Mine.");
+        ManagedValue<String> set = ManagedValue.openSet(TestValue.Id.SET).of(String.class).in("Set")
+                .because("Mine.");
+
+        String ids = TestValue.Id.class.getName();
+        assertEquals(ids + ".GREETING", greeting.id());
+        assertEquals(TestValue.class.getName(), greeting.marker());
+        assertEquals(ids + ".SET", set.id());
+        assertEquals(TestValue.class.getName(), set.marker());
+        assertNull(text("test.untyped").marker());
+    }
+
+    @Test
+    void aMethodMarkedWithAPluginsAnnotationReachesWhoeverClaimedItsConstant() {
+        List<String> taken = new ArrayList<>();
+        ManagedValues.claim(ManagedValue.method(TestValue.Id.GREETING).in("Values").holds(String.class, "")
+                .because("Mine."), value -> taken.add("greeting=" + value));
+
+        ManagedValues.install(Typed.class);
+
+        // FAREWELL is unclaimed: reported, never thrown.
+        assertEquals(List.of("greeting=hello"), taken);
+    }
+
+    enum Loose { FLOW }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface Unmarked {
+
+        Id value();
+
+        enum Id { FLOW }
+    }
+
+    @ManagedMarker
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface WrongElement {
+
+        String value();
+
+        enum Id { FLOW }
+    }
+
+    /** Class retention, the default: declared fine, and a bot's runtime would never see it. */
+    @ManagedMarker
+    @interface NotAtRuntime {
+
+        Id value();
+
+        enum Id { FLOW }
+    }
+
+    @ManagedMarker
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.METHOD)
+    @interface MethodsOnly {
+
+        Id value();
+
+        enum Id { PICTURES }
+    }
+
+    @Test
+    void aTypedIdMustBeAConstantOfTheEnumInAMarkedAnnotation() {
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.method(Loose.FLOW));
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.method(Unmarked.Id.FLOW));
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(WrongElement.Id.FLOW));
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.method(NotAtRuntime.Id.FLOW));
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(MethodsOnly.Id.PICTURES));
+        ManagedValue.method(MethodsOnly.Id.PICTURES);
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.method((Enum<?>) null));
+    }
+
+    static final class Both {
+
+        @Managed("test.stale")
+        @TestValue(TestValue.Id.SET)
+        public static String both() {
+            return "typed wins";
+        }
+    }
+
+    @Test
+    void aTypedIdWinsOverAStaleManagedBesideIt() {
+        List<String> taken = new ArrayList<>();
+        ManagedValues.claim(ManagedValue.method(TestValue.Id.SET).in("Values").holds(String.class, "")
+                .because("Mine."), taken::add);
+        ManagedValues.claim(text("test.stale"), value -> taken.add("stale=" + value));
+
+        ManagedValues.install(Both.class);
+
+        assertEquals(List.of("typed wins"), taken);
     }
 
     @Test

@@ -56,6 +56,12 @@ import java.lang.annotation.Target;
  * declaration for. The difference is whether the rest of the bot names the parts: {@code Pictures.COLLECT}
  * is written at its use sites, and a flow's activities are not.
  *
+ * <h2>A typed id instead</h2>
+ *
+ * <p>A plugin may give its values typed ids — its own annotation, marked {@link ManagedMarker}, whose
+ * {@code value()} is an enum constant — so a bot writes {@code @SdkValue(SdkValue.Id.FLOW)} and javac checks
+ * it. That is where managed ids are going; this annotation is read beside it until the plugins move.
+ *
  * <h2>Why the id is a string</h2>
  *
  * <p>It is a <b>persisted identity</b>, paired with the same string on the plugin's side
