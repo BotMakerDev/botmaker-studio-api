@@ -1,11 +1,14 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.managed.ManagedMarker;
 import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.source.ManagedValue;
 import com.botmaker.plugin.api.value.PluginType;
 import org.junit.jupiter.api.Test;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -16,8 +19,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DeclaredPluginTest {
 
-    static final ManagedValue<String> NOTE = ManagedValue.method("note").in("Notes").holds(String.class, "")
-            .because("Mine.");
+    @ManagedMarker
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface NoteValue {
+
+        Id value();
+
+        enum Id { NOTE }
+    }
+
+    static final ManagedValue<String> NOTE = ManagedValue.method(NoteValue.Id.NOTE).in("Notes")
+            .holds(String.class, "").because("Mine.");
 
     static final class Declared extends DeclaredPlugin {
         Declared(AtomicInteger asked) {

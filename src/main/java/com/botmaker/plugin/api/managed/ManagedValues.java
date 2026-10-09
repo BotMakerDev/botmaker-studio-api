@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
- * Hands a bot's {@code @Managed} values to the plugins that own them, at run time, so no bot writes an
+ * Hands a bot's managed values to the plugins that own them, at run time, so no bot writes an
  * {@code install()}.
  *
  * <pre>{@code
@@ -27,9 +27,9 @@ import java.util.function.Consumer;
  *
  * <h2>Why it is here, the one class in this module that is not an interface or a record</h2>
  *
- * <p>It is the other half of {@link Managed}: the annotation says which method holds a value, and this says
- * who takes it when the bot starts. Every plugin that puts {@code @Managed} in a bot already brings this
- * module at {@code compile}, so here the runtime costs nobody a dependency.
+ * <p>It is the other half of {@link ManagedMarker}: a plugin's marked annotation says which method holds a
+ * value, and this says who takes it when the bot starts. Every plugin that puts its marker in a bot already
+ * brings this module at {@code compile}, so here the runtime costs nobody a dependency.
  *
  * <p>The bot still <b>names</b> each values class, because that is a fact only the bot has and one javac can
  * check. A {@code META-INF/services} entry or a package walked by convention would be a second statement of
@@ -38,7 +38,7 @@ import java.util.function.Consumer;
  * <h2>Claim ordering</h2>
  *
  * <p>A plugin claims before {@link #install} runs — from its entry point, or from the static initialiser of
- * a type its {@code @Managed} methods return. The last claim on an id wins, so claiming twice is harmless.
+ * a type its marked methods return. The last claim on an id wins, so claiming twice is harmless.
  */
 public final class ManagedValues {
 
@@ -49,18 +49,16 @@ public final class ManagedValues {
 
     /**
      * Says that {@code sink} takes the value of every method a bot marks with {@code value}'s id —
-     * {@code @SdkValue(SdkValue.Id.FLOW)} for a typed one, {@code @Managed("<id>")} otherwise.
+     * {@code @SdkValue(SdkValue.Id.FLOW)}.
      *
      * <p>Typed by the declaration: a value that is not a {@code T} never reaches the sink and is reported by
-     * {@link #install} instead. An open set ({@link ManagedValue#isOpenSet()}) has no value and is ignored, as
-     * is a value declared with no type by a plugin built against an older contract.
+     * {@link #install} instead. An open set ({@link ManagedValue#isOpenSet()}) has no value and is ignored.
      */
     public static <T> void claim(ManagedValue<T> value, Consumer<? super T> sink) {
-        if (value == null || value.isOpenSet() || value.type() == null || value.id() == null
-                || value.id().isBlank() || sink == null) {
+        if (value == null || value.isOpenSet() || sink == null) {
             return;
         }
-        SINKS.put(value.id().strip(), held -> {
+        SINKS.put(value.id(), held -> {
             T typed = value.cast(held);
             if (typed == null) {
                 throw new ClassCastException((held == null ? "null" : held.getClass().getName())
@@ -71,11 +69,11 @@ public final class ManagedValues {
     }
 
     /**
-     * Invokes every managed method on each class — marked {@code @Managed} or with a plugin's
-     * {@link ManagedMarker} annotation — and gives what it returns to whoever claimed its id.
+     * Invokes every managed method on each class — marked with a plugin's {@link ManagedMarker} annotation —
+     * and gives what it returns to whoever claimed its id.
      *
-     * <p>Only a {@code public static} method taking no arguments is a value, which is {@link Managed}'s own
-     * rule. A marked type is not installed: it holds constants the bot names where it uses them.
+     * <p>Only a {@code public static} method taking no arguments is a value, which is {@link ManagedMarker}'s
+     * own rule. A marked type is not installed: it holds constants the bot names where it uses them.
      *
      * <p><b>Nothing here throws.</b> An unclaimed id means that plugin is not on this bot's classpath, and a
      * method that throws is the bot author's own code failing; both are one line on {@code System.err} naming
@@ -125,20 +123,10 @@ public final class ManagedValues {
     }
 
     /**
-     * The id {@code element} is marked with, or null: a plugin's {@link ManagedMarker} annotation answers
-     * {@link ManagedValue#idOf} its constant, and only without one does {@code @Managed} answer its text.
+     * The id {@code element} is marked with — {@link ManagedValue#idOf} the constant its plugin's
+     * {@link ManagedMarker} annotation holds — or null.
      */
     static String idOn(AnnotatedElement element) {
-        String typed = typedIdOn(element);
-        if (typed != null) {
-            return typed;
-        }
-        Managed managed = element.getAnnotation(Managed.class);
-        return managed == null || managed.value() == null || managed.value().isBlank() ? null
-                : managed.value().strip();
-    }
-
-    private static String typedIdOn(AnnotatedElement element) {
         for (Annotation annotation : element.getAnnotations()) {
             Class<? extends Annotation> marker = annotation.annotationType();
             if (!marker.isAnnotationPresent(ManagedMarker.class)) {
@@ -163,12 +151,12 @@ public final class ManagedValues {
             value = method.invoke(null);
         } catch (ReflectiveOperationException | RuntimeException | LinkageError failed) {
             System.err.println("[values] " + type.getSimpleName() + "." + method.getName()
-                    + "() threw, so '" + id.strip() + "' is not installed: " + cause(failed));
+                    + "() threw, so '" + id + "' is not installed: " + cause(failed));
             return;
         }
-        Consumer<Object> sink = SINKS.get(id.strip());
+        Consumer<Object> sink = SINKS.get(id);
         if (sink == null) {
-            System.err.println("[values] nothing claims '" + id.strip() + "' — the plugin that reads it is "
+            System.err.println("[values] nothing claims '" + id + "' — the plugin that reads it is "
                     + "not on this bot's classpath, so " + type.getSimpleName() + "." + method.getName()
                     + "() is ignored.");
             return;
@@ -176,7 +164,7 @@ public final class ManagedValues {
         try {
             sink.accept(value);
         } catch (RuntimeException | LinkageError refused) {
-            System.err.println("[values] the plugin that claims '" + id.strip() + "' refused the value from "
+            System.err.println("[values] the plugin that claims '" + id + "' refused the value from "
                     + type.getSimpleName() + "." + method.getName() + "(): " + cause(refused));
         }
     }

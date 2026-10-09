@@ -17,25 +17,40 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * What a bot's {@code main} gets for naming a plugin's values class, and what it is spared. Moved from
- * {@code botmaker-plugin-basics} with the class (2026-09-28), and typed by the declaration since.
+ * {@code botmaker-plugin-basics} with the class (2026-09-28), typed by the declaration since, and marked with a
+ * plugin's own annotation since 2026-10-09.
  *
- * <p>Every test claims an <b>id of its own</b> rather than resetting the registry between them: the claims are
- * static because a plugin registers them once, and distinct ids assert that two plugins' ids do not collide.
+ * <p>Every test claims a <b>constant of its own</b> rather than resetting the registry between them: the claims
+ * are static because a plugin registers them once.
  */
 class ManagedValuesTest {
 
-    private static ManagedValue<String> text(String id) {
+    /** A plugin's own marker, as {@link ManagedMarker} asks for it: its {@code value()} an enum nested in it. */
+    @ManagedMarker
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.METHOD})
+    public @interface TestValue {
+
+        Id value();
+
+        enum Id {
+            FLOW, CAPTURE, WRONG_TYPE, NOBODY_READS_THIS, NOT_PUBLIC, NOT_STATIC, TAKES_ARGUMENTS, PICTURES, OPENED,
+            INTS, SET, THROWS, SURVIVES, GREETING, FAREWELL
+        }
+    }
+
+    private static ManagedValue<String> text(TestValue.Id id) {
         return ManagedValue.method(id).in("Values").holds(String.class, "").because("Mine.");
     }
 
     static final class Values {
 
-        @Managed("test.flow")
+        @TestValue(TestValue.Id.FLOW)
         public static String flow() {
             return "the flow";
         }
 
-        @Managed("test.capture")
+        @TestValue(TestValue.Id.CAPTURE)
         public static String capture() {
             return "the capture source";
         }
@@ -44,8 +59,8 @@ class ManagedValuesTest {
     @Test
     void everyManagedMethodReachesWhoeverClaimedItsId() {
         List<String> taken = new ArrayList<>();
-        ManagedValues.claim(text("test.flow"), value -> taken.add("flow=" + value));
-        ManagedValues.claim(text("test.capture"), value -> taken.add("capture=" + value));
+        ManagedValues.claim(text(TestValue.Id.FLOW), value -> taken.add("flow=" + value));
+        ManagedValues.claim(text(TestValue.Id.CAPTURE), value -> taken.add("capture=" + value));
 
         ManagedValues.install(Values.class);
 
@@ -55,7 +70,7 @@ class ManagedValuesTest {
 
     static final class WrongType {
 
-        @Managed("test.wrong-type")
+        @TestValue(TestValue.Id.WRONG_TYPE)
         public static Integer count() {
             return 3;
         }
@@ -64,7 +79,7 @@ class ManagedValuesTest {
     @Test
     void aValueOfAnotherTypeNeverReachesTheSink() {
         List<Object> taken = new ArrayList<>();
-        ManagedValues.claim(text("test.wrong-type"), taken::add);
+        ManagedValues.claim(text(TestValue.Id.WRONG_TYPE), taken::add);
 
         ManagedValues.install(WrongType.class);
 
@@ -73,7 +88,7 @@ class ManagedValuesTest {
 
     static final class Unclaimed {
 
-        @Managed("test.nobody-reads-this")
+        @TestValue(TestValue.Id.NOBODY_READS_THIS)
         public static String value() {
             return "ignored";
         }
@@ -87,17 +102,17 @@ class ManagedValuesTest {
     @SuppressWarnings("unused")
     static final class NotValues {
 
-        @Managed("test.not-public")
+        @TestValue(TestValue.Id.NOT_PUBLIC)
         static String hidden() {
             return "no";
         }
 
-        @Managed("test.not-static")
+        @TestValue(TestValue.Id.NOT_STATIC)
         public String perInstance() {
             return "no";
         }
 
-        @Managed("test.takes-arguments")
+        @TestValue(TestValue.Id.TAKES_ARGUMENTS)
         public static String computed(String argument) {
             return argument;
         }
@@ -109,8 +124,9 @@ class ManagedValuesTest {
 
     @Test
     void onlyAPublicStaticNoArgumentMethodIsAValue() {
-        List<String> taken = new ArrayList<>();
-        for (String id : List.of("test.not-public", "test.not-static", "test.takes-arguments")) {
+        List<TestValue.Id> taken = new ArrayList<>();
+        for (TestValue.Id id : List.of(TestValue.Id.NOT_PUBLIC, TestValue.Id.NOT_STATIC,
+                TestValue.Id.TAKES_ARGUMENTS)) {
             ManagedValues.claim(text(id), value -> taken.add(id));
         }
 
@@ -119,27 +135,27 @@ class ManagedValuesTest {
         assertTrue(taken.isEmpty(), () -> "installed something that is not a value: " + taken);
     }
 
-    @Managed("test.pictures")
+    @TestValue(TestValue.Id.PICTURES)
     static final class Pictures {
 
         public static final String COLLECT = "collect.png";
     }
 
     @Test
-    void managedOnATypeInstallsNothingAndAnOpenSetCannotBeClaimed() {
+    void aMarkedTypeInstallsNothingAndAnOpenSetCannotBeClaimed() {
         List<Object> taken = new ArrayList<>();
-        ManagedValues.claim(ManagedValue.openSet("test.pictures").of(String.class).in("Pictures").because("Mine."),
-                taken::add);
-        ManagedValues.claim(text("test.pictures"), taken::add);
+        ManagedValues.claim(ManagedValue.openSet(TestValue.Id.PICTURES).of(String.class).in("Pictures")
+                .because("Mine."), taken::add);
+        ManagedValues.claim(text(TestValue.Id.PICTURES), taken::add);
 
         ManagedValues.install(Pictures.class);
 
-        assertTrue(taken.isEmpty(), () -> "installed a type-level @Managed: " + taken);
+        assertTrue(taken.isEmpty(), () -> "installed a marked type: " + taken);
     }
 
     static final class Opened {
 
-        @Managed("test.opened")
+        @TestValue(TestValue.Id.OPENED)
         public static String opened() {
             return "opened, never created";
         }
@@ -148,7 +164,7 @@ class ManagedValuesTest {
     /** A value the host may only open is still a method's value: it was taken for an open set until 2026-10-05. */
     @Test
     void aValueTheHostNeverCreatesIsStillClaimed() {
-        ManagedValue<String> opened = ManagedValue.method("test.opened").openedOnly().holds(String.class)
+        ManagedValue<String> opened = ManagedValue.method(TestValue.Id.OPENED).openedOnly().holds(String.class)
                 .because("Mine.");
         List<String> taken = new ArrayList<>();
         ManagedValues.claim(opened, taken::add);
@@ -159,31 +175,15 @@ class ManagedValuesTest {
         assertEquals(List.of("opened, never created"), taken);
     }
 
-    /** The 0.3 steps a released plugin's static initialiser calls still link, untyped and never claimed. */
-    @Test
-    @SuppressWarnings("deprecation")
-    void theUntypedStepsOfAnOlderContractStillBuildAValue() {
-        ManagedValue<Void> set = ManagedValue.openSet("test.old-set").in("Old").because("Mine.");
-        ManagedValue<Void> opened = ManagedValue.method("test.old-opened").notCreated().because("Mine.");
-        List<Object> taken = new ArrayList<>();
-        ManagedValues.claim(opened, taken::add);
-
-        assertTrue(set.isOpenSet());
-        assertNull(set.type());
-        assertNull(set.cast("x"));
-        assertEquals(ManagedValue.Shape.METHOD, opened.shape());
-        assertNull(opened.type());
-        assertTrue(taken.isEmpty());
-    }
-
     @Test
     void aSetOfPrimitivesIsRefusedAsItIsDeclared() {
-        assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet("test.ints").of(int.class));
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.INTS).of(int.class));
     }
 
     @Test
     void anOpenSetKnowsWhatEachConstantIs() {
-        ManagedValue<String> set = ManagedValue.openSet("test.set").of(String.class).in("Set").because("Mine.");
+        ManagedValue<String> set = ManagedValue.openSet(TestValue.Id.SET).of(String.class).in("Set")
+                .because("Mine.");
 
         assertTrue(set.isOpenSet());
         assertEquals(String.class, set.type());
@@ -193,12 +193,12 @@ class ManagedValuesTest {
 
     static final class OneThrows {
 
-        @Managed("test.throws")
+        @TestValue(TestValue.Id.THROWS)
         public static String broken() {
             throw new IllegalStateException("the bot author's own code");
         }
 
-        @Managed("test.survives")
+        @TestValue(TestValue.Id.SURVIVES)
         public static String fine() {
             return "installed anyway";
         }
@@ -207,23 +207,12 @@ class ManagedValuesTest {
     @Test
     void aValueThatThrowsCostsOnlyItself() {
         List<String> taken = new ArrayList<>();
-        ManagedValues.claim(text("test.throws"), value -> taken.add("throws=" + value));
-        ManagedValues.claim(text("test.survives"), value -> taken.add("survives=" + value));
+        ManagedValues.claim(text(TestValue.Id.THROWS), value -> taken.add("throws=" + value));
+        ManagedValues.claim(text(TestValue.Id.SURVIVES), value -> taken.add("survives=" + value));
 
         ManagedValues.install(OneThrows.class);
 
         assertEquals(List.of("survives=installed anyway"), taken);
-    }
-
-    /** A plugin's own marker, as {@link ManagedMarker} asks for it: its {@code value()} an enum nested in it. */
-    @ManagedMarker
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.TYPE, ElementType.METHOD})
-    public @interface TestValue {
-
-        Id value();
-
-        enum Id { GREETING, FAREWELL, SET }
     }
 
     static final class Typed {
@@ -240,25 +229,23 @@ class ManagedValuesTest {
     }
 
     @Test
-    void aTypedIdIsTheEnumsBinaryNameAndTheConstant() {
-        ManagedValue<String> greeting = ManagedValue.method(TestValue.Id.GREETING).in("Values")
-                .holds(String.class, "").because("Mine.");
+    void anIdIsTheEnumsBinaryNameAndTheConstant() {
+        ManagedValue<String> greeting = text(TestValue.Id.GREETING);
         ManagedValue<String> set = ManagedValue.openSet(TestValue.Id.SET).of(String.class).in("Set")
                 .because("Mine.");
 
         String ids = TestValue.Id.class.getName();
         assertEquals(ids + ".GREETING", greeting.id());
+        assertTrue(ids.endsWith("$TestValue$Id"), ids);
         assertEquals(TestValue.class.getName(), greeting.marker());
         assertEquals(ids + ".SET", set.id());
         assertEquals(TestValue.class.getName(), set.marker());
-        assertNull(text("test.untyped").marker());
     }
 
     @Test
     void aMethodMarkedWithAPluginsAnnotationReachesWhoeverClaimedItsConstant() {
         List<String> taken = new ArrayList<>();
-        ManagedValues.claim(ManagedValue.method(TestValue.Id.GREETING).in("Values").holds(String.class, "")
-                .because("Mine."), value -> taken.add("greeting=" + value));
+        ManagedValues.claim(text(TestValue.Id.GREETING), value -> taken.add("greeting=" + value));
 
         ManagedValues.install(Typed.class);
 
@@ -305,35 +292,14 @@ class ManagedValuesTest {
     }
 
     @Test
-    void aTypedIdMustBeAConstantOfTheEnumInAMarkedAnnotation() {
+    void anIdMustBeAConstantOfTheEnumInAMarkedAnnotation() {
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.method(Loose.FLOW));
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.method(Unmarked.Id.FLOW));
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(WrongElement.Id.FLOW));
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.method(NotAtRuntime.Id.FLOW));
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(MethodsOnly.Id.PICTURES));
         ManagedValue.method(MethodsOnly.Id.PICTURES);
-        assertThrows(IllegalArgumentException.class, () -> ManagedValue.method((Enum<?>) null));
-    }
-
-    static final class Both {
-
-        @Managed("test.stale")
-        @TestValue(TestValue.Id.SET)
-        public static String both() {
-            return "typed wins";
-        }
-    }
-
-    @Test
-    void aTypedIdWinsOverAStaleManagedBesideIt() {
-        List<String> taken = new ArrayList<>();
-        ManagedValues.claim(ManagedValue.method(TestValue.Id.SET).in("Values").holds(String.class, "")
-                .because("Mine."), taken::add);
-        ManagedValues.claim(text("test.stale"), value -> taken.add("stale=" + value));
-
-        ManagedValues.install(Both.class);
-
-        assertEquals(List.of("typed wins"), taken);
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.method(null));
     }
 
     @Test

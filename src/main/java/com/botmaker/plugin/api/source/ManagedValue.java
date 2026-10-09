@@ -1,7 +1,6 @@
 package com.botmaker.plugin.api.source;
 
 import com.botmaker.plugin.api.managed.ManagedMarker;
-import com.botmaker.plugin.api.meta.ReplacedBy;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -18,11 +17,10 @@ import java.util.Arrays;
  * then exists in exactly one place, and {@link #type()} is what lets the runtime hand the sink a {@code T} and
  * the window read one without a cast.
  *
- * <p><b>What matches</b>: a method or type in the bot's own Java marked with this value's id. A typed id —
- * {@link #method(Enum)}, {@link #openSet(Enum)} — is the plugin's own {@link ManagedMarker} annotation,
- * {@code @SdkValue(SdkValue.Id.FLOW)}, which javac checks; a string id is
- * {@code @Managed("<id>")} ({@code com.botmaker.plugin.api.managed.Managed}), which it does not. A bot has
- * either on its classpath through the plugin that brings it at {@code compile}.
+ * <p><b>What matches</b>: a method or type in the bot's own Java marked with this value's id — the plugin's
+ * own {@link ManagedMarker} annotation holding a constant of the enum nested in it,
+ * {@code @SdkValue(SdkValue.Id.FLOW)}, which javac checks. A bot has the annotation on its classpath through
+ * the plugin that brings it at {@code compile}.
  *
  * <p><b>Two shapes, one marker.</b> On a <b>method</b> it is a fixed value the plugin shipped a declaration
  * for — the host rewrites the expression that method returns and never adds or removes a method. On a
@@ -32,9 +30,9 @@ import java.util.Arrays;
  * a value is, is its {@link #shape()}.
  *
  * <p><b>Where it goes when it is missing.</b> A project that never had the plugin's file has no
- * {@code @Managed} method to open, and nothing else would ever write one. {@code holder} and {@code type} are
+ * marked method to open, and nothing else would ever write one. {@code holder} and {@code type} are
  * what the host needs to write it once ({@link PluginValues#create}, or on every bind): the class the value
- * lives in, under {@code plugins/<last id segment>/}, and the type the method returns. What the method first
+ * lives in, under {@code plugins/<last segment of the plugin's id>/}, and the type the method returns. What the method first
  * returns is {@code initial}, written by the host's grammar as any value is; with none, the type's own fresh
  * value — which a type declared only by its parts ({@code ComponentType}) has not got. A value with no holder
  * can only be opened, never created.
@@ -50,7 +48,7 @@ import java.util.Arrays;
  */
 public final class ManagedValue<T> {
 
-    /** Where the {@code @Managed} annotation goes, and so what the host may change. */
+    /** Where the marker annotation goes, and so what the host may change. */
     public enum Shape {
         /** On a method: one value, the expression the method returns. */
         METHOD("method", "a managed value"),
@@ -76,12 +74,8 @@ public final class ManagedValue<T> {
         }
     }
 
-    /** The id and, for a typed one, the binary name of the plugin's marker annotation. */
+    /** The id and the binary name of the plugin's marker annotation. */
     private record Key(String id, String marker) {
-
-        static Key of(String id) {
-            return new Key(requireText(id, "id"), null);
-        }
 
         static Key of(Enum<?> constant, ElementType on) {
             if (constant == null) throw new IllegalArgumentException("A managed value needs an id");
@@ -105,18 +99,14 @@ public final class ManagedValue<T> {
         this.initial = initial;
     }
 
-    /**
-     * The id: for a typed value {@link #idOf} its constant — {@code "com.botmaker.sdk.api.bot.SdkValue$Id.FLOW"} —
-     * and otherwise the string given — {@code "flow"}.
-     */
+    /** The id: {@link #idOf} its constant — {@code "com.botmaker.sdk.api.bot.SdkValue$Id.FLOW"}. */
     public String id() {
         return key.id();
     }
 
     /**
      * The binary name of the plugin's {@link ManagedMarker} annotation a bot marks this value with —
-     * {@code "com.botmaker.sdk.api.bot.SdkValue"} — or null for a value declared by a string id, which a bot
-     * marks {@code @Managed("<id>")}.
+     * {@code "com.botmaker.sdk.api.bot.SdkValue"}.
      */
     public String marker() {
         return key.marker();
@@ -186,10 +176,7 @@ public final class ManagedValue<T> {
         return shape;
     }
 
-    /**
-     * The class the {@code @Managed} method returns, or — for an open set — the class of each constant. Null
-     * only for a value declared through a deprecated untyped step by a plugin built against contract 0.3.
-     */
+    /** The class the marked method returns, or — for an open set — the class of each constant. */
     public Class<T> type() {
         return type;
     }
@@ -200,23 +187,16 @@ public final class ManagedValue<T> {
     }
 
     /**
-     * <b>The way to declare a method-shaped value</b>, step by step:
+     * <b>The way to declare a method-shaped value</b>, step by step. {@code id} is a constant of the enum nested
+     * in the plugin's {@link ManagedMarker} annotation, which a bot marks the method with —
+     * {@code @SdkValue(SdkValue.Id.FLOW)}:
      *
      * <pre>{@code
-     * public static final ManagedValue<Flow> FLOW = ManagedValue.method("flow")
+     * public static final ManagedValue<Flow> FLOW = ManagedValue.method(SdkValue.Id.FLOW)
      *         .in("Sdk")                              // the class that holds it | .openedOnly()
      *         .holds(Flow.class, Flow.NONE)           // what it returns, and what a created one starts as
      *         .because("This is the bot's activity flow. Draw it in 🔀 Activity Flow.");
      * }</pre>
-     */
-    public static MethodSteps method(String id) {
-        return new MethodSteps(Key.of(id));
-    }
-
-    /**
-     * A method-shaped value with a typed id: a constant of the enum nested in the plugin's
-     * {@link ManagedMarker} annotation, which a bot marks the method with — {@code @SdkValue(SdkValue.Id.FLOW)}.
-     * Otherwise as {@link #method(String)}.
      *
      * @throws IllegalArgumentException when the enum is not nested in such an annotation
      */
@@ -225,23 +205,15 @@ public final class ManagedValue<T> {
     }
 
     /**
-     * <b>The way to declare an open set</b> — a class of constants the user grows, {@code @Managed} on the
-     * type, created empty in the holder:
+     * <b>The way to declare an open set</b> — a class of constants the user grows, which a bot marks the holder
+     * class with — {@code @SdkValue(SdkValue.Id.PICTURES)} — created empty in the holder:
      *
      * <pre>{@code
-     * public static final ManagedValue<ImageTemplate> PICTURES = ManagedValue.openSet("pictures")
+     * public static final ManagedValue<ImageTemplate> PICTURES = ManagedValue.openSet(SdkValue.Id.PICTURES)
      *         .of(ImageTemplate.class)                // the class of each constant
      *         .in("Pictures")
      *         .because("Picture constants are managed in 🖼 Manage Pictures.");
      * }</pre>
-     */
-    public static SetSteps openSet(String id) {
-        return new SetSteps(Key.of(id));
-    }
-
-    /**
-     * An open set with a typed id, which a bot marks the holder class with —
-     * {@code @SdkValue(SdkValue.Id.PICTURES)}. Otherwise as {@link #openSet(String)}.
      *
      * @throws IllegalArgumentException when the enum is not nested in a {@link ManagedMarker} annotation
      */
@@ -266,16 +238,6 @@ public final class ManagedValue<T> {
         /** Somewhere the host may open and never create: {@code .openedOnly().holds(T.class)}. */
         public OpenedStep openedOnly() {
             return new OpenedStep(key);
-        }
-
-        /**
-         * @deprecated untyped — the value it builds has no {@link #type()}, so the runtime never claims it. Kept
-         *             so a plugin built against contract 0.3 still links; use {@link #openedOnly()}.
-         */
-        @Deprecated
-        @ReplacedBy(note = "Declare what the method returns: .openedOnly().holds(T.class).")
-        public Reason<Void> notCreated() {
-            return new Reason<>(key, null, Shape.METHOD, null, null);
         }
     }
 
@@ -337,16 +299,6 @@ public final class ManagedValue<T> {
             }
             return new SetHolderStep<>(key, element);
         }
-
-        /**
-         * @deprecated untyped, kept so a plugin built against contract 0.3 still links; a host checks nothing
-         *             it adds. Say what each constant is with {@link #of} first.
-         */
-        @Deprecated
-        @ReplacedBy(note = "Declare what each constant is: .of(E.class).in(holder).")
-        public Reason<Void> in(String holder) {
-            return new Reason<>(key, requireText(holder, "holder"), Shape.OPEN_SET, null, null);
-        }
     }
 
     /** After {@link SetSteps#of}: the class that is the set. */
@@ -394,7 +346,7 @@ public final class ManagedValue<T> {
         return text;
     }
 
-    /** Whether this is an open set — {@code @Managed} on a type — rather than one method's value. */
+    /** Whether this is an open set — the marker on a type — rather than one method's value. */
     public boolean isOpenSet() {
         return shape == Shape.OPEN_SET;
     }
@@ -404,7 +356,7 @@ public final class ManagedValue<T> {
      * sink or a window reads what the host or the bot handed over without writing a cast of its own.
      */
     public T cast(Object value) {
-        return type != null && type.isInstance(value) ? type.cast(value) : null;
+        return type.isInstance(value) ? type.cast(value) : null;
     }
 
     @Override

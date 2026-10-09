@@ -58,7 +58,7 @@ import java.lang.annotation.Target;
  * <p>{@link #min} and {@link #max} are numbers, not strings a plugin's codec would parse: no plugin parses
  * anything.
  *
- * @see com.botmaker.plugin.api.managed.Managed the same idea for a value a <em>plugin's</em> window keeps
+ * @see com.botmaker.plugin.api.managed.ManagedMarker the same idea for a value a <em>plugin's</em> window keeps
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

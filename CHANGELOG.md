@@ -24,8 +24,15 @@ is allowed to make. Additions arrive as `default` methods.
   `@SdkValue(SdkValue.Id.FLOW)` and a misspelt id no longer compiles. `ManagedValue.method(Enum)` and
   `openSet(Enum)` declare one (refused unless the enum sits in such an annotation); its `id()` is
   `ManagedValue.idOf(constant)` — the enum's binary name and the constant — and `marker()` names the
-  annotation. `ManagedValues.install` hands a method marked either way to its claimer. `@Managed("<id>")`
-  is still read; it goes when the plugins have moved.
+  annotation. `ManagedValues.install` hands a marked method to its claimer.
+
+### Removed
+
+- **`@Managed` and string managed ids** (breaking). `com.botmaker.plugin.api.managed.Managed`,
+  `ManagedValue.method(String)`, `ManagedValue.openSet(String)` and the contract-0.3 untyped steps
+  (`MethodSteps.notCreated()`, `SetSteps.in(String)`) are gone, and `ManagedValues.install` no longer reads
+  `@Managed`. A plugin declares each value by a constant of its own `@ManagedMarker` annotation's enum, and a
+  bot marks it with that annotation. `ManagedValue.type()` and `marker()` are never null now.
 
 ### Changed
 
