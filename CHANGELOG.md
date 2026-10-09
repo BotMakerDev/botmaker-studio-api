@@ -19,6 +19,12 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **Enum open sets.** `ManagedValue.openSet(id).ofEnum(Outcome.class, BotConstants::outcome)` declares a set that
+  is an enum of the bot's own implementing the interface `Outcome`, each member a bare constant name. A host adds,
+  renames and removes those constants, creates the holder as an empty enum implementing the interface, and reads
+  `Outcomes.WON` as what the method reference makes of `"WON"` (`ManagedValue.byName`), because it cannot load
+  the bot's enum. `ManagedValue.isEnum()` says which kind a set is. `PluginValues.open(id, member)` answers
+  empty for an enum's constant, and `add` only checks the value it is given.
 - **Withers: a call's parts written as named links.** `DeclaredCall.with(Task::described, Task::note)` and
   `.flag(Task::goesHome, Task::home)` declare links written after the factory —
   `Task.of("Collect").described("Picks up ore").goesHome()` — each only when its part differs from what the

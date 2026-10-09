@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -35,7 +36,7 @@ class ManagedValuesTest {
 
         enum Id {
             FLOW, CAPTURE, WRONG_TYPE, NOBODY_READS_THIS, NOT_PUBLIC, NOT_STATIC, TAKES_ARGUMENTS, PICTURES, OPENED,
-            INTS, SET, THROWS, SURVIVES, GREETING, FAREWELL
+            INTS, SET, ENUM_SET, THROWS, SURVIVES, GREETING, FAREWELL
         }
     }
 
@@ -186,9 +187,43 @@ class ManagedValuesTest {
                 .because("Mine.");
 
         assertTrue(set.isOpenSet());
+        assertFalse(set.isEnum());
+        assertNull(set.byName("X"));
         assertEquals(String.class, set.type());
         assertEquals("x", set.cast("x"));
         assertNull(set.cast(3));
+    }
+
+    /** What a bot's enum constant stands for, made from its name: the element of an enum set. */
+    public interface Label {
+        String name();
+    }
+
+    public record Named(String name) implements Label {}
+
+    public static Label named(String name) {
+        if (name.isBlank()) throw new IllegalArgumentException("no name");
+        return new Named(name);
+    }
+
+    @Test
+    void anEnumSetReadsEachConstantByItsName() {
+        ManagedValue<Label> set = ManagedValue.openSet(TestValue.Id.ENUM_SET)
+                .ofEnum(Label.class, ManagedValuesTest::named).in("Labels").because("Mine.");
+
+        assertTrue(set.isOpenSet());
+        assertTrue(set.isEnum());
+        assertEquals(new Named("WON"), set.byName("WON"));
+        assertNull(set.byName(" "), "a name the plugin refuses reads as nothing");
+        assertNull(set.byName(null));
+    }
+
+    @Test
+    void anEnumSetNeedsAnInterfaceAndAMethodReference() {
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.ENUM_SET)
+                .ofEnum(Named.class, Named::new));
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.ENUM_SET)
+                .ofEnum(Label.class, name -> new Named(name)));
     }
 
     static final class OneThrows {

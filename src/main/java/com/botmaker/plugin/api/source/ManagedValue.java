@@ -1,6 +1,7 @@
 package com.botmaker.plugin.api.source;
 
 import com.botmaker.plugin.api.managed.ManagedMarker;
+import com.botmaker.plugin.api.value.Ref;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -27,7 +28,8 @@ import java.util.Arrays;
  * <b>type</b> it is an open set the user grows — a class of constants the rest of the bot names at its use
  * sites — and the whole class is the plugin's window's, so the canvas may not add to it, rename in it or
  * delete from it. There {@link #type()} is the class of each constant: see {@link #openSet}. Which of the two
- * a value is, is its {@link #shape()}.
+ * a value is, is its {@link #shape()}. An open set is a class of {@code public static final} fields, or an enum
+ * of bare names implementing {@link #type()} ({@link #isEnum()}).
  *
  * <p><b>Where it goes when it is missing.</b> A project that never had the plugin's file has no
  * marked method to open, and nothing else would ever write one. {@code holder} and {@code type} are
@@ -89,14 +91,17 @@ public final class ManagedValue<T> {
     private final Shape shape;
     private final Class<T> type;
     private final T initial;
+    private final Ref.Of1<String, ? extends T> byName;
 
-    private ManagedValue(Key key, String reason, String holder, Shape shape, Class<T> type, T initial) {
+    private ManagedValue(Key key, String reason, String holder, Shape shape, Class<T> type, T initial,
+                         Ref.Of1<String, ? extends T> byName) {
         this.key = key;
         this.reason = reason;
         this.holder = holder;
         this.shape = shape;
         this.type = type;
         this.initial = initial;
+        this.byName = byName;
     }
 
     /** The id: {@link #idOf} its constant — {@code "com.botmaker.sdk.api.bot.SdkValue$Id.FLOW"}. */
@@ -187,6 +192,28 @@ public final class ManagedValue<T> {
     }
 
     /**
+     * Whether this open set is an enum of the bot's ({@link SetSteps#ofEnum}), each member a bare constant
+     * whose name is the whole of it, rather than a class of {@code public static final} fields.
+     */
+    public boolean isEnum() {
+        return byName != null;
+    }
+
+    /**
+     * The value the enum constant {@code name} of this set stands for, made by the plugin from the name alone —
+     * what a host that cannot load the bot's enum reads {@code Outcomes.WON} as. Null when this is no enum set,
+     * the plugin's function refused the name, or it answered something other than {@link #type()}.
+     */
+    public T byName(String name) {
+        if (byName == null || name == null) return null;
+        try {
+            return cast(byName.call(name));
+        } catch (RuntimeException refused) {
+            return null;
+        }
+    }
+
+    /**
      * <b>The way to declare a method-shaped value</b>, step by step. {@code id} is a constant of the enum nested
      * in the plugin's {@link ManagedMarker} annotation, which a bot marks the method with —
      * {@code @SdkValue(SdkValue.Id.FLOW)}:
@@ -213,6 +240,11 @@ public final class ManagedValue<T> {
      *         .of(ImageTemplate.class)                // the class of each constant
      *         .in("Pictures")
      *         .because("Picture constants are managed in 🖼 Manage Pictures.");
+     *
+     * public static final ManagedValue<Outcome> OUTCOMES = ManagedValue.openSet(SdkValue.Id.OUTCOMES)
+     *         .ofEnum(Outcome.class, BotConstants::outcome)  // an enum of bare names: enum Outcomes { WON }
+     *         .in("Outcomes")
+     *         .because("Outcomes are managed in 🔀 Activity Flow.");
      * }</pre>
      *
      * @throws IllegalArgumentException when the enum is not nested in a {@link ManagedMarker} annotation
@@ -253,7 +285,7 @@ public final class ManagedValue<T> {
         /** A method returning a {@code type}, which the host opens and never writes. */
         public <T> Reason<T> holds(Class<T> type) {
             if (type == null) throw new IllegalArgumentException(key.id() + ": no type given");
-            return new Reason<>(key, null, Shape.METHOD, type, null);
+            return new Reason<>(key, null, Shape.METHOD, type, null, null);
         }
     }
 
@@ -274,7 +306,7 @@ public final class ManagedValue<T> {
          */
         public <T> Reason<T> holds(Class<T> type, T initial) {
             if (type == null) throw new IllegalArgumentException(key.id() + ": no type given");
-            return new Reason<>(key, holder, Shape.METHOD, type, initial);
+            return new Reason<>(key, holder, Shape.METHOD, type, initial, null);
         }
     }
 
@@ -297,24 +329,52 @@ public final class ManagedValue<T> {
                 throw new IllegalArgumentException(key.id() + ": a constant is an object; use the boxed class of "
                         + element.getName());
             }
-            return new SetHolderStep<>(key, element);
+            return new SetHolderStep<>(key, element, null);
+        }
+
+        /**
+         * Constants of an enum of the bot's own implementing the interface {@code element}, each a bare name —
+         * {@code public enum Outcomes implements Outcome { WON, LOST }} — which the host creates, adds to,
+         * renames in and removes from as it does a class's fields, and creates as an empty enum implementing
+         * {@code element}.
+         *
+         * <p>A host cannot load the bot's enum, so it reads {@code Outcomes.WON} as what {@code byName} makes of
+         * {@code "WON"}: a value of the plugin's own that equals itself by name, which the type's declaration
+         * writes back and the host spells as that constant. The name is the whole member; nothing else about it
+         * is written, so a plugin derives anything it shows (a label) from the name.
+         *
+         * @param byName a method reference from a constant's name to the value it stands for —
+         *               {@code BotConstants::outcome}
+         * @throws IllegalArgumentException when {@code element} is no interface, or {@code byName} is no method
+         *                                  reference
+         */
+        public <E> SetHolderStep<E> ofEnum(Class<E> element, Ref.Of1<String, ? extends E> byName) {
+            if (element == null) throw new IllegalArgumentException(key.id() + ": no element type given");
+            if (!element.isInterface()) {
+                throw new IllegalArgumentException(key.id() + ": a bot's enum implements its element type, so "
+                        + element.getName() + " must be an interface");
+            }
+            Ref.resolve(byName);
+            return new SetHolderStep<>(key, element, byName);
         }
     }
 
-    /** After {@link SetSteps#of}: the class that is the set. */
+    /** After {@link SetSteps#of} or {@link SetSteps#ofEnum}: the class that is the set. */
     public static final class SetHolderStep<E> {
 
         private final Key key;
         private final Class<E> element;
+        private final Ref.Of1<String, ? extends E> byName;
 
-        private SetHolderStep(Key key, Class<E> element) {
+        private SetHolderStep(Key key, Class<E> element, Ref.Of1<String, ? extends E> byName) {
             this.key = key;
             this.element = element;
+            this.byName = byName;
         }
 
         /** The class {@code holder} — {@code "Pictures"} — created empty when a project has none. */
         public Reason<E> in(String holder) {
-            return new Reason<>(key, requireText(holder, "holder"), Shape.OPEN_SET, element, null);
+            return new Reason<>(key, requireText(holder, "holder"), Shape.OPEN_SET, element, null, byName);
         }
     }
 
@@ -326,18 +386,21 @@ public final class ManagedValue<T> {
         private final Shape shape;
         private final Class<T> type;
         private final T initial;
+        private final Ref.Of1<String, ? extends T> byName;
 
-        private Reason(Key key, String holder, Shape shape, Class<T> type, T initial) {
+        private Reason(Key key, String holder, Shape shape, Class<T> type, T initial,
+                       Ref.Of1<String, ? extends T> byName) {
             this.key = key;
             this.holder = holder;
             this.shape = shape;
             this.type = type;
             this.initial = initial;
+            this.byName = byName;
         }
 
         /** What owns this value and where to change it instead. */
         public ManagedValue<T> because(String reason) {
-            return new ManagedValue<>(key, requireText(reason, "reason"), holder, shape, type, initial);
+            return new ManagedValue<>(key, requireText(reason, "reason"), holder, shape, type, initial, byName);
         }
     }
 

@@ -111,7 +111,8 @@ public interface PluginValues {
     /**
      * One constant's initialiser as a value — {@code new ImageTemplate("…/ore.png")} for {@code Pictures.ORE}
      * — read and written through the same context a slot is. Empty when there is no such constant, or its
-     * initialiser is not one the grammar reads.
+     * initialiser is not one the grammar reads, and always for an enum set's constant
+     * ({@link ManagedValue#isEnum}), whose name is all it has.
      */
     default Optional<ValueContext> open(String id, String member) {
         return Optional.empty();
@@ -121,7 +122,8 @@ public interface PluginValues {
      * Declares {@code public static final <T> member = <value>;} in the open set's class, {@code T} being the
      * value's class and the initialiser written by the grammar. Refused when the name is not a Java name, is
      * already taken, the value is not of the set's {@link ManagedValue#type() element type}, or it is one no
-     * loaded plugin declares.
+     * loaded plugin declares. In an enum set ({@link ManagedValue#isEnum}) it is the bare constant
+     * {@code member}, and {@code value} — what {@link ManagedValue#byName} makes of it — is only checked.
      */
     default Optional<String> add(String id, String member, Object value) {
         return Optional.of(NO_SOURCE_TREE);
