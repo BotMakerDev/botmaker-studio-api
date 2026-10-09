@@ -19,6 +19,15 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **Withers: a call's parts written as named links.** `DeclaredCall.with(Task::described, Task::note)` and
+  `.flag(Task::goesHome, Task::home)` declare links written after the factory —
+  `Task.of("Collect").described("Picks up ore").goesHome()` — each only when its part differs from what the
+  factory makes, so a part left at its default is not written. A flag takes no argument and only turns a thing
+  on: a setting on by default gets a negative name. Each wither's part follows the factory's in
+  `components`/`componentTypes`, so `build(components(v))` still equals `v`, and `build` given the factory's
+  parts alone answers what the factory makes. `ComponentType.withers()` (default empty) and `Wither` are what
+  a host reads.
+
 - **Typed managed ids.** `@ManagedMarker` makes a plugin's own annotation the marker of its managed values:
   its `value()` is an enum nested in it, one constant per value, so a bot writes
   `@SdkValue(SdkValue.Id.FLOW)` and a misspelt id no longer compiles. `ManagedValue.method(Enum)` and

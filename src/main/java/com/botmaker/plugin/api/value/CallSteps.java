@@ -16,6 +16,10 @@ import java.util.function.Function;
  * .writtenAsRecord()                                      // a record: its canonical constructor
  * }</pre>
  *
+ * <p>A part a reader could not tell from the next — a {@code boolean}, a third {@code int} — is better a named
+ * link after the call than an argument in it: {@link DeclaredCall#with} and {@link DeclaredCall#flag} follow
+ * any of these but {@code writtenAsEach} ({@link Wither}).
+ *
  * <p><b>One accessor per part, in the factory's order</b>, and javac counts them: there is one
  * {@code writtenAs} per number of parts, and the accessors' types are what pick an overloaded factory
  * ({@code LocalDate.of(int, int, int)} over {@code LocalDate.of(int, Month, int)}). The value is built back

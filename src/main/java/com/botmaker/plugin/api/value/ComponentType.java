@@ -94,8 +94,8 @@ public interface ComponentType<T> {
      *       <b>The one time the host writes a chain</b> is a value that declaration's own parts
      *       do not build back equal — {@code Combo.of(keys)} has no hold — when a chain's parts do, and its
      *       part 0 is a different value the declaration writes whole: {@code Combo.of(Key.CTRL, Key.S)
-     *       .held(Duration.ofMillis(200))}. One link deep; a chain whose part 0 is the value itself (a
-     *       wither) is never written.</li>
+     *       .held(Duration.ofMillis(200))}. One link deep; a chain whose part 0 is the value itself is never
+     *       written this way — that is a {@link #withers() wither}, declared on the call it follows.</li>
      * </ul>
      *
      * <p>An {@link Executable} rather than a name, so a rename fails where the plugin builds this, not in a
@@ -125,6 +125,16 @@ public interface ComponentType<T> {
      * type assignable to {@link #type()} is ignored.
      */
     default List<java.lang.reflect.Field> constants() {
+        return List.of();
+    }
+
+    /**
+     * The links written after {@link #factory()}, in the order they are written: {@code .described("…")
+     * .goesHome()}. Empty by default — a call with none is the factory alone. Declared with
+     * {@link DeclaredCall#with} and {@link DeclaredCall#flag}; see {@link Wither} for how their parts join
+     * {@link #components} and {@link #componentTypes()}, after the factory's.
+     */
+    default List<Wither<T>> withers() {
         return List.of();
     }
 

@@ -8,6 +8,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * A type declared through {@link PluginType#value} whose Java is a call: one object that is both the
@@ -30,6 +31,16 @@ public final class DeclaredCallType<T> implements EditableType<T>, ComponentType
     @SafeVarargs
     public final DeclaredCallType<T> constants(T... values) {
         return new DeclaredCallType<>(declared, call.constants(values));
+    }
+
+    /** This type, then a wither setting one part. See {@link DeclaredCall#with}. */
+    public <A> DeclaredCallType<T> with(Ref.Of2<T, A, T> wither, Function<? super T, ? extends A> part) {
+        return new DeclaredCallType<>(declared, call.with(wither, part));
+    }
+
+    /** This type, then a flag turning one part on. See {@link DeclaredCall#flag}. */
+    public DeclaredCallType<T> flag(Ref.Of1<T, T> wither, Predicate<? super T> on) {
+        return new DeclaredCallType<>(declared, call.flag(wither, on));
     }
 
     /** This type, built back by hand. See {@link DeclaredCall#build(Function)}. */
@@ -85,6 +96,11 @@ public final class DeclaredCallType<T> implements EditableType<T>, ComponentType
     @Override
     public List<Field> constants() {
         return call.constants();
+    }
+
+    @Override
+    public List<Wither<T>> withers() {
+        return call.withers();
     }
 
     @Override

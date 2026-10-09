@@ -12,15 +12,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
  * What a declared call is made of — the factory, how a value comes apart, how it is built back, the constants
- * a value equal to one is written as — and the derivations that let a declaration state only the factory and
- * the parts. Immutable; every {@code with} answers a copy.
+ * a value equal to one is written as, the withers chained after it — and the derivations that let a
+ * declaration state only the factory and the parts. Immutable; every {@code with} answers a copy.
+ *
+ * <p>{@code parts}, {@code components} and {@code build} are the factory's alone; {@link #allParts},
+ * {@link #taken} and {@link #built} add one part per wither after them ({@link Wither}).
  */
 record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
-                    Function<T, List<Object>> components, Function<List<Object>, T> build, List<Field> constants) {
+                    Function<T, List<Object>> components, Function<List<Object>, T> build, List<Field> constants,
+                    List<Wither<T>> withers) {
 
     /** A call to {@code factory}, taken apart by {@code accessors} in its part order and built back by invoking it. */
     static <T> CallShape<T> of(Class<T> type, Ref factory, boolean spreadLast, List<Function<? super T, ?>> accessors) {
@@ -39,7 +44,7 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
         }
         checkResult(type, factory);
         return new CallShape<>(type, factory, parts, taking(accessors, spreadLast), invoking(type, factory),
-                List.of());
+                List.of(), List.of());
     }
 
     /** A record written as its canonical constructor, taken apart by its accessors. */
@@ -67,18 +72,75 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
     }
 
     CallShape<T> withComponents(Function<T, List<Object>> components) {
-        return new CallShape<>(type, factory, parts, components, build, constants);
+        return new CallShape<>(type, factory, parts, components, build, constants, withers);
     }
 
     CallShape<T> withBuild(Function<List<Object>, T> build) {
-        return new CallShape<>(type, factory, parts, components, build, constants);
+        return new CallShape<>(type, factory, parts, components, build, constants, withers);
     }
 
     /** The {@code public static final} fields of {@link #type} holding exactly these values. */
     CallShape<T> withConstants(Object... values) {
         List<Field> found = new ArrayList<>(values.length);
         for (Object value : values) found.add(constant(value));
-        return new CallShape<>(type, factory, parts, components, build, List.copyOf(found));
+        return new CallShape<>(type, factory, parts, components, build, List.copyOf(found), withers);
+    }
+
+    /**
+     * This shape with {@code wither} chained after the ones it has. Refused on a varargs factory, whose parts
+     * are any number, so the wither's part would have no place; and for a method already chained, which a
+     * value would set twice.
+     */
+    CallShape<T> withWither(Wither<T> wither) {
+        if (factory.isVarArgs()) {
+            throw new IllegalArgumentException(name(factory) + " is varargs, so no wither can follow its parts");
+        }
+        for (Wither<T> each : withers) {
+            if (each.method().equals(wither.method())) {
+                throw new IllegalArgumentException(wither.method().getName() + " is chained twice");
+            }
+        }
+        List<Wither<T>> more = new ArrayList<>(withers);
+        more.add(wither);
+        return new CallShape<>(type, factory, parts, components, build, constants, List.copyOf(more));
+    }
+
+    /** Every part: the factory's, then one per wither. */
+    List<Class<?>> allParts() {
+        if (withers.isEmpty()) return parts;
+        List<Class<?>> out = new ArrayList<>(parts);
+        for (Wither<T> wither : withers) out.add(wither.partType());
+        return List.copyOf(out);
+    }
+
+    /** {@code value} taken apart: the factory's parts, then each wither's. */
+    List<Object> taken(T value) {
+        List<Object> base = components.apply(value);
+        if (withers.isEmpty() || base == null) return base;
+        List<Object> out = new ArrayList<>(base);
+        for (Wither<T> wither : withers) out.add(wither.part(value));
+        return Collections.unmodifiableList(out);
+    }
+
+    /**
+     * The value back: the factory's parts built, then each wither applied whose part differs from the one the
+     * factory made — so a wither that would refuse the factory's own default is never asked to take it. Given
+     * the factory's parts alone, the value the factory makes: what the host compares a value with to know
+     * which links it needs. {@code null} for any other count.
+     */
+    T built(List<Object> given) {
+        if (withers.isEmpty() || given == null) return build.apply(given);
+        int fixed = parts.size();
+        if (given.size() != fixed && given.size() != fixed + withers.size()) return null;
+        T made = build.apply(given.subList(0, fixed));
+        T value = made;
+        for (int i = 0; value != null && i < given.size() - fixed; i++) {
+            Wither<T> wither = withers.get(i);
+            Object part = given.get(fixed + i);
+            if (Objects.equals(part, wither.part(made))) continue;
+            value = wither.apply(value, part);
+        }
+        return value;
     }
 
     private Field constant(Object value) {
@@ -175,10 +237,10 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
         };
     }
 
-    private static final Object REFUSED = new Object();
+    static final Object REFUSED = new Object();
 
     /** {@code part} as a {@code to} argument, or {@link #REFUSED}. Numbers widen and round; nothing else converts. */
-    private static Object coerce(Object part, Class<?> to) {
+    static Object coerce(Object part, Class<?> to) {
         Class<?> boxed = box(to);
         if (part == null) return to.isPrimitive() ? REFUSED : null;
         if (boxed.isInstance(part)) return part;
