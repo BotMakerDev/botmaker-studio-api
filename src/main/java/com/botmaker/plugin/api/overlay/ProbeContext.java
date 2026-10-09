@@ -19,7 +19,7 @@ public interface ProbeContext extends OverlayContext {
     Executable call();
 
     /**
-     * The call's argument at {@code index}, read by the host as a value of {@code type} — a {@code @Managed}
+     * The call's argument at {@code index}, read by the host as a value of {@code type} — a managed
      * constant included; empty when it cannot be read (a local variable, a call, a varargs tail).
      */
     <T> Optional<T> argument(int index, Class<T> type);

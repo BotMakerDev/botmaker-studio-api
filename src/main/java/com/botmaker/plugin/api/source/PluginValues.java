@@ -9,10 +9,13 @@ import java.util.Optional;
 /**
  * A plugin's own values, as they are written in the bot's Java.
  *
- * <p>Each one is a {@code @Managed("id")} method in the bot's own source — the file its template shipped, or
- * the one {@link #create} wrote. The host finds it by that id, works out its type from the method's declared return
- * type, and hands back a {@link ValueContext} over the expression the method returns — the same context a
- * slot on the canvas and a row in the Parameters window are edited through. So a plugin's own window reads
+ * <p>Each one is a method marked with the plugin's own annotation ({@code @SdkValue(SdkValue.Id.FLOW)},
+ * meta-annotated {@link com.botmaker.plugin.api.managed.ManagedMarker}) in the bot's own source — the file its
+ * template shipped, or the one {@link #create} wrote. Its id is
+ * {@link com.botmaker.plugin.api.source.ManagedValue#idOf} that constant: the enum's binary name and the
+ * constant's ({@code com.example.SdkValue$Id.FLOW}). The host finds the method by that id, works out its type
+ * from the method's declared return type, and hands back a {@link ValueContext} over the expression the method
+ * returns — the same context a slot on the canvas and a row in the Parameters window are edited through. So a plugin's own window reads
  * and writes its value with the interface it already knows, and no second way to edit a value exists.
  *
  * <h2>This is where a plugin's JSON went</h2>
@@ -37,7 +40,7 @@ import java.util.Optional;
  * declaration. A constant's uses are what javac resolves to it, and a rename or repoint that would stop the bot compiling
  * is refused. A path literal a user wrote in their own code is theirs and nothing matches it.
  *
- * <p><b>Reading may fail, and that is ordinary.</b> A user may hand-edit a {@code @Managed} body into
+ * <p><b>Reading may fail, and that is ordinary.</b> A user may hand-edit a marked method's body into
  * something that is not a single {@code return <expression>;}, or use a value type no loaded plugin
  * registers. The host shows that read-only with a sentence saying why, and {@link #open} answers empty: the
  * value is intact and the user has not lost anything, so this is a state to report rather than repair.
@@ -45,7 +48,7 @@ import java.util.Optional;
 public interface PluginValues {
 
     /**
-     * Every {@code @Managed} id this plugin has in the open project, in no promised order.
+     * Every managed id this plugin has in the open project, in no promised order.
      *
      * <p>Empty when the plugin's file is not in the project — it was never added, or the user deleted it.
      * That is not an error: a plugin whose file is gone has no values, and offering to put it back is a
@@ -86,8 +89,9 @@ public interface PluginValues {
 
     // ── an open set ─────────────────────────────────────────────────────────────────────────────────────
     //
-    // A ManagedValue.openSet is a whole class — @Managed("pictures") on Pictures — whose public static final
-    // constants the plugin adds, renames and removes. Every operation below is addressed by the set's id and
+    // A ManagedValue.openSet is a whole class — @SdkValue(SdkValue.Id.PICTURES) on Pictures — whose public
+    // static final constants, or an enum's constants for a set declared ofEnum, the plugin adds, renames and
+    // removes. Every operation below is addressed by the set's id and
     // one constant's name, and every one is done by binding: the host resolves the constant and changes what
     // javac says refers to it, never a spelling. Each is total and refuses with the sentence to show.
 
@@ -102,7 +106,7 @@ public interface PluginValues {
 
     /**
      * The names of the constants the open set {@code id} holds, in the order they are written. Empty when the
-     * project has no class carrying {@code @Managed(id)}.
+     * project has no class carrying {@code id}'s mark.
      */
     default List<String> members(String id) {
         return List.of();

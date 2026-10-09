@@ -27,7 +27,7 @@ import java.lang.annotation.Target;
  *
  * <p><b>In the contract, not generated into the bot</b>, where it would be one more file the user never asked
  * for, whose shape the host would match by simple name. A bot that compiles the
- * contract's annotations ({@code @Param}, {@code @Managed}) compiles this one too, and the host finds it by
+ * contract's annotations ({@code @Param}, {@code @ManagedMarker}) compiles this one too, and the host finds it by
  * class. A host writes it only where the classpath carries it, and otherwise makes the change unmarked.
  *
  * <p>{@link RetentionPolicy#SOURCE}: it exists for the person and the host's scan, never at runtime, so a

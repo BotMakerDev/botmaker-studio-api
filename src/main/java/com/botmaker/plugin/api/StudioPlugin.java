@@ -161,7 +161,7 @@ public interface StudioPlugin {
      * The values this plugin maintains through its own window, which the host shows but does not let its
      * code canvas edit — see {@link ManagedValue}.
      *
-     * <p>Each one names an id a {@code @Managed} method or type in the bot's Java carries, and the sentence
+     * <p>Each one names an id a marked method or type in the bot's Java carries, and the sentence
      * to show when the canvas refuses an edit to it. These are also the ids {@link com.botmaker.plugin.api.source.PluginValues#open} will
      * answer for: what the plugin declares here is what it may read and write.
      *

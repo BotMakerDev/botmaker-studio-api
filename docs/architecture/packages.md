@@ -9,7 +9,8 @@
   `SlotRun`, `ValueContext`, `TypeRef`, `Bounds`), `…api.toolbar` (`ToolbarItem`, `ToolbarSteps`, `Pressed`,
   `ToolbarGroup`, `EnabledWhen`, `ActionContext`), `…api.source` (`ManagedValue`, `PluginValues`),
   `…api.record` (`@Records`, `Gesture`, `RecordedValue`), and `…api.params` (`@Param`) and `…api.managed`
-  (`@Managed`, `ManagedValues`), the two annotations that sit on a **bot's** own declarations.
+  (`@ManagedMarker`, `ManagedValues`): `@Param` and a plugin's own `@ManagedMarker` annotation are the two
+  that sit on a **bot's** own declarations.
 - `…api.value` — `PluginType<T>` (the class, `fresh()`, optional `freshCall`/`preview`), `EditableType<T>`
   (adds `editor(ValueContext)`, never `null` — a type its owner draws), `ComponentType<T>` (`componentTypes`,
   `components`, `build`, `factory`, an `Executable`), and the steps that declare them (`TypeSteps`,

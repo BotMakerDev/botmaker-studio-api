@@ -130,7 +130,7 @@ public final class PluginDeclaration {
                 runOverlay, overlay, assistant, trial);
     }
 
-    /** The {@code @Managed} values its windows keep — {@link StudioPlugin#managedValues()}. */
+    /** The managed values its windows keep — {@link StudioPlugin#managedValues()}. */
     public PluginDeclaration values(Supplier<? extends List<? extends ManagedValue<?>>> values) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
                 runOverlay, overlay, assistant, trial);

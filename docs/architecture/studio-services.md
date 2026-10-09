@@ -30,11 +30,13 @@ display) is gone. **Only a resource the OS counts justifies a lifecycle.** The i
 projects, so it means *this project is over*, never *you are being discarded*.
 
 **`pluginValues()` rewrites one expression inside a file the host did not write**
-(`../docs/refactor/33-plugin-java.md`). A bot holds a plugin's values as `@Managed("id")` methods in its own
+(`../docs/refactor/33-plugin-java.md`). A bot holds a plugin's values as methods marked with the plugin's own
+annotation (`@SdkValue(SdkValue.Id.FLOW)`, meta-annotated `@ManagedMarker`) in its own
 `src/main/java/<bot package>/plugins/<last id segment>/`, and the host never touches the class around them.
-`open(id)` hands back a **`ValueContext`**, so a slot, a Parameters row and a `@Managed` value are all edited
+`open(id)` hands back a **`ValueContext`**, so a slot, a Parameters row and a managed value are all edited
 through one interface and no second way to edit a value exists; a body that is not a single
-`return <expression>;` answers empty and is shown read-only with the reason. An open set (`@Managed` on a
-type, the SDK's `Pictures`) changes **by binding**: `members`, `add`, `uses`, `rename`, `repoint`, `remove`,
+`return <expression>;` answers empty and is shown read-only with the reason. An open set (the mark on a
+type: the SDK's `Pictures` class, or its `Outcomes` enum when the set is declared `ofEnum`) changes **by
+binding**: `members`, `add`, `uses`, `rename`, `repoint`, `remove`,
 each total and refused when the bot would stop compiling. The host rewrites; the plugin says which constant.
 `PluginValues.Use` is host-constructed only.

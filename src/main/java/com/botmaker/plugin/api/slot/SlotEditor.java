@@ -82,7 +82,7 @@ public interface SlotEditor {
      * of them. The editor reads the annotation's own elements through {@link SlotContext#parameter()}.
      *
      * <p><b>It declines where there is no call</b> — a row of the Parameters window and every
-     * {@code @Managed} value, neither of which has one — and where the host could not resolve the call.
+     * managed value, neither of which has one — and where the host could not resolve the call.
      * A value that must be editable in both places needs a type of its own.
      *
      * <p><b>Checked when it is built</b>: an annotation without {@code @Retention(RUNTIME)}, or whose

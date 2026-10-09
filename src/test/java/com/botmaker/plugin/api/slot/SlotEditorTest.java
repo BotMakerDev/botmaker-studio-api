@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Which slot an editor claims.
  *
  * <p>The property worth asserting is the one a plugin author gets wrong: an editor chosen by the parameter is
- * <b>absent</b> from the Parameters window and from a {@code @Managed} value, because neither has a call
+ * <b>absent</b> from the Parameters window and from a managed value, because neither has a call
  * site by construction. Declining there is the honest answer, and it is why a value that must be editable
  * in both places needs a type of its own.
  */
@@ -50,7 +50,7 @@ class SlotEditorTest {
 
     private static final TypeRef STRING = TypeRef.of(String.class);
 
-    /** A Parameters row, or a {@code @Managed} value: a value with no call site anywhere. */
+    /** A Parameters row, or a managed value: a value with no call site anywhere. */
     private static ValueContext row() {
         return new ValueContext() {
             @Override public TypeRef type() { return STRING; }

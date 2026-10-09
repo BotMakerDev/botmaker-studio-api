@@ -10,7 +10,7 @@ import java.lang.reflect.Modifier;
  * The static method Studio calls to try one statement as a bot run would run it — named by method reference,
  * {@code PluginDeclaration.trial(Bot::trial)}.
  *
- * <p>Its shape is the run entry's: a body and the classes whose {@code @Managed} values the run installs,
+ * <p>Its shape is the run entry's: a body and the classes whose managed values the run installs,
  * {@code Bot.trial(() -> { …the statement… }, Sdk.class)}. It does the setup a run does — capture source,
  * settings, input — then runs only the body, and returns when the body does. Studio writes the throwaway
  * caller (never into the project's sources) from the method this names, so the plugin writes no Java.

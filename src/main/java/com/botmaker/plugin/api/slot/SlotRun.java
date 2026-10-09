@@ -14,7 +14,7 @@ import java.util.Optional;
  * what {@link #replace} is for.
  *
  * <p><b>Elements cross as values, like every other value.</b> The host reads each argument through the
- * grammar it reads a slot with — a constant of a {@code @Managed} type included — and writes each value
+ * grammar it reads a slot with — a constant of a managed open set included — and writes each value
  * back the same way. What the host contributes is what only the host has: that these arguments are one
  * list, and what the surrounding code will still accept.
  *

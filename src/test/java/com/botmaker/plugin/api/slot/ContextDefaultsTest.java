@@ -23,7 +23,7 @@ class ContextDefaultsTest {
 
     private static final TypeRef STRING = TypeRef.of(String.class);
 
-    /** A Parameters row, or a {@code @Managed} value: a value with no call site anywhere. */
+    /** A Parameters row, or a managed value: a value with no call site anywhere. */
     private static ValueContext row() {
         return new ValueContext() {
             @Override public TypeRef type() { return STRING; }

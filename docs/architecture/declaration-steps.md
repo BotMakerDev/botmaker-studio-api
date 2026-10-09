@@ -22,7 +22,10 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   `null` when they do not fit or it throws.
 - **A managed value**: `ManagedValue.method(id).in(holder).holds(T.class, initial).because(reason)`,
   `.openedOnly().holds(T.class)` instead of `in` for one the host may open and never create, and
-  `ManagedValue.openSet(id).of(E.class).in(holder).because(reason)`, `E` being the class of each constant. It
+  `ManagedValue.openSet(id).of(E.class).in(holder).because(reason)`, `E` being the class of each constant;
+  `.ofEnum(E.class, Owner::byName)` instead of `of` makes the holder an enum implementing the interface `E`,
+  whose constants the host reads as `byName(name)`. `id` is a constant of the enum nested in the plugin's
+  `@ManagedMarker` annotation (`SdkValue.Id.FLOW`). It
   is typed and declared once: a plugin keeps one constant per value and uses it in `managedValues()`, in
   `ManagedValues.claim`, and through the toolkit's `ManagedHandle` or, for an open set, `ManagedSet`. **A recorded value**: `RecordedValue.of(T.class).at(Finder::find)`.
 - **A slot editor**: `SlotEditor.onParameter(Annotation.class)` | `forType(X.class)` | `when(predicate)` →

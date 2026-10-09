@@ -14,7 +14,7 @@
  * {@link com.botmaker.plugin.api.Dialogs}, {@link com.botmaker.plugin.api.Theme},
  * {@link com.botmaker.plugin.api.Runs} (with the {@link com.botmaker.plugin.api.TraceLine} it relays),
  * {@link com.botmaker.plugin.api.StyleClasses}. A plugin reads those as one facility, which is why they are not
- * several packages. A plugin's names are {@code @Managed} constants, renamed by binding through
+ * several packages. A plugin's names are managed constants, renamed by binding through
  * {@link com.botmaker.plugin.api.source.PluginValues}, never found by text.
  *
  * <p>One package per contribution surface below: {@code catalog} (the palette),

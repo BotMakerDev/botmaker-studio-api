@@ -32,9 +32,9 @@ on 2026-10-05).
 Interfaces, records, annotations, and the step classes that build a declaration. It has no implementation of
 a host, references no Studio type, and depends on one artifact (`javafx-controls`, `provided`).
 
-**One runtime class: `managed.ManagedValues`**, the bot-side half of `@Managed`
+**One runtime class: `managed.ManagedValues`**, the bot-side half of a managed value
 (`claim(ManagedValue<T>, Consumer<? super T>)`, `install(Class<?>...)`). It runs inside a bot, which already
-has this jar through any plugin that puts `@Managed` there. Add nothing else of the kind: the test is *does
+has this jar through any plugin whose own annotation (meta-annotated `@ManagedMarker`) sits there. Add nothing else of the kind: the test is *does
 every plugin with a bot-side half need it, and does it name nothing but this module and the JDK*.
 
 Studio is the host; `botmaker-sdk` is the first plugin — a *privileged default* plugin, but a plugin, with

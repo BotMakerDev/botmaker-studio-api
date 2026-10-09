@@ -10,7 +10,7 @@ import java.util.Optional;
  * <p>This is the half of {@link SlotContext} that does not need a call site: a type, the value, a way to
  * write one back, and the host services. It exists because the host edits values in more than one place and
  * only some of them are a call — a slot in a bot's Java, a row in the Parameters window, and the expression
- * a {@code @Managed} method returns — and until this interface there was no way for one editor to serve
+ * a managed method returns — and until this interface there was no way for one editor to serve
  * them all.
  *
  * <h2>The value is a value, and that is the whole design</h2>
@@ -108,7 +108,7 @@ public interface ValueContext {
      * chosen by the call they sit in rather than by their type (a Steam app id and a window title are both
      * {@code String}), and those need a call site; everything else should not know the difference.
      *
-     * <p>A row in the Parameters window and a {@code @Managed} value both have no call site, so this is
+     * <p>A row in the Parameters window and a managed value both have no call site, so this is
      * empty there — which is the case an editor most often forgets, because it is the one that never
      * happens while the editor is being written against a slot in source.
      */
