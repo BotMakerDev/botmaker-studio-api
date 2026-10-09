@@ -61,8 +61,11 @@
              v0.1.6.
              v0.3.0 the same way on 2026-09-24: TypeRef lost its three name members and SlotContext its two
              enclosing names for an Executable, and SlotEditor.forCall takes a Predicate<Executable>. Pinned
-             ahead of the tag, which does not exist yet. -->
-        <botmaker.japicmp.baseline>v0.4.2</botmaker.japicmp.baseline>
+             ahead of the tag, which does not exist yet.
+             v0.6.0 the same way on 2026-10-10: typed managed ids replaced @Managed's string value()
+             (@ManagedMarker), and main's CI went red against v0.4.2 — and with it every module whose CI
+             installs this one from main. -->
+        <botmaker.japicmp.baseline>v0.6.0</botmaker.japicmp.baseline>
         <botmaker.japicmp.skip>false</botmaker.japicmp.skip>
     </properties>
 

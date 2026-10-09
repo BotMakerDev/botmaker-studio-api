@@ -51,8 +51,8 @@ no back door. If the SDK needs something this module does not expose, the contra
 - **Every surface is declared by steps; factories are method references**, with the two strings in
   `two-strings.md` kept. **No public constructor on a value a plugin builds** (`no-public-constructor.md`).
 - **The catalog degrades, never throws** (`catalog.md`). **No Jackson here.**
-- **japicmp fails on any incompatible change, with no ignore list**; the baseline is pinned to `v0.4.0`, so
-  the next release is `--studio-api 0.4.0` (`japicmp.md`).
+- **japicmp fails on any incompatible change, with no ignore list**; the baseline is pinned to `v0.6.0`, so
+  the next release is `--studio-api 0.6.0` (`japicmp.md`).
 
 ## Style
 
