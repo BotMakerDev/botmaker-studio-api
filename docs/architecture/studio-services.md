@@ -36,7 +36,13 @@ annotation (`@SdkValue(SdkValue.Id.FLOW)`, meta-annotated `@ManagedMarker`) in i
 `open(id)` hands back a **`ValueContext`**, so a slot, a Parameters row and a managed value are all edited
 through one interface and no second way to edit a value exists; a body that is not a single
 `return <expression>;` answers empty and is shown read-only with the reason. An open set (the mark on a
-type: the SDK's `Pictures` class, or its `Outcomes` enum when the set is declared `ofEnum`) changes **by
-binding**: `members`, `add`, `uses`, `rename`, `repoint`, `remove`,
-each total and refused when the bot would stop compiling. The host rewrites; the plugin says which constant.
-`PluginValues.Use` is host-constructed only.
+type: the SDK's `Pictures` class, an enum when the set is declared `ofEnum`, or the SDK's `Activities` class of
+nested enums when it is declared `ofEnums(…).groupedAs(…)`) changes **by binding**: `members`, `add`, `uses`,
+`rename`, `repoint`, `remove`, and for a grouped set `groups`, `addGroup`, `renameGroup`, `removeGroup` (a
+member is `"Group.NAME"`), each total and refused when the bot would stop compiling. The host rewrites; the
+plugin says which constant. `PluginValues.Use` is host-constructed only.
+
+**`methods(id, group)` and `createMethod(…)`** (2026-10-10) answer the bot's `public static` no-argument
+methods returning a grouped set's nested enum, or `void` when both are null, as `Class::method`, and write a
+new one — the host is the only one that reads a method's return type off the bot. The SDK's *Runs* and *Home*
+pickers in the Activity Flow are built on them.

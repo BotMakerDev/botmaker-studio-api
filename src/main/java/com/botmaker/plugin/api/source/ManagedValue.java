@@ -293,10 +293,11 @@ public final class ManagedValue<T> {
      *         .in("Pictures")
      *         .because("Picture constants are managed in 🖼 Manage Pictures.");
      *
-     * public static final ManagedValue<Outcome> OUTCOMES = ManagedValue.openSet(SdkValue.Id.OUTCOMES)
-     *         .ofEnum(Outcome.class, BotConstants::outcome)  // an enum of bare names: enum Outcomes { WON }
-     *         .in("Outcomes")
-     *         .because("Outcomes are managed in 🔀 Activity Flow.");
+     * public static final ManagedValue<Outcome> ACTIVITIES = ManagedValue.openSet(SdkValue.Id.ACTIVITIES)
+     *         .ofEnums(Outcome.class, BotConstants::outcome)  // enums nested in the holder: enum Collect { NEXT }
+     *         .groupedAs(Activity.class, BotConstants::activity)
+     *         .in("Activities")
+     *         .because("Activities are managed in 🔀 Activity Flow.");
      * }</pre>
      *
      * @throws IllegalArgumentException when the enum is not nested in a {@link ManagedMarker} annotation
