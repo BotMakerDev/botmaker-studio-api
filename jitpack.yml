@@ -12,4 +12,9 @@ install:
   # taking botmaker-sdk v1.1.1 down with it. A gate here could only ever refuse a tag that is already
   # pushed; the refusal that matters is `mvn verify` in this repository's own CI, before the tag exists.
   # Exactly the same reasoning as the -DskipTests beside it.
-  - mvn install -DskipTests -Dmaven.javadoc.skip=true -Dbotmaker.japicmp.skip=true -B
+  #
+  # The build runs on a pinned Temurin, not on the JDK `jdk:` installs: since 2026-10-09 JitPack's sdkman JDK 25
+  # loads no class from a jar, so every build died on `Could not find or load main class
+  # org.codehaus.plexus.classworlds.launcher.Launcher` before Maven started (umbrella CLAUDE.md § JitPack). The
+  # checksum is Adoptium's for that tarball; move the URL and the checksum together, in every jitpack.yml.
+  - curl -sSfL -o /tmp/jdk.tgz https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.4.1%2B1/OpenJDK25U-jdk_x64_linux_hotspot_25.0.4.1_1.tar.gz && echo "dbb698396d478e7fa2b1e50f4103324b2a99b90569ee27c33f2261f9215cf41e  /tmp/jdk.tgz" | sha256sum -c - && mkdir -p /tmp/jdk && tar xzf /tmp/jdk.tgz -C /tmp/jdk --strip-components=1 && export JAVA_HOME=/tmp/jdk PATH=/tmp/jdk/bin:$PATH && mvn install -DskipTests -Dmaven.javadoc.skip=true -Dbotmaker.japicmp.skip=true -B
