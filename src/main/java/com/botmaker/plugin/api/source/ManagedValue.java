@@ -28,8 +28,9 @@ import java.util.Arrays;
  * <b>type</b> it is an open set the user grows — a class of constants the rest of the bot names at its use
  * sites — and the whole class is the plugin's window's, so the canvas may not add to it, rename in it or
  * delete from it. There {@link #type()} is the class of each constant: see {@link #openSet}. Which of the two
- * a value is, is its {@link #shape()}. An open set is a class of {@code public static final} fields, or an enum
- * of bare names implementing {@link #type()} ({@link #isEnum()}).
+ * a value is, is its {@link #shape()}. An open set is a class of {@code public static final} fields, an enum
+ * of bare names implementing {@link #type()} ({@link #isEnum()}), or a class of such enums nested in it
+ * ({@link #isGrouped()}).
  *
  * <p><b>Where it goes when it is missing.</b> A project that never had the plugin's file has no
  * marked method to open, and nothing else would ever write one. {@code holder} and {@code type} are
@@ -85,6 +86,9 @@ public final class ManagedValue<T> {
         }
     }
 
+    /** A set of nested enums ({@link SetSteps#ofEnums}): how a constant and a whole enum read as the plugin's. */
+    private record Grouped(Ref.Of2<String, String, ?> byName, Class<?> groupType, Ref.Of1<String, ?> byGroup) {}
+
     private final Key key;
     private final String reason;
     private final String holder;
@@ -92,9 +96,10 @@ public final class ManagedValue<T> {
     private final Class<T> type;
     private final T initial;
     private final Ref.Of1<String, ? extends T> byName;
+    private final Grouped grouped;
 
     private ManagedValue(Key key, String reason, String holder, Shape shape, Class<T> type, T initial,
-                         Ref.Of1<String, ? extends T> byName) {
+                         Ref.Of1<String, ? extends T> byName, Grouped grouped) {
         this.key = key;
         this.reason = reason;
         this.holder = holder;
@@ -102,6 +107,7 @@ public final class ManagedValue<T> {
         this.type = type;
         this.initial = initial;
         this.byName = byName;
+        this.grouped = grouped;
     }
 
     /** The id: {@link #idOf} its constant — {@code "com.botmaker.sdk.api.bot.SdkValue$Id.FLOW"}. */
@@ -214,6 +220,52 @@ public final class ManagedValue<T> {
     }
 
     /**
+     * Whether this open set is a class of enums nested in it ({@link SetSteps#ofEnums}) — one enum per group,
+     * each a set of bare constants — rather than one class's constants.
+     */
+    public boolean isGrouped() {
+        return grouped != null;
+    }
+
+    /**
+     * The value the constant {@code name} of the nested enum {@code group} stands for —
+     * {@code Activities.Collect.WON} read by a host that cannot load the bot's enum is what this makes of
+     * {@code ("Collect", "WON")}. Null when this set is not {@link #isGrouped() grouped}, the plugin refused, or
+     * it answered something other than {@link #type()}.
+     */
+    public T byName(String group, String name) {
+        if (grouped == null || group == null || name == null) return null;
+        try {
+            return cast(grouped.byName().call(group, name));
+        } catch (RuntimeException refused) {
+            return null;
+        }
+    }
+
+    /**
+     * The plugin's class for a whole nested enum — what a class literal of one, {@code Activities.Collect.class},
+     * reads as wherever a value is read. Null when this set is not {@link #isGrouped() grouped}.
+     */
+    public Class<?> groupType() {
+        return grouped == null ? null : grouped.groupType();
+    }
+
+    /**
+     * The value the nested enum {@code group} stands for — what {@code Activities.Collect.class} reads as — made
+     * by the plugin from the enum's simple name. Null when this set is not grouped, the plugin refused, or it
+     * answered something other than {@link #groupType()}.
+     */
+    public Object byGroup(String group) {
+        if (grouped == null || group == null) return null;
+        try {
+            Object made = grouped.byGroup().call(group);
+            return grouped.groupType().isInstance(made) ? made : null;
+        } catch (RuntimeException refused) {
+            return null;
+        }
+    }
+
+    /**
      * <b>The way to declare a method-shaped value</b>, step by step. {@code id} is a constant of the enum nested
      * in the plugin's {@link ManagedMarker} annotation, which a bot marks the method with —
      * {@code @SdkValue(SdkValue.Id.FLOW)}:
@@ -285,7 +337,7 @@ public final class ManagedValue<T> {
         /** A method returning a {@code type}, which the host opens and never writes. */
         public <T> Reason<T> holds(Class<T> type) {
             if (type == null) throw new IllegalArgumentException(key.id() + ": no type given");
-            return new Reason<>(key, null, Shape.METHOD, type, null, null);
+            return new Reason<>(key, null, Shape.METHOD, type, null, null, null);
         }
     }
 
@@ -306,7 +358,7 @@ public final class ManagedValue<T> {
          */
         public <T> Reason<T> holds(Class<T> type, T initial) {
             if (type == null) throw new IllegalArgumentException(key.id() + ": no type given");
-            return new Reason<>(key, holder, Shape.METHOD, type, initial, null);
+            return new Reason<>(key, holder, Shape.METHOD, type, initial, null, null);
         }
     }
 
@@ -329,7 +381,7 @@ public final class ManagedValue<T> {
                 throw new IllegalArgumentException(key.id() + ": a constant is an object; use the boxed class of "
                         + element.getName());
             }
-            return new SetHolderStep<>(key, element, null);
+            return new SetHolderStep<>(key, element, null, null);
         }
 
         /**
@@ -355,26 +407,91 @@ public final class ManagedValue<T> {
                         + element.getName() + " must be an interface");
             }
             Ref.resolve(byName);
-            return new SetHolderStep<>(key, element, byName);
+            return new SetHolderStep<>(key, element, byName, null);
+        }
+
+        /**
+         * Enums of the bot's own <b>nested in the holder class</b>, each implementing the interface
+         * {@code element} and each a set of bare names — one enum per group:
+         *
+         * <pre>{@code
+         * @SdkValue(SdkValue.Id.ACTIVITIES)
+         * public final class Activities {
+         *     public enum Collect implements Outcome { NEXT, NOTHING_LEFT }
+         *     public enum Battle implements Outcome { NEXT, WON, LOST }
+         * }
+         * }</pre>
+         *
+         * <p>For a set whose members belong to something: here each enum is one activity, and its constants are
+         * what that activity can report, so a method returning {@code Activities.Collect} cannot return
+         * {@code Battle}'s. The host adds, renames and removes whole enums ({@link PluginValues#addGroup}) as well
+         * as the constants in one, and reads {@code Activities.Collect.WON} as what {@code byName} makes of
+         * {@code ("Collect", "WON")}. The holder is created as an empty {@code public final class}.
+         *
+         * @param byName a method reference from an enum's simple name and a constant's name to the value the
+         *               constant stands for — {@code BotConstants::outcome}
+         * @throws IllegalArgumentException when {@code element} is no interface, or {@code byName} is no method
+         *                                  reference
+         */
+        public <E> GroupStep<E> ofEnums(Class<E> element, Ref.Of2<String, String, ? extends E> byName) {
+            if (element == null) throw new IllegalArgumentException(key.id() + ": no element type given");
+            if (!element.isInterface()) {
+                throw new IllegalArgumentException(key.id() + ": a bot's enum implements its element type, so "
+                        + element.getName() + " must be an interface");
+            }
+            Ref.resolve(byName);
+            return new GroupStep<>(key, element, byName);
         }
     }
 
-    /** After {@link SetSteps#of} or {@link SetSteps#ofEnum}: the class that is the set. */
-    public static final class SetHolderStep<E> {
+    /** After {@link SetSteps#ofEnums}: what a whole nested enum reads as. */
+    public static final class GroupStep<E> {
 
         private final Key key;
         private final Class<E> element;
-        private final Ref.Of1<String, ? extends E> byName;
+        private final Ref.Of2<String, String, ? extends E> byName;
 
-        private SetHolderStep(Key key, Class<E> element, Ref.Of1<String, ? extends E> byName) {
+        private GroupStep(Key key, Class<E> element, Ref.Of2<String, String, ? extends E> byName) {
             this.key = key;
             this.element = element;
             this.byName = byName;
         }
 
+        /**
+         * A class literal of one nested enum — {@code Activities.Collect.class} — reads as what {@code byGroup}
+         * makes of its simple name, a {@code group}: how a plugin's value names a whole enum, as the SDK's flow
+         * names an activity, without the host loading the bot's class. The host writes such a value back as
+         * the class literal it was read from.
+         *
+         * @param group   the plugin's class for one enum — {@code Activity}
+         * @param byGroup a method reference from an enum's simple name to that value — {@code BotConstants::activity}
+         * @throws IllegalArgumentException when {@code group} is missing or {@code byGroup} is no method reference
+         */
+        public <G> SetHolderStep<E> groupedAs(Class<G> group, Ref.Of1<String, ? extends G> byGroup) {
+            if (group == null) throw new IllegalArgumentException(key.id() + ": no group type given");
+            Ref.resolve(byGroup);
+            return new SetHolderStep<>(key, element, null, new Grouped(byName, group, byGroup));
+        }
+    }
+
+    /** After {@link SetSteps#of}, {@link SetSteps#ofEnum} or {@link GroupStep#groupedAs}: the class that is the set. */
+    public static final class SetHolderStep<E> {
+
+        private final Key key;
+        private final Class<E> element;
+        private final Ref.Of1<String, ? extends E> byName;
+        private final Grouped grouped;
+
+        private SetHolderStep(Key key, Class<E> element, Ref.Of1<String, ? extends E> byName, Grouped grouped) {
+            this.key = key;
+            this.element = element;
+            this.byName = byName;
+            this.grouped = grouped;
+        }
+
         /** The class {@code holder} — {@code "Pictures"} — created empty when a project has none. */
         public Reason<E> in(String holder) {
-            return new Reason<>(key, requireText(holder, "holder"), Shape.OPEN_SET, element, null, byName);
+            return new Reason<>(key, requireText(holder, "holder"), Shape.OPEN_SET, element, null, byName, grouped);
         }
     }
 
@@ -387,20 +504,23 @@ public final class ManagedValue<T> {
         private final Class<T> type;
         private final T initial;
         private final Ref.Of1<String, ? extends T> byName;
+        private final Grouped grouped;
 
         private Reason(Key key, String holder, Shape shape, Class<T> type, T initial,
-                       Ref.Of1<String, ? extends T> byName) {
+                       Ref.Of1<String, ? extends T> byName, Grouped grouped) {
             this.key = key;
             this.holder = holder;
             this.shape = shape;
             this.type = type;
             this.initial = initial;
             this.byName = byName;
+            this.grouped = grouped;
         }
 
         /** What owns this value and where to change it instead. */
         public ManagedValue<T> because(String reason) {
-            return new ManagedValue<>(key, requireText(reason, "reason"), holder, shape, type, initial, byName);
+            return new ManagedValue<>(key, requireText(reason, "reason"), holder, shape, type, initial, byName,
+                    grouped);
         }
     }
 

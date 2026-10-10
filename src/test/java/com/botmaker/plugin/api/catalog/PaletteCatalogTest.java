@@ -1,5 +1,6 @@
 package com.botmaker.plugin.api.catalog;
 
+import com.botmaker.plugin.api.palette.EntryPoint;
 import com.botmaker.plugin.api.palette.Hidden;
 import com.botmaker.plugin.api.palette.Palette;
 import com.botmaker.plugin.api.palette.PaletteDefault;
@@ -121,6 +122,30 @@ class PaletteCatalogTest {
     }
 
     /** Alphabetical, reached types included — an {@code order} element ranked them until 2026-09-30. */
+    @Palette(category = "demo", categoryLabel = "Demo")
+    @SuppressWarnings("unused")
+    static final class Launcher {
+
+        @EntryPoint
+        public static void start(String name) {
+        }
+
+        public static void start() {
+        }
+
+        public static void stop() {
+        }
+    }
+
+    @Test
+    void anEntryPointIsOfferedAndKnownByItsName() {
+        FacadeEntry launcher = PaletteCatalog.of(Launcher.class).facade(Launcher.class).orElseThrow();
+        assertTrue(launcher.offers("start"), "an entry point is offered, in main");
+        assertTrue(launcher.entryPoint("start"), "one marked overload marks the name");
+        assertFalse(launcher.entryPoint("stop"));
+        assertFalse(launcher.entryPoint("nothing"));
+    }
+
     @Test
     void catalogsAlphabeticallyAndReadsTheAnnotations() {
         PaletteCatalog catalog = demo();

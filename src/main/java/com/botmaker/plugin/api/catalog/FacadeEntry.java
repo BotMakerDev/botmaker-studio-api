@@ -1,5 +1,8 @@
 package com.botmaker.plugin.api.catalog;
 
+import com.botmaker.plugin.api.palette.EntryPoint;
+
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -72,5 +75,21 @@ public record FacadeEntry(Class<?> type, Category category, boolean offered, Str
 
     public boolean offers(String memberName) {
         return members.stream().anyMatch(m -> m.id().name().equals(memberName));
+    }
+
+    /**
+     * Whether the member name is offered only as a statement inside {@code main} — an overload of it carries
+     * {@link EntryPoint}. Read off {@link #type()} rather than kept as a component, so the record's shape stays
+     * as it is; a class whose methods cannot be read answers false.
+     */
+    public boolean entryPoint(String memberName) {
+        try {
+            for (Method method : type.getMethods()) {
+                if (method.getName().equals(memberName) && method.isAnnotationPresent(EntryPoint.class)) return true;
+            }
+        } catch (LinkageError | SecurityException unreadable) {
+            // A facade whose signatures name a missing class is offered as before, everywhere.
+        }
+        return false;
     }
 }

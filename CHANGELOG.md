@@ -17,7 +17,20 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
-No source changes since v0.7.1; re-released for updated upstream pins.
+### Added
+
+- **An open set of nested enums**: `ManagedValue.openSet(id).ofEnums(Outcome.class, BotConstants::outcome)
+  .groupedAs(Activity.class, BotConstants::activity)` declares a holder class whose members are enums nested in
+  it, one per group (`Activities { enum Collect implements Outcome { NEXT, WON } }`). `isGrouped()`,
+  `byName(group, name)`, `groupType()` and `byGroup(group)` read it. A class literal of one nested enum,
+  `Activities.Collect.class`, reads as the plugin's group value.
+- `PluginValues.groups`, `addGroup`, `renameGroup` and `removeGroup` work on whole nested enums. A grouped set's
+  member is named `"Group.NAME"` in every existing operation.
+- `PluginValues.methods(id, group)` lists the bot's `public static` no-argument methods that return a nested
+  enum, or `void` when both are null, as `Class::method`. `createMethod(…)` writes one, creating the class when
+  it is missing, and answers a `MethodWrite`.
+- `@EntryPoint` (palette): a member offered only as a statement directly inside `main`.
+  `FacadeEntry.entryPoint(name)` reads it.
 
 No source changes since v0.7.0; re-released for updated upstream pins.
 

@@ -226,6 +226,43 @@ class ManagedValuesTest {
                 .ofEnum(Label.class, name -> new Named(name)));
     }
 
+    /** A whole nested enum, made from its simple name: the group of a grouped set. */
+    public record Group(String name) {}
+
+    public static Label inGroup(String group, String name) {
+        if (name.isBlank()) throw new IllegalArgumentException("no name");
+        return new Named(group + "." + name);
+    }
+
+    public static Group group(String name) {
+        return new Group(name);
+    }
+
+    @Test
+    void aGroupedSetReadsAConstantByItsEnumAndNameAndAnEnumByItsName() {
+        ManagedValue<Label> set = ManagedValue.openSet(TestValue.Id.ENUM_SET)
+                .ofEnums(Label.class, ManagedValuesTest::inGroup)
+                .groupedAs(Group.class, ManagedValuesTest::group)
+                .in("Activities").because("Mine.");
+
+        assertTrue(set.isGrouped());
+        assertFalse(set.isEnum(), "a grouped set is no single enum");
+        assertEquals(new Named("Collect.WON"), set.byName("Collect", "WON"));
+        assertNull(set.byName("Collect", " "), "a name the plugin refuses reads as nothing");
+        assertNull(set.byName("WON"), "a grouped constant has no single-name reading");
+        assertEquals(Group.class, set.groupType());
+        assertEquals(new Group("Collect"), set.byGroup("Collect"));
+        assertNull(set.byGroup(null));
+    }
+
+    @Test
+    void aGroupedSetNeedsAnInterfaceAndMethodReferences() {
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.ENUM_SET)
+                .ofEnums(Named.class, (g, n) -> new Named(n)));
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.ENUM_SET)
+                .ofEnums(Label.class, ManagedValuesTest::inGroup).groupedAs(Group.class, name -> new Group(name)));
+    }
+
     static final class OneThrows {
 
         @TestValue(TestValue.Id.THROWS)

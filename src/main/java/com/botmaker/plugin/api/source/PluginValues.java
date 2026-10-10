@@ -161,6 +161,79 @@ public interface PluginValues {
         return Optional.of(NO_SOURCE_TREE);
     }
 
+    // ── a set of nested enums ───────────────────────────────────────────────────────────────────────────
+    //
+    // A ManagedValue.openSet(…).ofEnums(…) holder is a class of enums nested in it, one per group:
+    // Activities { enum Collect implements Outcome { NEXT, WON } }. Every operation above takes a member of such
+    // a set as "Group.NAME" — "Collect.WON" — and members(id) lists them so. The operations below are on whole
+    // enums, named by their simple name, and are done by binding as the ones above are.
+
+    /** The simple names of the enums nested in the grouped set {@code id}, in the order they are written. */
+    default List<String> groups(String id) {
+        return List.of();
+    }
+
+    /**
+     * Declares {@code public enum group implements <element> { constants… }} in the grouped set's class, after
+     * its last one. Refused when the name is not a Java name or is taken, or {@code constants} is empty: an
+     * enum a method returns needs a constant to return.
+     */
+    default Optional<String> addGroup(String id, String group, List<String> constants) {
+        return Optional.of(NO_SOURCE_TREE);
+    }
+
+    /** Renames the nested enum and every use of it — its class literal, its constants' qualifiers — by binding. */
+    default Optional<String> renameGroup(String id, String group, String newName) {
+        return Optional.of(NO_SOURCE_TREE);
+    }
+
+    /** Deletes the nested enum. Refused while anything uses it or one of its constants, the uses listed. */
+    default Optional<String> removeGroup(String id, String group) {
+        return Optional.of(NO_SOURCE_TREE);
+    }
+
+    // ── the bot's methods ───────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Every {@code public static} method with no parameter in the bot's own sources returning the nested enum
+     * {@code group} of the grouped set {@code id} — or, with both {@code null}, returning {@code void} — each as
+     * the method reference a bot writes, {@code Collect::body}, in source order.
+     *
+     * <p>What a plugin offers where a value names "the method that does this": the SDK's flow lists the methods
+     * that can be one activity's body, and the methods that can be its way home. The reference is the text the
+     * value crosses as ({@code docs/architecture/two-strings.md}), compared and never parsed.
+     */
+    default List<String> methods(String id, String group) {
+        return List.of();
+    }
+
+    /**
+     * Writes {@code public static <group> method() { return <group>.<its first constant>; }} — or, with
+     * {@code id} and {@code group} null, {@code public static void method() {}} — into the bot's class
+     * {@code className}, creating the class beside the bot's main one when there is none.
+     *
+     * <p>Refused when either name is not a Java name, the method is already there, or the bot would not compile.
+     *
+     * @return the method reference written, {@code Collect::body}, or the sentence saying why nothing was
+     */
+    default MethodWrite createMethod(String id, String group, String className, String method) {
+        return new MethodWrite(null, NO_SOURCE_TREE);
+    }
+
+    /**
+     * What {@link #createMethod} did: the reference written, or why nothing was.
+     *
+     * @param reference {@code Collect::body}, or null when refused
+     * @param refusal   the sentence to show, or null when written
+     */
+    record MethodWrite(String reference, String refusal) {
+
+        /** Whether the method was written. */
+        public boolean written() {
+            return reference != null;
+        }
+    }
+
     /** What every write answers on a host with no project behind it. */
     String NO_SOURCE_TREE = "This host keeps no source tree.";
 
