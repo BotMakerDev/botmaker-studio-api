@@ -3,6 +3,7 @@ package com.botmaker.plugin.api.value;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -43,6 +44,22 @@ public final class DeclaredCall<T> implements ComponentType<T> {
      */
     public <A> DeclaredCall<T> with(Ref.Of2<T, A, T> wither, Function<? super T, ? extends A> part) {
         return new DeclaredCall<>(shape.withWither(Wither.with(shape.type(), wither, part)));
+    }
+
+    /**
+     * {@link #with(Ref.Of2, Function)} for a link whose part the host holds as something its parameter is not,
+     * so it is taken apart by {@code part} and set by {@code apply} rather than by calling the method: a class
+     * literal of a managed enum, which crosses as the plugin's value of that enum ({@code .whenOff(Collect.class)}),
+     * or a method reference, which crosses as the text it is written as ({@code .home(Gamebot::goHome)}). The same
+     * pair a {@link #components}/{@link #build} declaration hands its factory's parts by, for one link.
+     *
+     * @param wither the method the link is written as; the host reads its name and parameter, and never calls it
+     * @param part   the part a value holds, as the host reads and writes it
+     * @param apply  {@code value} with its part set, or {@code null} for a part this link does not take
+     */
+    public <A> DeclaredCall<T> with(Ref.Of2<T, A, T> wither, Function<? super T, ?> part,
+                                BiFunction<? super T, Object, ? extends T> apply) {
+        return new DeclaredCall<>(shape.withWither(Wither.with(shape.type(), wither, part, apply)));
     }
 
     /**

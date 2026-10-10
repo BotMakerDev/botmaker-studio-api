@@ -31,6 +31,9 @@ is allowed to make. Additions arrive as `default` methods.
   it is missing, and answers a `MethodWrite`.
 - `@EntryPoint` (palette): a member offered only as a statement directly inside `main`.
   `FacadeEntry.entryPoint(name)` reads it.
+- `DeclaredCall.with(wither, part, apply)`: a link whose part the host holds as something its parameter is not —
+  a managed enum's class literal (`.whenOff(Activities.Collect.class)`) or a method reference
+  (`.home(Gamebot::goHome)`) — taken apart by `part` and set by `apply` instead of by calling the method.
 
 No source changes since v0.7.0; re-released for updated upstream pins.
 

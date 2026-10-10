@@ -115,6 +115,20 @@ class WitherTest {
         assertEquals(new Task("Collect", "", false, 2), TASK.build(Arrays.asList("Collect", "", false, 2L)));
     }
 
+    /** A part the host holds as something the parameter is not is taken apart and set by the declaration's own pair. */
+    @Test
+    void aLinkWithItsOwnApplySetsAPartTheMethodCouldNotTake() {
+        DeclaredCall<Task> spelt = ComponentType.part(Task.class).writtenAs(Task::of, Task::name)
+                .with(Task::described, task -> List.of(task.note().split(" ")),
+                        (task, part) -> part instanceof List<?> words ? task.described(
+                                String.join(" ", words.stream().map(String::valueOf).toList())) : null);
+        assertEquals(String.class, spelt.withers().getFirst().partType(), "the host still reads the parameter");
+        Task task = Task.of("Collect").described("Picks up ore");
+        assertEquals(List.of("Collect", List.of("Picks", "up", "ore")), spelt.components(task));
+        assertEquals(task, spelt.build(spelt.components(task)));
+        assertNull(spelt.build(List.of("Collect", "Picks up ore")), "a part the apply refuses");
+    }
+
     @Test
     void whatIsNoWitherIsRefused() {
         DeclaredCall<Task> base = ComponentType.part(Task.class).writtenAs(Task::of, Task::name);

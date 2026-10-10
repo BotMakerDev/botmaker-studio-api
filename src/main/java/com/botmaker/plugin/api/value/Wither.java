@@ -4,6 +4,7 @@ import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -45,21 +46,30 @@ public final class Wither<T> {
     private final Method method;
     private final Function<? super T, ?> part;
     private final boolean flag;
+    /** How the part is set, for a link whose part is not what its parameter takes; null to call the method. */
+    private final BiFunction<? super T, Object, ? extends T> setter;
 
-    private Wither(Class<T> type, Method method, Function<? super T, ?> part, boolean flag) {
+    private Wither(Class<T> type, Method method, Function<? super T, ?> part, boolean flag,
+                   BiFunction<? super T, Object, ? extends T> setter) {
         this.type = type;
         this.method = method;
         this.part = part;
         this.flag = flag;
+        this.setter = setter;
     }
 
     static <T> Wither<T> with(Class<T> type, Ref wither, Function<? super T, ?> part) {
-        return new Wither<>(type, checked(type, wither, 1), required(part), false);
+        return new Wither<>(type, checked(type, wither, 1), required(part), false, null);
+    }
+
+    static <T> Wither<T> with(Class<T> type, Ref wither, Function<? super T, ?> part,
+                              BiFunction<? super T, Object, ? extends T> apply) {
+        return new Wither<>(type, checked(type, wither, 1), required(part), false, required(apply));
     }
 
     static <T> Wither<T> flag(Class<T> type, Ref wither, Predicate<? super T> on) {
         Predicate<? super T> test = required(on);
-        return new Wither<>(type, checked(type, wither, 0), value -> test.test(value), true);
+        return new Wither<>(type, checked(type, wither, 0), value -> test.test(value), true, null);
     }
 
     private static <F> F required(F given) {
@@ -124,6 +134,8 @@ public final class Wither<T> {
                 if (!(part instanceof Boolean on)) return null;
                 if (!on) return Boolean.TRUE.equals(this.part.apply(value)) ? null : value;
                 changed = method.invoke(value);
+            } else if (setter != null) {
+                changed = setter.apply(value, part);
             } else {
                 Object argument = CallShape.coerce(part, method.getParameterTypes()[0]);
                 if (argument == CallShape.REFUSED) return null;
