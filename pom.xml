@@ -13,7 +13,7 @@
     -->
     <groupId>com.github.BotMakerDev</groupId>
     <artifactId>botmaker-studio-api</artifactId>
-    <version>0.6.2-SNAPSHOT</version>
+    <version>0.7.0</version>
 
     <name>BotMaker Studio Plugin API</name>
     <description>
@@ -65,7 +65,7 @@
              v0.6.0 the same way on 2026-10-10: typed managed ids replaced @Managed's string value()
              (@ManagedMarker), and main's CI went red against v0.4.2 — and with it every module whose CI
              installs this one from main. -->
-        <botmaker.japicmp.baseline>v0.6.0</botmaker.japicmp.baseline>
+        <botmaker.japicmp.baseline>v0.6.1</botmaker.japicmp.baseline>
         <botmaker.japicmp.skip>false</botmaker.japicmp.skip>
     </properties>
 
