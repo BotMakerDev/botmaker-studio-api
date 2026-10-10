@@ -15,6 +15,19 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+No source changes since v0.7.0; re-released for updated upstream pins.
+
+No source changes since v0.6.1; re-released for updated upstream pins.
+
+### Fixed
+
+- **0.6.0 republished.** The contract is 0.6.0's, unchanged. Tag `v0.6.0` was pushed while JitPack's builders
+  could not start Maven (`Could not find or load main class org.codehaus.plexus.classworlds.launcher.Launcher`,
+  every build from 2026-10-09 to 2026-10-10), so JitPack serves nothing for it, and a tag that built `Error`
+  stays broken. Depend on 0.6.1, never 0.6.0.
+
 ## [0.7.0] — 2026-10-10
 
 No source changes since v0.6.1; re-released for updated upstream pins.
