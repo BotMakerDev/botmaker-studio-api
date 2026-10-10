@@ -13,7 +13,7 @@
     -->
     <groupId>com.github.BotMakerDev</groupId>
     <artifactId>botmaker-studio-api</artifactId>
-    <version>0.7.1</version>
+    <version>0.7.2-SNAPSHOT</version>
 
     <name>BotMaker Studio Plugin API</name>
     <description>
