@@ -112,10 +112,9 @@ public final class ManagedValue<T> {
     private final Ref.Of1<String, ? extends T> byName;
     private final Grouped grouped;
     private final Field field;
-    private final boolean retired;
 
     private ManagedValue(Key key, String reason, String holder, Shape shape, Class<T> type, T initial,
-                         Ref.Of1<String, ? extends T> byName, Grouped grouped, Field field, boolean retired) {
+                         Ref.Of1<String, ? extends T> byName, Grouped grouped, Field field) {
         this.key = key;
         this.reason = reason;
         this.holder = holder;
@@ -125,33 +124,6 @@ public final class ManagedValue<T> {
         this.byName = byName;
         this.grouped = grouped;
         this.field = field;
-        this.retired = retired;
-    }
-
-    /**
-     * This value as a <b>retired</b> one: the shape an older release of the plugin wrote, kept so a
-     * {@link Conversion} can read it out of a bot that still holds it (2026-10-11).
-     *
-     * <p>The host reads a retired value and hands it to the conversion that names it, then removes it; it never
-     * creates one, never opens one in an editor, and never lets a window write one. Keep the declaration, its
-     * marker constant and its types in the jar for as long as the plugin converts from that shape: a bot older
-     * than the oldest retired shape can no longer be upgraded in one step. {@code plugin validate} refuses a
-     * retired value no conversion reads.
-     *
-     * <pre>{@code
-     * public static final ManagedValue<Outcome> OUTCOMES = ManagedValue.openSet(SdkValue.Id.OUTCOMES)
-     *         .ofEnum(Outcome.class, BotConstants::outcome).in("Outcomes")
-     *         .because("Converted into Activities on upgrade.")
-     *         .retired();
-     * }</pre>
-     */
-    public ManagedValue<T> retired() {
-        return new ManagedValue<>(key, reason, holder, shape, type, initial, byName, grouped, field, true);
-    }
-
-    /** Whether this is a {@link #retired()} shape, read only so a {@link Conversion} can carry it over. */
-    public boolean isRetired() {
-        return retired;
     }
 
     /** The id: {@link #idOf} its constant — {@code "com.botmaker.sdk.api.bot.SdkValue$Id.FLOW"}. */
@@ -703,7 +675,7 @@ public final class ManagedValue<T> {
         /** What owns this value and where to change it instead. */
         public ManagedValue<T> because(String reason) {
             return new ManagedValue<>(key, requireText(reason, "reason"), holder, shape, type, initial, byName,
-                    grouped, field, false);
+                    grouped, field);
         }
     }
 
@@ -727,7 +699,6 @@ public final class ManagedValue<T> {
 
     @Override
     public String toString() {
-        return "ManagedValue[" + key.id() + (holder == null ? "" : " in " + holder) + (retired ? ", retired" : "")
-                + "]";
+        return "ManagedValue[" + key.id() + (holder == null ? "" : " in " + holder) + "]";
     }
 }

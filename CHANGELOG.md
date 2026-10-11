@@ -28,12 +28,6 @@ is allowed to make. Additions arrive as `default` methods.
   marker's `@Target` must include `ElementType.FIELD`. `ManagedValues.claim` ignores a parameter, since the bot
   reads the field itself. Additive: a plugin built against 0.7 is unaffected.
 
-- **A plugin converts its own managed values when their shape changes.** `ManagedValue.retired()` keeps an old
-  declaration readable (never created, never edited), and `Conversion.from(retired…).to(current…)
-  .by(Plugin::convert).because("…")`, listed in `StudioPlugin.conversions()`, says how a bot's old values become
-  the new ones: `Converting` holds what the host read, `Converted` what to write, many to many. The host runs
-  conversions when a bot upgrades the plugin; `plugin validate` will refuse a retired value no conversion reads.
-
 - **An open set of nested enums**: `ManagedValue.openSet(id).ofEnums(Outcome.class, BotConstants::outcome)
   .groupedAs(Activity.class, BotConstants::activity)` declares a holder class whose members are enums nested in
   it, one per group (`Activities { enum Collect implements Outcome { NEXT, WON } }`). `isGrouped()`,

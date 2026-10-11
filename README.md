@@ -80,9 +80,10 @@ public final class Sdk {
 ```
 
 Every marked method is `public static T id() { return <expr>; }`, and the host rewrites only that expression,
-so comments and helpers around it survive. A plugin that changes a managed value's shape declares the
-`Conversion` from the old one (by overriding `StudioPlugin.conversions()`; there is no declaration step); Studio runs it when a project upgrades the plugin, and the release refuses a
-plugin that changed shape without one.
+so comments and helpers around it survive. A plugin changes a managed value's shape freely: when a bot upgrades
+the plugin, Studio repairs what no longer reads the way it repairs any other code. A value whose id is gone is
+removed (kept, unmarked, while the bot's code still names it), and a value that no longer compiles takes the
+declaration's first value, marked `@Refactor` for review.
 
 ## Compatibility
 
