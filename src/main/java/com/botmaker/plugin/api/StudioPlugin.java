@@ -6,6 +6,7 @@ import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.record.RecordedValue;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
+import com.botmaker.plugin.api.source.Conversion;
 import com.botmaker.plugin.api.source.ManagedValue;
 import com.botmaker.plugin.api.toolbar.ToolbarItem;
 import com.botmaker.plugin.api.value.ComponentType;
@@ -170,6 +171,19 @@ public interface StudioPlugin {
      * and every value stays exactly as editable as it was.
      */
     default List<ManagedValue<?>> managedValues() {
+        return List.of();
+    }
+
+    /**
+     * How this release carries a bot's managed values from the shapes older releases wrote: one
+     * {@link Conversion} per change, from {@link ManagedValue#retired() retired}
+     * values this plugin still lists in {@link #managedValues()} to the ones it writes now, run by the host in this
+     * order when a bot upgrades to this release (2026-10-11).
+     *
+     * <p>The host never converts anything a plugin did not declare. {@code default} empty: a plugin that never
+     * changed a value's shape converts nothing.
+     */
+    default List<Conversion> conversions() {
         return List.of();
     }
 
