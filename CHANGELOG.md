@@ -19,6 +19,15 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **A plugin declares parameters of its own.** `ManagedValue.param(id).in(holder).startsAs(Owner::first)
+  .shown(category, description, visibility).because("…")` declares a `@Param` field of the holder that carries
+  the plugin's mark: `@SdkValue(SdkValue.Id.DO_SETUP) @Param(…) public static boolean doSetup = true;`. It is a
+  third `ManagedValue.Shape`, `PARAM`. `startsAs` names a no-argument method: its generic return type is the
+  field's type (`form()`), and what it returns is the first value. The host writes the field when the holder
+  lacks it and keeps its declaration; only the value is edited, in the Parameters window and the Runner. The
+  marker's `@Target` must include `ElementType.FIELD`. `ManagedValues.claim` ignores a parameter, since the bot
+  reads the field itself. Additive: a plugin built against 0.7 is unaffected.
+
 - **A plugin converts its own managed values when their shape changes.** `ManagedValue.retired()` keeps an old
   declaration readable (never created, never edited), and `Conversion.from(retired…).to(current…)
   .by(Plugin::convert).because("…")`, listed in `StudioPlugin.conversions()`, says how a bot's old values become

@@ -1,12 +1,15 @@
 package com.botmaker.plugin.api.source;
 
 import com.botmaker.plugin.api.managed.ManagedMarker;
+import com.botmaker.plugin.api.params.Param;
 import com.botmaker.plugin.api.value.Ref;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 
 /**
@@ -32,6 +35,12 @@ import java.util.Arrays;
  * of bare names implementing {@link #type()} ({@link #isEnum()}), or a class of such enums nested in it
  * ({@link #isGrouped()}).
  *
+ * <p><b>A third shape, a parameter</b> ({@link #param}, 2026-10-11): on a <b>field</b> that also carries
+ * {@code @Param}, a value the person running the bot picks — {@code Sdk.doSetup}. The host writes the field when
+ * the holder lacks it and keeps its declaration (name, type, annotations) the plugin's; its value is edited like
+ * any parameter's, in the Parameters window and the Runner. The bot reads the field itself, so nothing is
+ * claimed at run time.
+ *
  * <p><b>Where it goes when it is missing.</b> A project that never had the plugin's file has no
  * marked method to open, and nothing else would ever write one. {@code holder} and {@code type} are
  * what the host needs to write it once ({@link PluginValues#create}, or on every bind): the class the value
@@ -56,7 +65,9 @@ public final class ManagedValue<T> {
         /** On a method: one value, the expression the method returns. */
         METHOD("method", "a managed value"),
         /** On a type: a class of constants the plugin adds to, renames in and removes from. */
-        OPEN_SET("open-set", "a managed set");
+        OPEN_SET("open-set", "a managed set"),
+        /** On a field that is also a {@code @Param}: its declaration the plugin's, its value the runner's. */
+        PARAM("param", "a plugin's parameter");
 
         private final String id;
         private final String displayName;
@@ -66,7 +77,7 @@ public final class ManagedValue<T> {
             this.displayName = displayName;
         }
 
-        /** The stable key: {@code "method"}, {@code "open-set"}. */
+        /** The stable key: {@code "method"}, {@code "open-set"}, {@code "param"}. */
         public String id() {
             return id;
         }
@@ -89,6 +100,9 @@ public final class ManagedValue<T> {
     /** A set of nested enums ({@link SetSteps#ofEnums}): how a constant and a whole enum read as the plugin's. */
     private record Grouped(Ref.Of2<String, String, ?> byName, Class<?> groupType, Ref.Of1<String, ?> byGroup) {}
 
+    /** A parameter ({@link #param}): the field's full type, and what its {@code @Param} says. */
+    private record Field(Type form, String category, String description, String visibility) {}
+
     private final Key key;
     private final String reason;
     private final String holder;
@@ -97,10 +111,11 @@ public final class ManagedValue<T> {
     private final T initial;
     private final Ref.Of1<String, ? extends T> byName;
     private final Grouped grouped;
+    private final Field field;
     private final boolean retired;
 
     private ManagedValue(Key key, String reason, String holder, Shape shape, Class<T> type, T initial,
-                         Ref.Of1<String, ? extends T> byName, Grouped grouped, boolean retired) {
+                         Ref.Of1<String, ? extends T> byName, Grouped grouped, Field field, boolean retired) {
         this.key = key;
         this.reason = reason;
         this.holder = holder;
@@ -109,6 +124,7 @@ public final class ManagedValue<T> {
         this.initial = initial;
         this.byName = byName;
         this.grouped = grouped;
+        this.field = field;
         this.retired = retired;
     }
 
@@ -130,7 +146,7 @@ public final class ManagedValue<T> {
      * }</pre>
      */
     public ManagedValue<T> retired() {
-        return new ManagedValue<>(key, reason, holder, shape, type, initial, byName, grouped, true);
+        return new ManagedValue<>(key, reason, holder, shape, type, initial, byName, grouped, field, true);
     }
 
     /** Whether this is a {@link #retired()} shape, read only so a {@link Conversion} can carry it over. */
@@ -215,14 +231,48 @@ public final class ManagedValue<T> {
         return shape;
     }
 
-    /** The class the marked method returns, or — for an open set — the class of each constant. */
+    /**
+     * The class the marked method returns, or — for an open set — the class of each constant, or — for a
+     * parameter — the field's class, boxed when it is a primitive.
+     */
     public Class<T> type() {
         return type;
     }
 
-    /** What a created method first returns, or null for the type's fresh value. */
+    /**
+     * The type the host writes: a parameter's whole field type — {@code Set<Class<? extends Outcome>>},
+     * {@code boolean} — which {@link #type()} cannot say; {@link #type()} for any other shape.
+     */
+    public Type form() {
+        return field == null ? type : field.form();
+    }
+
+    /**
+     * What a created method first returns, or null for the type's fresh value; for a parameter, what the field
+     * is first set to, null written as {@code null}.
+     */
     public T initial() {
         return initial;
+    }
+
+    /** Whether this is a parameter ({@link #param}) — the marker on a {@code @Param} field. */
+    public boolean isParam() {
+        return shape == Shape.PARAM;
+    }
+
+    /** A parameter's {@code @Param(category)}; {@code ""} for any other shape. */
+    public String category() {
+        return field == null ? "" : field.category();
+    }
+
+    /** A parameter's {@code @Param(description)}; {@code ""} for any other shape. */
+    public String description() {
+        return field == null ? "" : field.description();
+    }
+
+    /** A parameter's {@code @Param(visibility)}, {@code Param.EDITOR} or {@code Param.PUBLIC}; {@code ""} otherwise. */
+    public String visibility() {
+        return field == null ? "" : field.visibility();
     }
 
     /**
@@ -312,6 +362,30 @@ public final class ManagedValue<T> {
     }
 
     /**
+     * <b>The way to declare a parameter of the plugin's own</b> — a {@code @Param} field in its holder that the
+     * person running the bot sets, and the bot reads by name — {@code Bot.runFlow(Sdk.flow, Sdk.doSetup, …)}:
+     *
+     * <pre>{@code
+     * public static final ManagedValue<Boolean> DO_SETUP = ManagedValue.param(SdkValue.Id.DO_SETUP)
+     *         .in("Sdk")
+     *         .startsAs(SdkParams::doSetup)           // its type, and the value a written field starts as
+     *         .shown("Run", "Set the game up first", Param.PUBLIC)
+     *         .because("The SDK reads this parameter. Change its value in the Runner or Project ▸ Parameters.");
+     * }</pre>
+     *
+     * <p>The field is named after the id, camel-cased — {@code DO_SETUP} is {@code doSetup} — and marked with it,
+     * {@code @SdkValue(SdkValue.Id.DO_SETUP) @Param(…) public static boolean doSetup = true;}. The host appends it
+     * to the holder whenever the holder lacks a field carrying the id, and never lets the Parameters window
+     * rename, retype, re-describe or remove it: the bot's own code names the field.
+     *
+     * @throws IllegalArgumentException when the enum is not nested in such an annotation, or its {@code @Target}
+     *                                  leaves out fields
+     */
+    public static ParamSteps param(Enum<?> id) {
+        return new ParamSteps(Key.of(id, ElementType.FIELD));
+    }
+
+    /**
      * <b>The way to declare an open set</b> — a class of constants the user grows, which a bot marks the holder
      * class with — {@code @SdkValue(SdkValue.Id.PICTURES)} — created empty in the holder:
      *
@@ -366,7 +440,7 @@ public final class ManagedValue<T> {
         /** A method returning a {@code type}, which the host opens and never writes. */
         public <T> Reason<T> holds(Class<T> type) {
             if (type == null) throw new IllegalArgumentException(key.id() + ": no type given");
-            return new Reason<>(key, null, Shape.METHOD, type, null, null, null);
+            return new Reason<>(key, null, Shape.METHOD, type, null, null, null, null);
         }
     }
 
@@ -387,7 +461,84 @@ public final class ManagedValue<T> {
          */
         public <T> Reason<T> holds(Class<T> type, T initial) {
             if (type == null) throw new IllegalArgumentException(key.id() + ": no type given");
-            return new Reason<>(key, holder, Shape.METHOD, type, initial, null, null);
+            return new Reason<>(key, holder, Shape.METHOD, type, initial, null, null, null);
+        }
+    }
+
+    /** After {@link #param}: the class the field is in. */
+    public static final class ParamSteps {
+
+        private final Key key;
+
+        private ParamSteps(Key key) {
+            this.key = key;
+        }
+
+        /** In the class {@code holder} — {@code "Sdk"} — which the host writes the field into, or creates. */
+        public ParamTypeStep in(String holder) {
+            return new ParamTypeStep(key, requireText(holder, "holder"));
+        }
+    }
+
+    /** After {@link ParamSteps#in}: the field's type and first value. */
+    public static final class ParamTypeStep {
+
+        private final Key key;
+        private final String holder;
+
+        private ParamTypeStep(Key key, String holder) {
+            this.key = key;
+            this.holder = holder;
+        }
+
+        /**
+         * A field of the type {@code initial}'s method returns — generic arguments included, which a class
+         * literal cannot say — first set to what it returns. The method is called once, here.
+         *
+         * @param initial a method reference to a {@code static} method of no argument —
+         *                {@code SdkParams::skip}, returning {@code Set<Class<? extends Outcome>>}
+         * @throws IllegalArgumentException when {@code initial} is no method reference, or it returns nothing
+         */
+        public <T> ParamShownStep<T> startsAs(Ref.Of0<T> initial) {
+            if (!(Ref.resolve(initial) instanceof Method method) || method.getReturnType() == void.class) {
+                throw new IllegalArgumentException(key.id() + ": startsAs names a method returning the value");
+            }
+            @SuppressWarnings("unchecked")
+            Class<T> type = (Class<T>) boxed(method.getReturnType());
+            return new ParamShownStep<>(key, holder, type, method.getGenericReturnType(), initial.call());
+        }
+
+        private static Class<?> boxed(Class<?> type) {
+            if (!type.isPrimitive()) return type;
+            return java.lang.invoke.MethodType.methodType(type).wrap().returnType();
+        }
+    }
+
+    /** After {@link ParamTypeStep#startsAs}: what the field's {@code @Param} says. */
+    public static final class ParamShownStep<T> {
+
+        private final Key key;
+        private final String holder;
+        private final Class<T> type;
+        private final Type form;
+        private final T initial;
+
+        private ParamShownStep(Key key, String holder, Class<T> type, Type form, T initial) {
+            this.key = key;
+            this.holder = holder;
+            this.type = type;
+            this.form = form;
+            this.initial = initial;
+        }
+
+        /**
+         * The heading it is listed under, the line beside it, and who sees it — {@code Param.PUBLIC} for the
+         * Runner too, {@code Param.EDITOR} for the Parameters window only; anything else reads as the latter.
+         */
+        public Reason<T> shown(String category, String description, String visibility) {
+            Field field = new Field(form, category == null ? "" : category, description == null ? "" : description,
+                    Param.PUBLIC.equals(visibility) ? Param.PUBLIC : Param.EDITOR);
+            return new Reason<>(key, holder, Shape.PARAM, type, initial, null, null, field);
         }
     }
 
@@ -520,7 +671,8 @@ public final class ManagedValue<T> {
 
         /** The class {@code holder} — {@code "Pictures"} — created empty when a project has none. */
         public Reason<E> in(String holder) {
-            return new Reason<>(key, requireText(holder, "holder"), Shape.OPEN_SET, element, null, byName, grouped);
+            return new Reason<>(key, requireText(holder, "holder"), Shape.OPEN_SET, element, null, byName, grouped,
+                    null);
         }
     }
 
@@ -534,9 +686,10 @@ public final class ManagedValue<T> {
         private final T initial;
         private final Ref.Of1<String, ? extends T> byName;
         private final Grouped grouped;
+        private final Field field;
 
         private Reason(Key key, String holder, Shape shape, Class<T> type, T initial,
-                       Ref.Of1<String, ? extends T> byName, Grouped grouped) {
+                       Ref.Of1<String, ? extends T> byName, Grouped grouped, Field field) {
             this.key = key;
             this.holder = holder;
             this.shape = shape;
@@ -544,12 +697,13 @@ public final class ManagedValue<T> {
             this.initial = initial;
             this.byName = byName;
             this.grouped = grouped;
+            this.field = field;
         }
 
         /** What owns this value and where to change it instead. */
         public ManagedValue<T> because(String reason) {
             return new ManagedValue<>(key, requireText(reason, "reason"), holder, shape, type, initial, byName,
-                    grouped, false);
+                    grouped, field, false);
         }
     }
 

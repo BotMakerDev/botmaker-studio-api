@@ -374,6 +374,60 @@ class ManagedValuesTest {
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.method(null));
     }
 
+    @ManagedMarker
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.METHOD, ElementType.FIELD})
+    @interface Fields {
+
+        Id value();
+
+        enum Id { SKIP, DO_SETUP }
+    }
+
+    public static java.util.Set<Class<? extends Number>> skip() {
+        return java.util.Set.of(Integer.class);
+    }
+
+    public static boolean doSetup() {
+        return true;
+    }
+
+    @Test
+    void aParameterIsTypedByItsMethodAndStartsAsWhatItReturns() {
+        ManagedValue<java.util.Set<Class<? extends Number>>> skip = ManagedValue.param(Fields.Id.SKIP).in("Sdk")
+                .startsAs(ManagedValuesTest::skip).shown("Run", "What to skip", "nobody").because("Mine.");
+        assertTrue(skip.isParam());
+        assertEquals(ManagedValue.Shape.PARAM, skip.shape());
+        assertEquals(java.util.Set.class, skip.type());
+        assertEquals("java.util.Set<java.lang.Class<? extends java.lang.Number>>", skip.form().getTypeName());
+        assertEquals(java.util.Set.of(Integer.class), skip.initial());
+        assertEquals("Run", skip.category());
+        assertEquals("What to skip", skip.description());
+        assertEquals(com.botmaker.plugin.api.params.Param.EDITOR, skip.visibility());
+
+        ManagedValue<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
+                .startsAs(ManagedValuesTest::doSetup).shown(null, null, com.botmaker.plugin.api.params.Param.PUBLIC)
+                .because("Mine.");
+        assertEquals(Boolean.class, doSetup.type());
+        assertEquals(boolean.class, doSetup.form());
+        assertEquals(com.botmaker.plugin.api.params.Param.PUBLIC, doSetup.visibility());
+        assertEquals("", doSetup.category());
+    }
+
+    @Test
+    void aParameterNeedsAMarkerFieldsMayCarryAndIsNeverClaimed() {
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(TestValue.Id.FLOW));
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(Fields.Id.SKIP).in("Sdk")
+                .startsAs(() -> java.util.Set.<Class<? extends Number>>of()));
+        ManagedValue<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
+                .startsAs(ManagedValuesTest::doSetup).shown("", "", "").because("Mine.");
+        List<Boolean> taken = new ArrayList<>();
+        ManagedValues.claim(doSetup, taken::add);
+        assertTrue(taken.isEmpty());
+        assertEquals(ManagedValue.Shape.METHOD, text(TestValue.Id.GREETING).shape());
+        assertEquals(String.class, text(TestValue.Id.GREETING).form());
+    }
+
     @Test
     void namingNoValuesClassAtAllIsLegal() {
         ManagedValues.install();

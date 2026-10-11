@@ -86,6 +86,14 @@ import java.lang.annotation.Target;
  * difference is whether the rest of the bot names the parts: {@code Pictures.COLLECT} is written at its use
  * sites, and a flow's activities are not.
  *
+ * <h2>On a field: a parameter of the plugin's</h2>
+ *
+ * <p>The marker beside {@code @Param} on a field — {@code @SdkValue(SdkValue.Id.DO_SETUP) @Param(…) public static
+ * boolean doSetup = true;} — says the plugin declared that parameter
+ * ({@link com.botmaker.plugin.api.source.ManagedValue#param(Enum)}): BotMaker writes the field when the holder
+ * lacks it and keeps its declaration, and its value is the runner's to set. The annotation's {@code @Target}
+ * then includes {@code ElementType.FIELD}.
+ *
  * @see com.botmaker.plugin.api.params.Param the same idea for a value the bot's <em>user</em> changes
  */
 @Documented
