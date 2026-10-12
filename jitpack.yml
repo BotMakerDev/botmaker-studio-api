@@ -1,15 +1,15 @@
 jdk:
   - openjdk25
 install:
-  # A plain `mvn install`, as in every module since 2026-10-06 (umbrella doc 43). This module also pins no
-  # BotMaker upstream. Its only dependency is javafx-controls at a literal version in `provided` scope, so the
-  # committed pom is already the pom a consumer resolves and there is nothing for flatten to bake in.
+  # .jitpack/build.sh is a copy of the umbrella's tools/jitpack/build.sh, which the release's JitpackScriptGate
+  # keeps identical. It brings its own Maven 3.9.9 (and Temurin 25 where SDKMan's download fails), fetched
+  # from Google's mirror of Maven Central first, and retries a 429 rather than losing the tag (umbrella doc 43).
   #
-  # -Dbotmaker.japicmp.skip=true deactivates the `api-gate` profile, so the japicmp plugin is not even
-  # loaded. It is not a convenience: JitPack's builder runs a Maven older than the 3.6.3 that plugin
-  # declares as a prerequisite, and the v0.0.1 build — this module's first ever tag — died on
-  # `The plugin ... requires Maven version 3.6.3` before any configuration was read, publishing nothing and
-  # taking botmaker-sdk v1.1.1 down with it. A gate here could only ever refuse a tag that is already
-  # pushed; the refusal that matters is `mvn verify` in this repository's own CI, before the tag exists.
-  # Exactly the same reasoning as the -DskipTests beside it.
-  - mvn install -DskipTests -Dmaven.javadoc.skip=true -Dbotmaker.japicmp.skip=true -B
+  # This module pins no BotMaker upstream. Its only dependency is javafx-controls at a literal version in
+  # `provided` scope, so the committed pom is already the pom a consumer resolves.
+  #
+  # -Dbotmaker.japicmp.skip=true deactivates the `api-gate` profile, so the japicmp plugin is not even loaded.
+  # A gate here could only ever refuse a tag that is already pushed; the refusal that matters is `mvn verify`
+  # in this repository's own CI, before the tag exists. The v0.0.1 build died on japicmp's Maven prerequisite
+  # before any configuration was read, publishing nothing and taking botmaker-sdk v1.1.1 down with it.
+  - bash .jitpack/build.sh -Dbotmaker.japicmp.skip=true

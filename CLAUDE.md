@@ -83,4 +83,6 @@ release version and `main` a `-SNAPSHOT` (umbrella doc 43). **The maintainer own
 from the umbrella with `../release.sh --studio-api <version>`.
 
 Unlike `botmaker-session` and `botmaker-sdk` this module runs **no `flatten-maven-plugin`**: flatten exists to
-bake a `${botmaker.*.version}` into the published pom, and this module pins no BotMaker upstream. Its `jitpack.yml` is a plain `mvn install`.
+bake a `${botmaker.*.version}` into the published pom, and this module pins no BotMaker upstream. Its
+`jitpack.yml` runs `.jitpack/build.sh`, the umbrella's `tools/jitpack/build.sh` (umbrella doc 43 §6), with
+`-Dbotmaker.japicmp.skip=true`.

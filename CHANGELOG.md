@@ -17,6 +17,12 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
+### Build
+
+- **JitPack builds with `.jitpack/build.sh`**, the umbrella's `tools/jitpack/build.sh`: Maven 3.9.9 and every
+  dependency from Google's mirror of Maven Central first, with backoff and Maven's 429 retry, so Central's
+  `429 Too Many Requests` no longer loses a tag. The statx shim comes with it.
+
 ### Added
 
 - **A plugin addresses its values by declaration, never by an id's spelling.** Every `PluginValues` operation
