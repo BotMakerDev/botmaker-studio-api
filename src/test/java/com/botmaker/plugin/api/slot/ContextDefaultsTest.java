@@ -140,6 +140,23 @@ class ContextDefaultsTest {
         assertEquals(List.of("y"), set);
     }
 
+    /** A host older than {@code member}/{@code writeMember} names no member and refuses to write one, writing nothing. */
+    @Test
+    void anOlderHostNamesNoMemberAndRefusesToWriteOne() {
+        List<Object> set = new java.util.ArrayList<>();
+        ValueContext older = new ValueContext() {
+            @Override public TypeRef type() { return STRING; }
+            @Override public <T> Optional<T> value(Class<T> type) { return Optional.empty(); }
+            @Override public void set(Object value) { set.add(value); }
+            @Override public String source() { return ""; }
+            @Override public StudioServices services() { return null; }
+        };
+
+        assertTrue(older.member("flows").isEmpty());
+        assertTrue(older.writeMember("flows", "DAILY").isPresent());
+        assertTrue(set.isEmpty());
+    }
+
     @Test
     void aValueCarriesItsTypedValueAndTheSourceItWasWrittenAs() {
         ValueContext value = row();

@@ -28,6 +28,12 @@ is allowed to make. Additions arrive as `default` methods.
   marker's `@Target` must include `ElementType.FIELD`. `ManagedValues.claim` ignores a parameter, since the bot
   reads the field itself. Additive: a plugin built against 0.7 is unaffected.
 
+- **An editor picks a constant by its name.** `ValueContext.member(id)` says which constant of the open set `id`
+  the value is written as (`"DAILY"` for `Flows.DAILY`), and `ValueContext.writeMember(id, member)` writes that
+  reference. `set(value)` could only write the first constant equal to the value, so of two equal flows the
+  second could never be picked. Both are `default`: an older host names no member and refuses the write with a
+  sentence to show.
+
 - **An open set of nested enums**: `ManagedValue.openSet(id).ofEnums(Outcome.class, BotConstants::outcome)
   .groupedAs(Activity.class, BotConstants::activity)` declares a holder class whose members are enums nested in
   it, one per group (`Activities { enum Collect implements Outcome { NEXT, WON } }`). `isGrouped()`,
