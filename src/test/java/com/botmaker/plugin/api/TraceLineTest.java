@@ -49,6 +49,7 @@ class TraceLineTest {
             throw new AssertionError("NONE delivered " + line);
         });
         assertDoesNotThrow(handle::close);
-        assertEquals("botmaker.debug", Runs.DEBUG_PROPERTY);
+        assertEquals("botmaker.debug", Runs.DEBUG.name());
+        assertEquals("true", Runs.DEBUG.write(true));
     }
 }

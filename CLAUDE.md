@@ -51,11 +51,10 @@ no back door. If the SDK needs something this module does not expose, the contra
 - **Every surface is declared by steps; factories are method references**, with the two strings in
   `two-strings.md` kept. **No public constructor on a value a plugin builds** (`no-public-constructor.md`).
 - **The catalog degrades, never throws** (`catalog.md`). **No Jackson here.**
-- **japicmp fails on any incompatible change, with no ignore list**; the baseline is `v0.7.0`, and the next
-  release is `--studio-api 0.8.0`, which adds `ManagedValue.param`, `ValueContext.member`/`writeMember`,
-  `PluginType.replacedBy`, `@Migrate`/`@Migrated`, `PluginValues.moveBefore`,
-  `ManagedValue.referredToAs` and `DeclaredCall.when`
-  (`japicmp.md`).
+- **japicmp fails on any incompatible change, with no ignore list**; the baseline is pinned ahead to `v0.9.0`,
+  the next release (`--studio-api 0.9.0`), which types the plugin surfaces: `PluginValues` and
+  `ValueContext.member` by `ManagedValue` and `Member`, `RunProperty`, `Param.Visibility`, `Held` parts — the
+  `String` forms gone (`japicmp.md`).
 
 ## Style
 

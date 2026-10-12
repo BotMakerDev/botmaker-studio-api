@@ -123,42 +123,20 @@ public interface Runs {
     };
 
     /**
-     * The value of the system property every run of this bot <b>on this machine</b> is started with, or
-     * {@code null} when none is set.
+     * What the system property {@code property} names holds for every run of this bot <b>on this machine</b>,
+     * read as its type; empty when it is unset or its text does not read.
      *
-     * <p>For a fact about running the bot here rather than about the bot — which game this computer launches,
-     * say — so it must never be committed with the project, never be published with it, and still reach the
-     * bot's process. The host keeps it beside the project in its own git-excluded state and passes it to every
-     * run and debug session as {@code -D<name>=<value>}; a bot run any other way passes its own {@code -D}.
-     * Host-only because the host owns both halves: the checkout's local state and the process it launches.
+     * <p>For a fact about running the bot here rather than about the bot — what this computer launched last, say
+     * — so it must never be committed with the project, never be published with it, and still reach the bot's
+     * process. The host keeps it beside the project in its own git-excluded state and passes it to every run and
+     * debug session as {@code -D<name>=<text>}; a bot run any other way passes its own {@code -D}. Host-only
+     * because the host owns both halves: the checkout's local state and the process it launches. A fact about the
+     * bot is Java in the bot ({@code @Param}), never a run property.
      *
-     * <p>The name is a system property's, and a plugin names only its own: {@code botmaker.launch.target}
-     * belongs to the plugin whose runtime reads it. A host that runs no bots keeps nothing and answers
-     * {@code null}.
-     *
-     * @deprecated read a declared {@link RunProperty} with {@link #get}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default String property(String name) {
-        return null;
-    }
-
-    /**
-     * Sets {@link #property(String)} for every later run on this machine; {@code null} or blank clears it. A run
-     * already in flight keeps what it started with. A host that runs no bots ignores it.
-     *
-     * @deprecated write a declared {@link RunProperty} with {@link #set}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default void setProperty(String name, String value) {
-    }
-
-    /**
-     * What {@code property} holds on this machine, read as its type; empty when it is unset or its text does not
-     * read. A host that runs no bots answers empty. See {@link #property(String)} for what a run property is.
+     * <p>A plugin names only its own properties. A host that runs no bots keeps nothing and answers empty.
      */
     default <T> Optional<T> get(RunProperty<T> property) {
-        return property == null ? Optional.empty() : property.read(property(property.name()));
+        return Optional.empty();
     }
 
     /**
@@ -166,7 +144,6 @@ public interface Runs {
      * keeps what it started with. A host that runs no bots ignores it.
      */
     default <T> void set(RunProperty<T> property, T value) {
-        if (property != null) setProperty(property.name(), property.write(value));
     }
 
     /**
@@ -175,10 +152,15 @@ public interface Runs {
      * Unset means the bot decides for itself.
      *
      * <p>The one property the host names rather than a plugin, because the toggle is the host's: showing a run's
-     * log is what hosting a run is. A plugin reads and sets it through {@link #property}/{@link #setProperty}
-     * like any other; a runtime that has no debug output ignores it.
+     * log is what hosting a run is. A plugin reads and sets it through {@link #get}/{@link #set} like any other;
+     * a runtime that has no debug output ignores it.
      */
-    String DEBUG_PROPERTY = "botmaker.debug";
+    RunProperty<Boolean> DEBUG = RunProperty.of("botmaker.debug",
+            text -> switch (text.trim().toLowerCase(java.util.Locale.ROOT)) {
+                case "true" -> Boolean.TRUE;
+                case "false" -> Boolean.FALSE;
+                default -> null;
+            }, String::valueOf);
 
     /**
      * Registers {@code listener} for the running bot's trace, one {@link TraceLine} at a time, and returns the

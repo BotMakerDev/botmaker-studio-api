@@ -53,7 +53,7 @@ public record TraceLine(Instant at, Level level, String source, String text, int
 
     /** How serious a line is. A closed set with stable ids, read totally: an unknown id is {@link #UNKNOWN}. */
     public enum Level {
-        /** Detail shown only while the run's debug output is on ({@link Runs#DEBUG_PROPERTY}). */
+        /** Detail shown only while the run's debug output is on ({@link Runs#DEBUG}). */
         DEBUG("debug", "Debug"),
         /** What the bot is doing, always shown. */
         INFO("info", "Info"),

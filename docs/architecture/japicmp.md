@@ -10,8 +10,9 @@ the rule is unconditional — only a Studio major release may break a plugin, an
 block — so there is nothing to distinguish. The baseline is set to the previous tag in every release commit
 (`Japicmp.bump`, never backwards).
 
-**The baseline is `v0.7.0`** (2026-10-11), a released tag, so japicmp compares against it. `v0.7.1` is
-released; `ManagedValue.param` since is additive, and the next release is **`--studio-api 0.8.0`**. A break is
-pinned ahead to the next minor's tag instead, as was done for `v0.2.0`, `v0.3.0`, `v0.4.0` and `v0.6.0`. An absent
+**The baseline is pinned to `v0.9.0`** (2026-10-12), ahead of the tag: the typed plugin surfaces removed every
+`String`-id `PluginValues` operation, the spelled `ValueContext.member`/`writeMember`, `Runs.property`/`setProperty`
+and `DeclaredCall.components`/`build`, so the next release is **`--studio-api 0.9.0`**. A break is pinned ahead to
+the next minor's tag, as was done for `v0.2.0`, `v0.3.0`, `v0.4.0` and `v0.6.0`. An absent
 baseline tag reports and passes. **When a baseline "passes", look at the first line of `target/japicmp/japicmp.diff`**:
 `against` followed by nothing means nothing was compared.

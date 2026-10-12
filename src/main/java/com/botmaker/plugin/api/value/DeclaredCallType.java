@@ -61,17 +61,6 @@ public final class DeclaredCallType<T> implements EditableType<T>, ComponentType
         return new DeclaredCallType<>(declared, call.builtAs(made));
     }
 
-    /**
-     * This type, built back by hand. See {@link DeclaredCall#build(Function)}.
-     *
-     * @deprecated {@link #builtFrom} reads the parts typed; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    @SuppressWarnings("removal")
-    public DeclaredCallType<T> build(Function<List<Object>, T> build) {
-        return new DeclaredCallType<>(declared, call.build(build));
-    }
-
     /** This type, deprecated in favour of {@code replacement}. See {@link DeclaredType#replacedBy(Class)}. */
     public DeclaredCallType<T> replacedBy(Class<?> replacement) {
         return new DeclaredCallType<>(declared.replacedBy(replacement), call);

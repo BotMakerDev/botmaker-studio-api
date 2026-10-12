@@ -11,8 +11,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,63 +60,28 @@ class PluginValuesTest {
     }
 
     @Test
-    void eachTypedOperationReachesTheHostByTheDeclarationsId() {
-        List<String> calls = new ArrayList<>();
-        PluginValues host = new PluginValues() {
-            @Override public List<String> ids() { return List.of(); }
-            @Override public Optional<ValueContext> open(String id) { calls.add("open " + id); return Optional.empty(); }
-            @Override public List<String> members(String id) { return List.of("ORE", "a.b.c", "Collect.WON"); }
-            @Override public Optional<String> add(String id, String member, Object value) {
-                calls.add("add " + id + " " + member + " " + value);
-                return Optional.empty();
-            }
-            @Override public Optional<String> repoint(String id, String member, String replacement, String note) {
-                calls.add("repoint " + member + " " + replacement);
-                return Optional.empty();
-            }
-            @Override public List<String> methods(String id, String group) {
-                calls.add("methods " + id + " " + group);
-                return List.of();
-            }
-        };
-
-        host.open(NAMES);
-        host.add(NAMES, Member.of("ORE"), "ore.png");
-        host.repoint(NAMES, Member.of("Collect", "WON"), Member.of("Collect", "LOST"), "");
-        host.voidMethods();
-
-        assertEquals(List.of("open " + NAMES.id(), "add " + NAMES.id() + " ORE ore.png",
-                "repoint Collect.WON Collect.LOST", "methods null null"), calls);
-        assertEquals(List.of(Member.of("ORE"), Member.of("Collect", "WON")), host.members(NAMES));
-    }
-
-    @Test
-    void aHostWithNoSourceTreeRefusesTheTypedWritesToo() {
+    void aHostWithNoSourceTreeRefusesEveryWrite() {
         assertEquals(Optional.of(PluginValues.NO_SOURCE_TREE), PluginValues.NONE.create(NAMES));
+        assertEquals(Optional.of(PluginValues.NO_SOURCE_TREE), PluginValues.NONE.add(NAMES, Member.of("ORE"), "o"));
         assertEquals(Optional.of(PluginValues.NO_SOURCE_TREE), PluginValues.NONE.remove(NAMES, Member.of("ORE")));
         assertFalse(PluginValues.NONE.createVoidMethod("Bot", "goHome").written());
         assertTrue(PluginValues.NONE.members(NAMES).isEmpty());
+        assertTrue(PluginValues.NONE.voidMethods().isEmpty());
+        assertTrue(PluginValues.NONE.open(NAMES).isEmpty());
     }
 
     @Test
-    void aContextNamesItsMemberTypedAndWritesOneByReference() {
-        List<String> written = new ArrayList<>();
+    void aContextThatNamesNoMemberRefusesToWriteOne() {
         ValueContext ctx = new ValueContext() {
             @Override public TypeRef type() { return TypeRef.unresolved("String"); }
             @Override public <T> Optional<T> value(Class<T> type) { return Optional.empty(); }
             @Override public void set(Object value) { }
             @Override public String source() { return "Names.ORE"; }
             @Override public StudioServices services() { return null; }
-            @Override public Optional<String> member(String id) { return Optional.of("Collect.WON"); }
-            @Override public Optional<String> writeMember(String id, String member) {
-                written.add(id + " " + member);
-                return Optional.empty();
-            }
         };
 
-        assertEquals(Optional.of(Member.of("Collect", "WON")), ctx.member(NAMES));
-        assertTrue(ctx.writeMember(NAMES, Member.of("ORE")).isEmpty());
-        assertEquals(List.of(NAMES.id() + " ORE"), written);
+        assertTrue(ctx.member(NAMES).isEmpty());
+        assertTrue(ctx.writeMember(NAMES, Member.of("ORE")).isPresent());
         assertTrue(ctx.writeMember(NAMES, null).isPresent(), "no member is refused, not thrown");
     }
 }

@@ -21,9 +21,7 @@ import java.util.Optional;
  *
  * <p><b>Addressed by the declaration, never by its id's spelling.</b> Every operation takes the plugin's own
  * {@link ManagedValue} constant, and a constant of an open set is a {@link Member}: a plugin never spells an id
- * or a {@code "Group.NAME"}. The operations taking a {@code String} id are the 0.8 form, kept until 0.9.0.
- * The typed ones are new in 0.8.2: a plugin that calls one needs a host on 0.8.2 or later, since an older host's
- * contract has no such method to link.
+ * or a {@code "Group.NAME"}. (The 0.8 operations taking a {@code String} id went in 0.9.0.)
  *
  * <h2>This is where a plugin's JSON went</h2>
  *
@@ -53,6 +51,9 @@ import java.util.Optional;
  * something that is not a single {@code return <expression>;}, or use a value type no loaded plugin
  * registers. The host shows that read-only with a sentence saying why, and {@link #open} answers empty: the
  * value is intact and the user has not lost anything, so this is a state to report rather than repair.
+ *
+ * <p>Every operation but {@link #ids} and {@link #open(ManagedValue)} is a {@code default} answering what a host
+ * with no source tree answers: empty, or {@link #NO_SOURCE_TREE}.
  */
 public interface PluginValues {
 
@@ -76,17 +77,7 @@ public interface PluginValues {
      * the file and takes one history entry. Calling {@link ValueContext#set} repeatedly is fine; each call
      * replaces what the last one wrote.
      */
-    default Optional<ValueContext> open(ManagedValue<?> value) {
-        return open(idOf(value));
-    }
-
-    /**
-     * {@link #open(ManagedValue)} by the id's spelling.
-     *
-     * @deprecated pass the {@link ManagedValue}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    Optional<ValueContext> open(String id);
+    Optional<ValueContext> open(ManagedValue<?> value);
 
     /**
      * Writes the class that holds {@code value} when the project has none, and answers why not when it did not.
@@ -103,16 +94,6 @@ public interface PluginValues {
      *         project is open, or the file could not be written
      */
     default Optional<String> create(ManagedValue<?> value) {
-        return create(idOf(value));
-    }
-
-    /**
-     * {@link #create(ManagedValue)} by the id's spelling.
-     *
-     * @deprecated pass the {@link ManagedValue}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default Optional<String> create(String id) {
         return Optional.of(NO_SOURCE_TREE);
     }
 
@@ -222,19 +203,9 @@ public interface PluginValues {
 
     /**
      * The constants the open set {@code set} holds, in the order they are written. Empty when the project has no
-     * class carrying its mark; a name the host spelled as no member is left out rather than thrown.
+     * class carrying its mark.
      */
     default List<Member> members(ManagedValue<?> set) {
-        return members(idOf(set)).stream().flatMap(spelled -> Member.read(spelled).stream()).toList();
-    }
-
-    /**
-     * {@link #members(ManagedValue)} spelled.
-     *
-     * @deprecated pass the {@link ManagedValue}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default List<String> members(String id) {
         return List.of();
     }
 
@@ -245,16 +216,6 @@ public interface PluginValues {
      * ({@link ManagedValue#isEnum}), whose name is all it has.
      */
     default Optional<ValueContext> open(ManagedValue<?> set, Member member) {
-        return open(idOf(set), spelled(member));
-    }
-
-    /**
-     * {@link #open(ManagedValue, Member)} spelled.
-     *
-     * @deprecated pass the {@link ManagedValue} and a {@link Member}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default Optional<ValueContext> open(String id, String member) {
         return Optional.empty();
     }
 
@@ -266,31 +227,11 @@ public interface PluginValues {
      * only checked.
      */
     default <E> Optional<String> add(ManagedValue<E> set, Member member, E value) {
-        return add(idOf(set), spelled(member), value);
-    }
-
-    /**
-     * {@link #add(ManagedValue, Member, Object)} spelled.
-     *
-     * @deprecated pass the {@link ManagedValue} and a {@link Member}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default Optional<String> add(String id, String member, Object value) {
         return Optional.of(NO_SOURCE_TREE);
     }
 
     /** Every use of the constant outside its own declaration. Empty when it is unused or cannot be resolved. */
     default List<Use> uses(ManagedValue<?> set, Member member) {
-        return uses(idOf(set), spelled(member));
-    }
-
-    /**
-     * {@link #uses(ManagedValue, Member)} spelled.
-     *
-     * @deprecated pass the {@link ManagedValue} and a {@link Member}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default List<Use> uses(String id, String member) {
         return List.of();
     }
 
@@ -300,16 +241,6 @@ public interface PluginValues {
      * for review.
      */
     default Optional<String> rename(ManagedValue<?> set, Member member, String newName) {
-        return rename(idOf(set), spelled(member), newName);
-    }
-
-    /**
-     * {@link #rename(ManagedValue, Member, String)} spelled.
-     *
-     * @deprecated pass the {@link ManagedValue} and a {@link Member}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default Optional<String> rename(String id, String member, String newName) {
         return Optional.of(NO_SOURCE_TREE);
     }
 
@@ -321,31 +252,11 @@ public interface PluginValues {
      * it after.
      */
     default Optional<String> repoint(ManagedValue<?> set, Member member, Member replacement, String note) {
-        return repoint(idOf(set), spelled(member), spelled(replacement), note);
-    }
-
-    /**
-     * {@link #repoint(ManagedValue, Member, Member, String)} spelled.
-     *
-     * @deprecated pass the {@link ManagedValue} and {@link Member}s; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default Optional<String> repoint(String id, String member, String replacement, String note) {
         return Optional.of(NO_SOURCE_TREE);
     }
 
     /** Deletes the constant's declaration. Refused while anything uses it, the uses listed in the sentence. */
     default Optional<String> remove(ManagedValue<?> set, Member member) {
-        return remove(idOf(set), spelled(member));
-    }
-
-    /**
-     * {@link #remove(ManagedValue, Member)} spelled.
-     *
-     * @deprecated pass the {@link ManagedValue} and a {@link Member}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default Optional<String> remove(String id, String member) {
         return Optional.of(NO_SOURCE_TREE);
     }
 
@@ -360,20 +271,8 @@ public interface PluginValues {
      * declared between the two. Always refused in an enum set ({@link ManagedValue#isEnum}, a set of nested
      * enums): an enum constant reads no other, and moving one changes its {@code ordinal()} and
      * {@code values()}.
-     *
-     * <p>The spelled form is new in 0.8.0, this one in 0.8.2: a plugin that calls it needs a host that recent.
      */
     default Optional<String> moveBefore(ManagedValue<?> set, Member member, Member before) {
-        return moveBefore(idOf(set), spelled(member), spelled(before));
-    }
-
-    /**
-     * {@link #moveBefore(ManagedValue, Member, Member)} spelled.
-     *
-     * @deprecated pass the {@link ManagedValue} and {@link Member}s; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default Optional<String> moveBefore(String id, String member, String before) {
         return Optional.of(NO_SOURCE_TREE);
     }
 
@@ -386,16 +285,6 @@ public interface PluginValues {
 
     /** The simple names of the enums nested in the grouped set {@code set}, in the order they are written. */
     default List<String> groups(ManagedValue<?> set) {
-        return groups(idOf(set));
-    }
-
-    /**
-     * {@link #groups(ManagedValue)} spelled.
-     *
-     * @deprecated pass the {@link ManagedValue}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default List<String> groups(String id) {
         return List.of();
     }
 
@@ -405,46 +294,16 @@ public interface PluginValues {
      * enum a method returns needs a constant to return.
      */
     default Optional<String> addGroup(ManagedValue<?> set, String group, List<String> constants) {
-        return addGroup(idOf(set), group, constants);
-    }
-
-    /**
-     * {@link #addGroup(ManagedValue, String, List)} spelled.
-     *
-     * @deprecated pass the {@link ManagedValue}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default Optional<String> addGroup(String id, String group, List<String> constants) {
         return Optional.of(NO_SOURCE_TREE);
     }
 
     /** Renames the nested enum and every use of it — its class literal, its constants' qualifiers — by binding. */
     default Optional<String> renameGroup(ManagedValue<?> set, String group, String newName) {
-        return renameGroup(idOf(set), group, newName);
-    }
-
-    /**
-     * {@link #renameGroup(ManagedValue, String, String)} spelled.
-     *
-     * @deprecated pass the {@link ManagedValue}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default Optional<String> renameGroup(String id, String group, String newName) {
         return Optional.of(NO_SOURCE_TREE);
     }
 
     /** Deletes the nested enum. Refused while anything uses it or one of its constants, the uses listed. */
     default Optional<String> removeGroup(ManagedValue<?> set, String group) {
-        return removeGroup(idOf(set), group);
-    }
-
-    /**
-     * {@link #removeGroup(ManagedValue, String)} spelled.
-     *
-     * @deprecated pass the {@link ManagedValue}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default Optional<String> removeGroup(String id, String group) {
         return Optional.of(NO_SOURCE_TREE);
     }
 
@@ -460,7 +319,7 @@ public interface PluginValues {
      * ({@code docs/architecture/two-strings.md}), compared and never parsed.
      */
     default List<String> methods(ManagedValue<?> set, String group) {
-        return methods(idOf(set), Objects.requireNonNull(group, "group"));
+        return List.of();
     }
 
     /**
@@ -468,16 +327,6 @@ public interface PluginValues {
      * {@link #methods(ManagedValue, String)} lists them: what can be a flow's way home or its setup.
      */
     default List<String> voidMethods() {
-        return methods((String) null, null);
-    }
-
-    /**
-     * {@link #methods(ManagedValue, String)}, or with both {@code null} {@link #voidMethods()}, spelled.
-     *
-     * @deprecated pass the {@link ManagedValue}, or call {@link #voidMethods()}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default List<String> methods(String id, String group) {
         return List.of();
     }
 
@@ -490,22 +339,11 @@ public interface PluginValues {
      * @return the method reference written, {@code Collect::body}, or the sentence saying why nothing was
      */
     default MethodWrite createMethod(ManagedValue<?> set, String group, String className, String method) {
-        return createMethod(idOf(set), Objects.requireNonNull(group, "group"), className, method);
+        return new MethodWrite(null, NO_SOURCE_TREE);
     }
 
     /** {@link #createMethod(ManagedValue, String, String, String)} for {@code public static void method() {}}. */
     default MethodWrite createVoidMethod(String className, String method) {
-        return createMethod((String) null, null, className, method);
-    }
-
-    /**
-     * {@link #createMethod(ManagedValue, String, String, String)}, or with both {@code null}
-     * {@link #createVoidMethod}, spelled.
-     *
-     * @deprecated pass the {@link ManagedValue}, or call {@link #createVoidMethod}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default MethodWrite createMethod(String id, String group, String className, String method) {
         return new MethodWrite(null, NO_SOURCE_TREE);
     }
 
@@ -527,14 +365,6 @@ public interface PluginValues {
     /** What every write answers on a host with no project behind it. */
     String NO_SOURCE_TREE = "This host keeps no source tree.";
 
-    private static String idOf(ManagedValue<?> value) {
-        return Objects.requireNonNull(value, "value").id();
-    }
-
-    private static String spelled(Member member) {
-        return Objects.requireNonNull(member, "member").toString();
-    }
-
     /**
      * A host that keeps no source tree: no ids, nothing to open.
      *
@@ -550,7 +380,7 @@ public interface PluginValues {
         }
 
         @Override
-        public Optional<ValueContext> open(String id) {
+        public Optional<ValueContext> open(ManagedValue<?> value) {
             return Optional.empty();
         }
     };

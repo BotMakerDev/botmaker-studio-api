@@ -1,8 +1,15 @@
 package com.botmaker.plugin.api.slot;
 
 import com.botmaker.plugin.api.StudioServices;
+import com.botmaker.plugin.api.managed.ManagedMarker;
+import com.botmaker.plugin.api.source.ManagedValue;
+import com.botmaker.plugin.api.source.PluginValues;
 import org.junit.jupiter.api.Test;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.reflect.Executable;
 import java.util.List;
 import java.util.Optional;
@@ -22,6 +29,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ContextDefaultsTest {
 
     private static final TypeRef STRING = TypeRef.of(String.class);
+
+    @ManagedMarker
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.TYPE, ElementType.METHOD})
+    public @interface Mark {
+
+        Id value();
+
+        enum Id { FLOWS }
+    }
 
     /** A Parameters row, or a managed value: a value with no call site anywhere. */
     private static ValueContext row() {
@@ -152,8 +169,10 @@ class ContextDefaultsTest {
             @Override public StudioServices services() { return null; }
         };
 
-        assertTrue(older.member("flows").isEmpty());
-        assertTrue(older.writeMember("flows", "DAILY").isPresent());
+        ManagedValue<String> flows = ManagedValue.openSet(Mark.Id.FLOWS).of(String.class).in("Flows")
+                .because("Mine.");
+        assertTrue(older.member(flows).isEmpty());
+        assertTrue(older.writeMember(flows, PluginValues.Member.of("DAILY")).isPresent());
         assertTrue(set.isEmpty());
     }
 

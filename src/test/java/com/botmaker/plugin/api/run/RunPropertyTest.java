@@ -44,8 +44,12 @@ class RunPropertyTest {
             @Override public OptionalLong pid() { return OptionalLong.empty(); }
             @Override public AutoCloseable onStateChanged(Consumer<Boolean> listener) { return () -> { }; }
             @Override public AutoCloseable onTelemetry(Consumer<byte[]> listener) { return () -> { }; }
-            @Override public String property(String name) { return kept.get(name); }
-            @Override public void setProperty(String name, String value) { kept.put(name, value); }
+            @Override public <T> Optional<T> get(RunProperty<T> property) {
+                return property.read(kept.get(property.name()));
+            }
+            @Override public <T> void set(RunProperty<T> property, T value) {
+                kept.put(property.name(), property.write(value));
+            }
         };
 
         host.set(COUNT, 7);

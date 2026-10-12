@@ -329,29 +329,18 @@ public final class ManagedValue<T> {
 
     /**
      * The value the nested enum {@code group} stands for — what {@code Activities.Collect.class} reads as — made
-     * by the plugin from the enum's simple name. Null when this set is not grouped, the plugin refused, or it
-     * answered something other than {@link #groupType()}.
-     *
-     * @deprecated use {@link #byGroup(Class, String)}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    public Object byGroup(String group) {
-        if (grouped == null || group == null) return null;
-        try {
-            Object made = grouped.byGroup().call(group);
-            return grouped.groupType().isInstance(made) ? made : null;
-        } catch (RuntimeException refused) {
-            return null;
-        }
-    }
-
-    /**
-     * The value the nested enum {@code group} stands for, as {@code as} — {@link #groupType()} or a supertype of
-     * it. Empty when this set is not grouped, the plugin refused, or the value is not an {@code as}.
+     * by the plugin from the enum's simple name, as {@code as}: {@link #groupType()} or a supertype of it. Empty
+     * when this set is not grouped, the plugin refused, or the value is not an {@code as}.
      */
     public <G> Optional<G> byGroup(Class<G> as, String group) {
-        Object made = byGroup(group);
-        return as != null && as.isInstance(made) ? Optional.of(as.cast(made)) : Optional.empty();
+        if (grouped == null || group == null || as == null) return Optional.empty();
+        try {
+            Object made = grouped.byGroup().call(group);
+            return grouped.groupType().isInstance(made) && as.isInstance(made)
+                    ? Optional.of(as.cast(made)) : Optional.empty();
+        } catch (RuntimeException refused) {
+            return Optional.empty();
+        }
     }
 
     /**
@@ -551,16 +540,6 @@ public final class ManagedValue<T> {
             Field field = new Field(form, category == null ? "" : category, description == null ? "" : description,
                     (visibility == null ? Param.Visibility.EDITOR : visibility).id());
             return new Reason<>(key, holder, Shape.PARAM, type, initial, null, null, field);
-        }
-
-        /**
-         * {@link #shown(String, String, Param.Visibility)} with the visibility spelled.
-         *
-         * @deprecated pass a {@link Param.Visibility}; removed in 0.9.0
-         */
-        @Deprecated(forRemoval = true)
-        public Reason<T> shown(String category, String description, String visibility) {
-            return shown(category, description, Param.Visibility.fromId(visibility));
         }
     }
 

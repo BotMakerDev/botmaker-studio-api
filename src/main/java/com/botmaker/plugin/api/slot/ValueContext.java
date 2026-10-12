@@ -102,16 +102,6 @@ public interface ValueContext {
      * <p>{@code default} for a host older than this method, which answers empty.
      */
     default Optional<PluginValues.Member> member(ManagedValue<?> set) {
-        return set == null ? Optional.empty() : member(set.id()).flatMap(PluginValues.Member::read);
-    }
-
-    /**
-     * {@link #member(ManagedValue)} spelled.
-     *
-     * @deprecated pass the {@link ManagedValue}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default Optional<String> member(String id) {
         return Optional.empty();
     }
 
@@ -125,16 +115,6 @@ public interface ValueContext {
      */
     default Optional<String> writeMember(ManagedValue<?> set, PluginValues.Member member) {
         if (set == null || member == null) return Optional.of("No constant to write.");
-        return writeMember(set.id(), member.toString());
-    }
-
-    /**
-     * {@link #writeMember(ManagedValue, PluginValues.Member)} spelled.
-     *
-     * @deprecated pass the {@link ManagedValue} and a {@link PluginValues.Member}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    default Optional<String> writeMember(String id, String member) {
         return Optional.of("This version of BotMaker cannot write " + member + " by its name; update BotMaker.");
     }
 

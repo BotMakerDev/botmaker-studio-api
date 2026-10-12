@@ -43,19 +43,24 @@ is allowed to make. Additions arrive as `default` methods.
   `with(wither, held, apply)` sets a link the same way, and `builtAs(Supplier)` builds a call with no parts as
   the plugin's own value. The host reads the same parts as before; only the plugin's declaration changes.
 
-A plugin that calls any of these needs a host on this version or later.
+A plugin built against this contract needs a host on it: a breaking release, **0.9.0**.
 
-**Source break for a bare `null`:** a call passing a `null` literal where an id or a visibility goes
-(`values.methods(null, null)`, `.shown("Run", "x", null)`) is now ambiguous; cast it, or use `voidMethods()`.
-Compiled plugins are unaffected.
+### Removed
 
-### Deprecated, removed in 0.9.0
+Every untyped form the operations above replace, with no deprecation period — a plugin built against 0.8 that
+calls one fails to link on a 0.9 host, and recompiling names what to change:
 
-- The `String`-id `PluginValues` operations, `ValueContext.member(String)` / `writeMember(String, String)`,
-  `shown(…, String visibility)`, `byGroup(String)` answering `Object`, and `Runs.property` / `setProperty`.
-- `DeclaredCall.components` / `build` and `DeclaredCallType.build`, which took a call apart into a `List<Object>`
-  and built it back by position, and `DeclaredCall.with(wither, part, BiFunction<T, Object, T>)`: declare the
-  part `Held`.
+- The `String`-id `PluginValues` operations (`open(String)`, `members(String)`, `add(String, String, Object)`, …)
+  and their two-`null` forms: pass the `ManagedValue` and a `Member`, or call `voidMethods()` /
+  `createVoidMethod(…)`. A host now implements `open(ManagedValue)`; every other operation is a `default` that
+  refuses as a host with no source tree does.
+- `ValueContext.member(String)` / `writeMember(String, String)`, `ParamShownStep.shown(…, String visibility)`,
+  and `ManagedValue.byGroup(String)` answering `Object`.
+- `Runs.property` / `setProperty` and `Runs.DEBUG_PROPERTY`: a host implements `get` / `set(RunProperty)`, and the
+  debug toggle is `Runs.DEBUG`, a `RunProperty<Boolean>`.
+- `DeclaredCall.components` / `build`, `DeclaredCallType.build`, and `DeclaredCall.with(wither, part,
+  BiFunction<T, Object, T>)`, which took a call apart into a `List<Object>` and built it back by position: declare
+  the part `Held`.
 
 ## [0.8.1] — 2026-10-12
 

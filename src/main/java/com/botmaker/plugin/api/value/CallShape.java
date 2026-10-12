@@ -83,10 +83,6 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
         }
     }
 
-    CallShape<T> withComponents(Function<T, List<Object>> components) {
-        return new CallShape<>(type, factory, parts, components, build, constants, withers, writes, held);
-    }
-
     CallShape<T> withBuild(Function<List<Object>, T> build) {
         return new CallShape<>(type, factory, parts, components, build, constants, withers, writes, held);
     }

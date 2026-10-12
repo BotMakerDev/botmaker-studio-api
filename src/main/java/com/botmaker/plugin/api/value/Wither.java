@@ -62,11 +62,6 @@ public final class Wither<T> {
         return new Wither<>(type, checked(type, wither, 1), required(part), false, null);
     }
 
-    static <T> Wither<T> with(Class<T> type, Ref wither, Function<? super T, ?> part,
-                              BiFunction<? super T, Object, ? extends T> apply) {
-        return new Wither<>(type, checked(type, wither, 1), required(part), false, required(apply));
-    }
-
     /** A link whose part the host holds as an {@code H}, set by {@code apply} once the part read is one. */
     @SuppressWarnings("unchecked")
     static <T, H> Wither<T> with(Class<T> type, Ref wither, Held<? super T, H> part,

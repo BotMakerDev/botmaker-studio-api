@@ -40,8 +40,6 @@ import java.util.function.Function;
  * <p>A part read as anything else is not this call: the source stays as written. Identity matters: a held part is
  * a constant, declared once and named both where the call is declared and where {@link Parts#get} reads it.
  *
- * <p>New in 0.8.2: a plugin declaring one needs a host on 0.8.2 or later, whose contract has this class.
- *
  * @param <T> the class the call builds
  * @param <H> what the host holds this part as
  */

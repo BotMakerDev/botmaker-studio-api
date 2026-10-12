@@ -66,22 +66,6 @@ public final class DeclaredCall<T> implements ComponentType<T> {
     }
 
     /**
-     * {@link #with(Ref.Of2, Function)} for a link whose part the host holds as something its parameter is not,
-     * so it is taken apart by {@code part} and set by {@code apply} rather than by calling the method.
-     *
-     * @param wither the method the link is written as; the host reads its name and parameter, and never calls it
-     * @param part   the part a value holds, as the host reads and writes it
-     * @param apply  {@code value} with its part set, or {@code null} for a part this link does not take
-     * @deprecated declare the part {@link Held}: {@link #with(Ref.Of2, Held, BiFunction)}, or
-     *             {@code with(wither, held.part(give))}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    public <A> DeclaredCall<T> with(Ref.Of2<T, A, T> wither, Function<? super T, ?> part,
-                                BiFunction<? super T, Object, ? extends T> apply) {
-        return new DeclaredCall<>(shape.withWither(Wither.with(shape.type(), wither, part, apply)));
-    }
-
-    /**
      * This call, then {@code .wither()} wherever a value has {@code on} and the factory's value has not:
      * {@code .flag(Flow.Step::goesHome, Flow.Step::goHome)} writes {@code .goesHome()}. A flag only turns a
      * thing on, so a setting that is on by default is declared by its negative ({@code .off()}). See
@@ -115,29 +99,6 @@ public final class DeclaredCall<T> implements ComponentType<T> {
      */
     public DeclaredCall<T> builtAs(Supplier<? extends T> made) {
         return new DeclaredCall<>(shape.withBuiltAs(made));
-    }
-
-    /**
-     * This call, taken apart by hand rather than by its accessors. The factory's parts only: each wither's part
-     * still follows them.
-     *
-     * @deprecated declare each part the host cannot read as a value {@link Held}; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    public DeclaredCall<T> components(Function<T, List<Object>> components) {
-        return new DeclaredCall<>(shape.withComponents(components));
-    }
-
-    /**
-     * This call, built back by hand rather than by invoking its factory. Answer {@code null} for parts this call
-     * does not build. Given the factory's parts only; each wither is applied after it.
-     *
-     * @deprecated {@link #builtFrom} reads the parts typed, {@link Held#map} keeps a map's good entries, and
-     *             {@link #builtAs} builds a call with none; removed in 0.9.0
-     */
-    @Deprecated(forRemoval = true)
-    public DeclaredCall<T> build(Function<List<Object>, T> build) {
-        return new DeclaredCall<>(shape.withBuild(build));
     }
 
     /**
