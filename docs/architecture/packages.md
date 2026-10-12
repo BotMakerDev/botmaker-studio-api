@@ -28,4 +28,6 @@
   `@Palette.order` is deleted.
 - `…api.meta` — **`@ReplacedBy`** (a rename's forward pointer; `CLASS` retention, because Studio reads it out
   of a jar it never loads and it stays out of every running bot's reflection data) and **`@Refactor(value,
-  done)`**, the mark on a function where a refactor wrote a value the user never chose.
+  done)`**, the mark on a function where a refactor wrote a value the user never chose; **`@Migrate`** (a
+  bot's method mapping one type's values to another, written by Studio from the author's steps, never run) and
+  **`@Migrated`** (a managed value such a method wrote and nobody edited since), all three `SOURCE`.

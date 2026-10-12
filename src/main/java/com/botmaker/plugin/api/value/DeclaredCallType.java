@@ -48,9 +48,19 @@ public final class DeclaredCallType<T> implements EditableType<T>, ComponentType
         return new DeclaredCallType<>(declared, call.build(build));
     }
 
+    /** This type, deprecated in favour of {@code replacement}. See {@link DeclaredType#replacedBy(Class)}. */
+    public DeclaredCallType<T> replacedBy(Class<?> replacement) {
+        return new DeclaredCallType<>(declared.replacedBy(replacement), call);
+    }
+
     @Override
     public Class<T> type() {
         return declared.type();
+    }
+
+    @Override
+    public Class<?> replacedBy() {
+        return declared.replacedBy();
     }
 
     @Override

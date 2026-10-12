@@ -52,7 +52,8 @@ no back door. If the SDK needs something this module does not expose, the contra
   `two-strings.md` kept. **No public constructor on a value a plugin builds** (`no-public-constructor.md`).
 - **The catalog degrades, never throws** (`catalog.md`). **No Jackson here.**
 - **japicmp fails on any incompatible change, with no ignore list**; the baseline is `v0.7.0`, and the next
-  release is `--studio-api 0.8.0`, which adds `ManagedValue.param` and `ValueContext.member`/`writeMember`
+  release is `--studio-api 0.8.0`, which adds `ManagedValue.param`, `ValueContext.member`/`writeMember`,
+  `PluginType.replacedBy` and `@Migrate`/`@Migrated`
   (`japicmp.md`).
 
 ## Style

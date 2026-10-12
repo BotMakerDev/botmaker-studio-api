@@ -19,6 +19,13 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **A plugin moves its values to a new type without converting them.** Keep the old class, mark it with the
+  standard `@Deprecated(forRemoval = true)`, and end its declaration with `.replacedBy(New.class)`
+  (`DeclaredType`/`DeclaredCallType`; read back as `PluginType.replacedBy()`, a `default` answering `null`).
+  The step refuses a class without `@Deprecated`. Studio then offers the bot's author to migrate the old values;
+  the plugin writes no mapping. `@Migrate` (the author's mapping, a bot method Studio writes and never runs) and
+  `@Migrated` (a value it wrote) join `com.botmaker.plugin.api.meta`, both `SOURCE`.
+
 - **A plugin declares parameters of its own.** `ManagedValue.param(id).in(holder).startsAs(Owner::first)
   .shown(category, description, visibility).because("…")` declares a `@Param` field of the holder that carries
   the plugin's mark: `@SdkValue(SdkValue.Id.DO_SETUP) @Param(…) public static boolean doSetup = true;`. It is a

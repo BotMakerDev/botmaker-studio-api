@@ -9,6 +9,12 @@
  * what a host writes on a <em>bot's</em> function when a refactor had to guess there — a plugin upgrade, a
  * signature change, a plugin's own rewrite — so the user can find and review it.
  *
+ * <p>Two more face the bot too: {@link com.botmaker.plugin.api.meta.Migrate} is the author's mapping from one
+ * type's values to another's, kept in the bot, and {@link com.botmaker.plugin.api.meta.Migrated} marks a value
+ * such a mapping wrote. A plugin that moves its values to a new type says so with the standard
+ * {@link java.lang.Deprecated} and {@link com.botmaker.plugin.api.value.PluginType#replacedBy()}; it never
+ * writes the mapping.
+ *
  * <p>{@code @Replaces}, the back edge, existed because a host upgrading a bot holds only two jars: the
  * version the bot pins and the version it is moving to. A bot jumping 1.0 → 3.0 could not see a pointer added
  * in 2.0 on an element deleted in 3.0, so the surviving element had to name what it replaced. It goes because

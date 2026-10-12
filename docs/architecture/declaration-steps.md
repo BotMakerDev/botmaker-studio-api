@@ -13,7 +13,9 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   `writtenAsEach(…)` | `writtenAsRecord()` | `writtenAsConstant()` | `writtenAsLiteral()` | `writtenAsParts()`
   (`TypeSteps`, `CallSteps`, results `DeclaredType`/`DeclaredCallType`). **A part**: `ComponentType.part(X.class)
   .writtenAs(…)` (`DeclaredCall`, with `.constants(VALUE)`, and `.components`/`.build` for the one hand-made
-  part, the SDK's activity body).
+  part, the SDK's activity body). **A deprecated type** ends with `.replacedBy(New.class)` on its
+  `DeclaredType`/`DeclaredCallType`, refused unless the class carries the standard `@Deprecated`: the host
+  offers the bot's author to migrate its values (`@Migrate`, 2026-10-12); the plugin never converts them.
 - **Factories are method references, never names.** `Ref.Of0`–`Of10` are serializable functional interfaces;
   `Ref.resolve` reads the `SerializedLambda` into the `Method` or `Constructor` once, when the declaration is
   built, and refuses a lambda. One typed `writtenAs` per arity, so the accessors' types pick an overloaded

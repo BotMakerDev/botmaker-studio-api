@@ -154,6 +154,41 @@ class TypeStepsTest {
                 () -> PluginType.value(Duration.class).fresh(() -> Duration.ZERO).editor(NONE).writtenAsLiteral());
     }
 
+    /** A type a plugin moved its values off. */
+    @Deprecated(forRemoval = true)
+    public record OldSpot(int x, int y) {}
+
+    @Test
+    void aDeprecatedTypePointsAtItsReplacement() {
+        DeclaredCallType<OldSpot> old = PluginType.value(OldSpot.class).fresh(() -> new OldSpot(0, 0)).editor(NONE)
+                .writtenAsRecord().replacedBy(Spot.class);
+        assertEquals(Spot.class, old.replacedBy());
+        assertEquals(List.of(int.class, int.class), old.componentTypes());
+        assertNull(PluginType.value(Spot.class).fresh(() -> new Spot(0, 0)).editor(NONE).writtenAsRecord()
+                .replacedBy());
+    }
+
+    /** Another type on its way out. */
+    @Deprecated(forRemoval = true)
+    public record OlderSpot(int x, int y) {}
+
+    @Test
+    void onlyADeprecatedClassIsReplaced() {
+        assertThrows(IllegalArgumentException.class,
+                () -> PluginType.value(OldSpot.class).fresh(() -> new OldSpot(0, 0)).editor(NONE).writtenAsRecord()
+                        .replacedBy(OlderSpot.class));
+        IllegalArgumentException refused = assertThrows(IllegalArgumentException.class,
+                () -> PluginType.value(Spot.class).fresh(() -> new Spot(0, 0)).editor(NONE).writtenAsRecord()
+                        .replacedBy(OldSpot.class));
+        assertTrue(refused.getMessage().contains("@Deprecated"), refused.getMessage());
+        assertThrows(IllegalArgumentException.class,
+                () -> PluginType.value(OldSpot.class).fresh(() -> new OldSpot(0, 0)).editor(NONE).writtenAsRecord()
+                        .replacedBy(OldSpot.class));
+        assertThrows(IllegalArgumentException.class,
+                () -> PluginType.value(OldSpot.class).fresh(() -> new OldSpot(0, 0)).editor(NONE).writtenAsRecord()
+                        .replacedBy(null));
+    }
+
     @Test
     void aFilledTypeIsACallTheBotMakes() {
         DeclaredType<LocalDate> today = PluginType.value(LocalDate.class).filledBy(LocalDate::now).shownAs(NONE);
