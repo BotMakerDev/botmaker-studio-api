@@ -35,6 +35,13 @@ is allowed to make. Additions arrive as `default` methods.
 - **`ManagedValue.byGroup(Class, group)`** answers the nested enum's value typed, in an `Optional`.
 - **`RunProperty<T>`**: a run property declared once with how its text reads and writes;
   `Runs.get(property)` / `Runs.set(property, value)`.
+- **`Held<T, H>`: a call's part the host holds as something the factory does not take**, declared once
+  (`Held.as(Activity.class, Step::activity)`, `Held.list(…)`, `Held.map(…)`, which drops a stray entry) and
+  written at its place with `held.part()` or `held.part(give)`. The host checks each part it read against its
+  kind before anything is built; a part of another kind is not this call. `DeclaredCall.builtFrom(parts ->
+  step(parts.get(ACTIVITY), parts.get(BODY)))` builds a value typed from its held parts,
+  `with(wither, held, apply)` sets a link the same way, and `builtAs(Supplier)` builds a call with no parts as
+  the plugin's own value. The host reads the same parts as before; only the plugin's declaration changes.
 
 A plugin that calls any of these needs a host on this version or later.
 
@@ -46,6 +53,9 @@ Compiled plugins are unaffected.
 
 - The `String`-id `PluginValues` operations, `ValueContext.member(String)` / `writeMember(String, String)`,
   `shown(…, String visibility)`, `byGroup(String)` answering `Object`, and `Runs.property` / `setProperty`.
+- `DeclaredCall.components` / `build` and `DeclaredCallType.build`, which took a call apart into a `List<Object>`
+  and built it back by position, and `DeclaredCall.with(wither, part, BiFunction<T, Object, T>)`: declare the
+  part `Held`.
 
 ## [0.8.1] — 2026-10-12
 

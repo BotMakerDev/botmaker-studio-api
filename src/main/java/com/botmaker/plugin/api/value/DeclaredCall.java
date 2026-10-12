@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * A call declared through {@link ComponentType#part}: a part of a value that is never picked on its own, or a
@@ -37,6 +38,9 @@ public final class DeclaredCall<T> implements ComponentType<T> {
      * {@code .with(Flow.Step::described, Flow.Step::description)} writes {@code .described("Picks up ore")}.
      * See {@link Wither}. Each wither adds one part after the factory's, in the order they are declared.
      *
+     * <p>A part the host holds as something the wither does not take is a {@link Held} part: {@code
+     * .with(Run::home, HOME.part(Bots::method))} hands the wither {@code give} of the text it read.
+     *
      * @param wither an instance method of the type taking the part and answering the changed value
      * @param part   the part a value holds, as the wither takes it
      * @throws IllegalArgumentException for a method that is no wither of the type, a varargs factory, or a
@@ -47,16 +51,31 @@ public final class DeclaredCall<T> implements ComponentType<T> {
     }
 
     /**
-     * {@link #with(Ref.Of2, Function)} for a link whose part the host holds as something its parameter is not,
-     * so it is taken apart by {@code part} and set by {@code apply} rather than by calling the method: a class
-     * literal of a managed enum, which crosses as the plugin's value of that enum ({@code .whenOff(Collect.class)}),
-     * or a method reference, which crosses as the text it is written as ({@code .home(Gamebot::goHome)}). The same
-     * pair a {@link #components}/{@link #build} declaration hands its factory's parts by, for one link.
+     * {@link #with(Ref.Of2, Function)} for a link whose part the host holds as something nothing turns into its
+     * parameter, so the value is set by {@code apply} rather than by calling the method: a class literal of a
+     * managed enum, which crosses as the plugin's value of that enum ({@code .whenOff(Collect.class)}). The host
+     * checks the part it read is an {@code H} before {@code apply} sees it.
      *
      * @param wither the method the link is written as; the host reads its name and parameter, and never calls it
      * @param part   the part a value holds, as the host reads and writes it
      * @param apply  {@code value} with its part set, or {@code null} for a part this link does not take
      */
+    public <A, H> DeclaredCall<T> with(Ref.Of2<T, A, T> wither, Held<? super T, H> part,
+                                       BiFunction<? super T, ? super H, ? extends T> apply) {
+        return new DeclaredCall<>(shape.withWither(Wither.with(shape.type(), wither, part, apply)));
+    }
+
+    /**
+     * {@link #with(Ref.Of2, Function)} for a link whose part the host holds as something its parameter is not,
+     * so it is taken apart by {@code part} and set by {@code apply} rather than by calling the method.
+     *
+     * @param wither the method the link is written as; the host reads its name and parameter, and never calls it
+     * @param part   the part a value holds, as the host reads and writes it
+     * @param apply  {@code value} with its part set, or {@code null} for a part this link does not take
+     * @deprecated declare the part {@link Held}: {@link #with(Ref.Of2, Held, BiFunction)}, or
+     *             {@code with(wither, held.part(give))}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     public <A> DeclaredCall<T> with(Ref.Of2<T, A, T> wither, Function<? super T, ?> part,
                                 BiFunction<? super T, Object, ? extends T> apply) {
         return new DeclaredCall<>(shape.withWither(Wither.with(shape.type(), wither, part, apply)));
@@ -75,19 +94,48 @@ public final class DeclaredCall<T> implements ComponentType<T> {
     }
 
     /**
-     * This call, taken apart by hand rather than by its accessors. <b>Only for a part the host cannot read
-     * as a value</b> — the SDK's activity body, which crosses as the source it is written as. The factory's
-     * parts only: each wither's part still follows them.
+     * This call, built from the parts the host read rather than by invoking its factory — for a factory nothing
+     * the host holds can be handed to, such as one taking a class literal, which the host holds as the plugin's
+     * value of that enum. Every place of the call is a {@link Held} part ({@code held.part()}); the host checks
+     * each part it read against its kind first, so {@code build} reads them typed:
+     * {@code .builtFrom(parts -> step(parts.get(ACTIVITY), parts.get(BODY)))}. Answer {@code null} for parts this
+     * call does not build. The factory's parts only; each wither is applied after it.
+     *
+     * @throws IllegalArgumentException when a place of the call is a plain accessor
      */
+    public DeclaredCall<T> builtFrom(Function<Held.Parts, ? extends T> build) {
+        return new DeclaredCall<>(shape.withBuiltFrom(build));
+    }
+
+    /**
+     * This call, a factory with no parts, built as {@code made} rather than by invoking the factory — whose value
+     * would be what the editor's own process has: {@code Source.current()} built as the ambient source itself.
+     *
+     * @throws IllegalArgumentException when the factory takes parts
+     */
+    public DeclaredCall<T> builtAs(Supplier<? extends T> made) {
+        return new DeclaredCall<>(shape.withBuiltAs(made));
+    }
+
+    /**
+     * This call, taken apart by hand rather than by its accessors. The factory's parts only: each wither's part
+     * still follows them.
+     *
+     * @deprecated declare each part the host cannot read as a value {@link Held}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     public DeclaredCall<T> components(Function<T, List<Object>> components) {
         return new DeclaredCall<>(shape.withComponents(components));
     }
 
     /**
-     * This call, built back by hand rather than by invoking its factory — for parts the factory would refuse
-     * but the value can still be made from, such as a map with a stray entry. Answer {@code null} for parts
-     * this call does not build. Given the factory's parts only; each wither is applied after it.
+     * This call, built back by hand rather than by invoking its factory. Answer {@code null} for parts this call
+     * does not build. Given the factory's parts only; each wither is applied after it.
+     *
+     * @deprecated {@link #builtFrom} reads the parts typed, {@link Held#map} keeps a map's good entries, and
+     *             {@link #builtAs} builds a call with none; removed in 0.9.0
      */
+    @Deprecated(forRemoval = true)
     public DeclaredCall<T> build(Function<List<Object>, T> build) {
         return new DeclaredCall<>(shape.withBuild(build));
     }

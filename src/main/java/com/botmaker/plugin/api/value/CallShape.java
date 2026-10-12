@@ -11,10 +11,13 @@ import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * What a declared call is made of — the factory, how a value comes apart, how it is built back, the constants
@@ -22,11 +25,12 @@ import java.util.function.Predicate;
  * declaration state only the factory and the parts. Immutable; every {@code with} answers a copy.
  *
  * <p>{@code parts}, {@code components} and {@code build} are the factory's alone; {@link #allParts},
- * {@link #taken} and {@link #built} add one part per wither after them ({@link Wither}).
+ * {@link #taken} and {@link #built} add one part per wither after them ({@link Wither}). {@code held} has one
+ * entry per accessor, the {@link Held} part standing there or {@code null} for a plain accessor.
  */
 record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
                     Function<T, List<Object>> components, Function<List<Object>, T> build, List<Field> constants,
-                    List<Wither<T>> withers, Predicate<? super T> writes) {
+                    List<Wither<T>> withers, Predicate<? super T> writes, List<Held<?, ?>> held) {
 
     /** A call to {@code factory}, taken apart by {@code accessors} in its part order and built back by invoking it. */
     static <T> CallShape<T> of(Class<T> type, Ref factory, boolean spreadLast, List<Function<? super T, ?>> accessors) {
@@ -44,8 +48,15 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
             throw new IllegalArgumentException(name(factory) + " is not varargs, so its last part is not spread");
         }
         checkResult(type, factory);
-        return new CallShape<>(type, factory, parts, taking(accessors, spreadLast), invoking(type, factory),
-                List.of(), List.of(), value -> true);
+        List<Held<?, ?>> held = new ArrayList<>(accessors.size());
+        for (Function<? super T, ?> accessor : accessors) held.add(Held.at(accessor));
+        if (factory.isVarArgs() && held.stream().anyMatch(Objects::nonNull)) {
+            throw new IllegalArgumentException(name(factory) + " is varargs, so its parts have no fixed places for a"
+                    + " Held part");
+        }
+        return new CallShape<>(type, factory, parts, taking(accessors, spreadLast),
+                handing(accessors, invoking(type, factory)), List.of(), List.of(), value -> true,
+                Collections.unmodifiableList(held));
     }
 
     /** A record written as its canonical constructor, taken apart by its accessors. */
@@ -73,23 +84,75 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
     }
 
     CallShape<T> withComponents(Function<T, List<Object>> components) {
-        return new CallShape<>(type, factory, parts, components, build, constants, withers, writes);
+        return new CallShape<>(type, factory, parts, components, build, constants, withers, writes, held);
     }
 
     CallShape<T> withBuild(Function<List<Object>, T> build) {
-        return new CallShape<>(type, factory, parts, components, build, constants, withers, writes);
+        return new CallShape<>(type, factory, parts, components, build, constants, withers, writes, held);
+    }
+
+    /**
+     * This shape built by {@code build} from its held parts, each checked first: a part read as anything but its
+     * held kind is not this call. Refused when an accessor is plain, whose part {@code build} could not read.
+     */
+    CallShape<T> withBuiltFrom(Function<Held.Parts, ? extends T> build) {
+        if (build == null) throw new IllegalArgumentException("builtFrom needs a function");
+        if (held.isEmpty() || held.contains(null)) {
+            throw new IllegalArgumentException(name(factory) + " is built from its parts only when each is a Held"
+                    + " part: write held.part() at every place");
+        }
+        if (new HashSet<>(held).size() != held.size()) {
+            throw new IllegalArgumentException(name(factory) + " names one Held part at two places; declare one per"
+                    + " place, so each is read by its own name");
+        }
+        List<Held<?, ?>> at = held;
+        return withBuild(given -> {
+            List<Object> read = each(at, given, (place, part) -> place.read(part));
+            if (read == null) return null;
+            try {
+                T value = build.apply(new Held.Parts(at, read));
+                return type.isInstance(value) ? value : null;
+            } catch (RuntimeException refused) {
+                return null;
+            }
+        });
+    }
+
+    /**
+     * {@code read} of each part at its place, one place per part — or {@code null} for another count, or a part
+     * {@code read} answers {@link #REFUSED} for.
+     */
+    private static <P> List<Object> each(List<P> places, List<Object> given, BiFunction<P, Object, Object> read) {
+        if (given == null || given.size() != places.size()) return null;
+        List<Object> out = new ArrayList<>(given.size());
+        for (int i = 0; i < given.size(); i++) {
+            Object part = read.apply(places.get(i), given.get(i));
+            if (part == REFUSED) return null;
+            out.add(part);
+        }
+        return Collections.unmodifiableList(out);
+    }
+
+    /** This shape, a call with no parts, built as {@code made} rather than by calling its factory. */
+    CallShape<T> withBuiltAs(Supplier<? extends T> made) {
+        if (made == null) throw new IllegalArgumentException("builtAs needs a supplier");
+        if (!parts.isEmpty()) {
+            throw new IllegalArgumentException(name(factory) + " takes " + parts.size() + " parts; builtAs is for a"
+                    + " call with none, builtFrom for one with parts");
+        }
+        return withBuild(given -> given != null && given.isEmpty() ? made.get() : null);
     }
 
     /** The {@code public static final} fields of {@link #type} holding exactly these values. */
     CallShape<T> withConstants(Object... values) {
         List<Field> found = new ArrayList<>(values.length);
         for (Object value : values) found.add(constant(value));
-        return new CallShape<>(type, factory, parts, components, build, List.copyOf(found), withers, writes);
+        return new CallShape<>(type, factory, parts, components, build, List.copyOf(found), withers, writes, held);
     }
 
     /** This shape writing only the values {@code writes} accepts; see {@link DeclaredCall#when}. */
     CallShape<T> withWrites(Predicate<? super T> writes) {
-        return new CallShape<>(type, factory, parts, components, build, constants, withers, writes);
+        return new CallShape<>(type, factory, parts, components, build, constants, withers, writes, held);
     }
 
     /**
@@ -108,7 +171,7 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
         }
         List<Wither<T>> more = new ArrayList<>(withers);
         more.add(wither);
-        return new CallShape<>(type, factory, parts, components, build, constants, List.copyOf(more), writes);
+        return new CallShape<>(type, factory, parts, components, build, constants, List.copyOf(more), writes, held);
     }
 
     /** Every part: the factory's, then one per wither. */
@@ -190,11 +253,25 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
         return value -> {
             List<Object> out = new ArrayList<>(fixed.size());
             for (int i = 0; i < fixed.size(); i++) {
-                Object part = fixed.get(i).apply(value);
+                Object part = Held.taken(fixed.get(i), value);
                 if (spreadLast && i == fixed.size() - 1 && part instanceof Collection<?> each) out.addAll(each);
                 else out.add(part);
             }
             return Collections.unmodifiableList(out);
+        };
+    }
+
+    /**
+     * {@code invoke} handed each held part as its factory parameter takes it ({@link Held#part(Function)}); a part
+     * read as anything but its held kind is not this call. {@code invoke} itself when no accessor is held.
+     */
+    private static <T> Function<List<Object>, T> handing(List<Function<? super T, ?>> accessors,
+                                                         Function<List<Object>, T> invoke) {
+        List<Function<? super T, ?>> fixed = List.copyOf(accessors);
+        if (fixed.stream().allMatch(accessor -> Held.at(accessor) == null)) return invoke;
+        return parts -> {
+            List<Object> handed = each(fixed, parts, Held::handed);
+            return handed == null ? null : invoke.apply(handed);
         };
     }
 

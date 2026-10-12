@@ -67,6 +67,18 @@ public final class Wither<T> {
         return new Wither<>(type, checked(type, wither, 1), required(part), false, required(apply));
     }
 
+    /** A link whose part the host holds as an {@code H}, set by {@code apply} once the part read is one. */
+    @SuppressWarnings("unchecked")
+    static <T, H> Wither<T> with(Class<T> type, Ref wither, Held<? super T, H> part,
+                                 BiFunction<? super T, ? super H, ? extends T> apply) {
+        Held<? super T, H> held = required(part);
+        BiFunction<? super T, ? super H, ? extends T> set = required(apply);
+        return new Wither<>(type, checked(type, wither, 1), held::take, false, (value, given) -> {
+            Object read = held.read(given);
+            return read == CallShape.REFUSED ? null : set.apply(value, (H) read);
+        });
+    }
+
     static <T> Wither<T> flag(Class<T> type, Ref wither, Predicate<? super T> on) {
         Predicate<? super T> test = required(on);
         return new Wither<>(type, checked(type, wither, 0), value -> test.test(value), true, null);
@@ -118,7 +130,7 @@ public final class Wither<T> {
 
     /** The part {@code value} holds for this link; a flag's is a {@code Boolean}. */
     public Object part(T value) {
-        return part.apply(value);
+        return Held.taken(part, value);
     }
 
     /**
@@ -137,7 +149,9 @@ public final class Wither<T> {
             } else if (setter != null) {
                 changed = setter.apply(value, part);
             } else {
-                Object argument = CallShape.coerce(part, method.getParameterTypes()[0]);
+                Object handed = Held.handed(this.part, part);
+                if (handed == CallShape.REFUSED) return null;
+                Object argument = CallShape.coerce(handed, method.getParameterTypes()[0]);
                 if (argument == CallShape.REFUSED) return null;
                 changed = method.invoke(value, argument);
             }
