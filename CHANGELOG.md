@@ -25,6 +25,9 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`PluginValues.classes()`**: the simple names of the bot's own top-level classes, the plugins' holders left out
+  — what a plugin offers beside `createMethod`, so the bot's author picks the class a new method goes in, or types a
+  new one. Defaults to none.
 - **A plugin addresses its values by declaration, never by an id's spelling.** Every `PluginValues` operation
   takes the plugin's own `ManagedValue` (`open(FLOWS)`, `groups(ACTIVITIES)`, `add(PICTURES, member, value)`),
   and a constant of an open set is a `PluginValues.Member` (`Member.of("Collect", "WON")`), which owns the

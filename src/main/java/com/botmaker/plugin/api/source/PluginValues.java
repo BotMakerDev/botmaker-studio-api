@@ -331,6 +331,17 @@ public interface PluginValues {
     }
 
     /**
+     * The simple names of the bot's own top-level classes a method can be written into, in source order —
+     * {@code Gamebot}, {@code Collect} — the plugins' value holders left out.
+     *
+     * <p>What a plugin offers beside {@link #createMethod(ManagedValue, String, String, String)}: the bot's
+     * author picks the class the new method goes in, or types a new name, which that call then creates.
+     */
+    default List<String> classes() {
+        return List.of();
+    }
+
+    /**
      * Writes {@code public static <group> method() { return <group>.<its first constant>; }} into the bot's class
      * {@code className}, creating the class beside the bot's main one when there is none.
      *
