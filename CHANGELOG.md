@@ -15,6 +15,84 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+No source changes since v0.8.0; re-released for updated upstream pins.
+
+### Added
+
+- **A constant of an open set can be referred to by its name.** `ManagedValue.openSet(id).of(T.class)
+  .referredToAs(Owner::byName)` makes a reference to one of the set's constants inside another value
+  (`Flows.DAILY` in `Flow.subflow(Flows.DAILY)`) read as what `byName` makes of the constant's name. The
+  initialiser is not read, and the host writes a value equal to that back as the reference. Use it for a set
+  whose constants are told apart by name, not by value: two flows that both start empty are still two flows.
+  Read back as `isReferredByName()` and `byReference(name)`.
+
+- **A class can be written by several factories.** `DeclaredCall.when(predicate)` limits a declaration to the
+  values it accepts; `ComponentType.writes(value)` (a `default` answering true) is what the host asks. Declare
+  the class once per factory. The host reads a call of any of them, and writes a value with the first
+  declaration of its class that accepts it. A link name may also be declared twice with different part types
+  (`.whenOff(Class)` and `.whenOff(Flow)`): the host reads it as the one whose part reads.
+
+- **A plugin moves one constant of its open set above another.** `PluginValues.moveBefore(id, member, before)`
+  declares `member` just above `before` when it is written below it, so `before`'s initialiser may read it:
+  javac refuses a static field read above its declaration. The SDK's flow editor needs it when a flow runs
+  another flow declared after it. The declaration moves whole, javadoc and annotations included, and no use
+  changes. The host refuses the move when the bot would no longer compile, and always in an enum set, where it
+  would change `ordinal()`. Nothing is written when the constant is already above. A `default` (a plugin that
+  implements `PluginValues` still compiles), but a plugin that calls it needs a 0.8.0 host: an older one has no
+  such method to link.
+
+- **A plugin moves its values to a new type without converting them.** Keep the old class, mark it with the
+  standard `@Deprecated(forRemoval = true)`, and end its declaration with `.replacedBy(New.class)`
+  (`DeclaredType`/`DeclaredCallType`; read back as `PluginType.replacedBy()`, a `default` answering `null`).
+  The step refuses a class without `@Deprecated`. Studio then offers the bot's author to migrate the old values;
+  the plugin writes no mapping. `@Migrate(Old.class)` (the author's mapping, a bot method Studio writes and never
+  runs: parameters the old type's parts, or for an enum the constant and a `switch`) and `@Migrated` (an open
+  set's constant it wrote, on a field) join `com.botmaker.plugin.api.meta`, both `SOURCE`.
+
+- **A plugin declares parameters of its own.** `ManagedValue.param(id).in(holder).startsAs(Owner::first)
+  .shown(category, description, visibility).because("…")` declares a `@Param` field of the holder that carries
+  the plugin's mark: `@SdkValue(SdkValue.Id.DO_SETUP) @Param(…) public static boolean doSetup = true;`. It is a
+  third `ManagedValue.Shape`, `PARAM`. `startsAs` names a no-argument method: its generic return type is the
+  field's type (`form()`), and what it returns is the first value. The host writes the field when the holder
+  lacks it and keeps its declaration; only the value is edited, in the Parameters window and the Runner. The
+  marker's `@Target` must include `ElementType.FIELD`. `ManagedValues.claim` ignores a parameter, since the bot
+  reads the field itself. Additive: a plugin built against 0.7 is unaffected.
+
+- **An editor picks a constant by its name.** `ValueContext.member(id)` says which constant of the open set `id`
+  the value is written as (`"DAILY"` for `Flows.DAILY`), and `ValueContext.writeMember(id, member)` writes that
+  reference. `set(value)` could only write the first constant equal to the value, so of two equal flows the
+  second could never be picked. Both are `default`: an older host names no member and refuses the write with a
+  sentence to show.
+
+- **An open set of nested enums**: `ManagedValue.openSet(id).ofEnums(Outcome.class, BotConstants::outcome)
+  .groupedAs(Activity.class, BotConstants::activity)` declares a holder class whose members are enums nested in
+  it, one per group (`Activities { enum Collect implements Outcome { NEXT, WON } }`). `isGrouped()`,
+  `byName(group, name)`, `groupType()` and `byGroup(group)` read it. A class literal of one nested enum,
+  `Activities.Collect.class`, reads as the plugin's group value.
+- `PluginValues.groups`, `addGroup`, `renameGroup` and `removeGroup` work on whole nested enums. A grouped set's
+  member is named `"Group.NAME"` in every existing operation.
+- `PluginValues.methods(id, group)` lists the bot's `public static` no-argument methods that return a nested
+  enum, or `void` when both are null, as `Class::method`. `createMethod(…)` writes one, creating the class when
+  it is missing, and answers a `MethodWrite`.
+- `@EntryPoint` (palette): a member offered only as a statement directly inside `main`.
+  `FacadeEntry.entryPoint(name)` reads it.
+- `DeclaredCall.with(wither, part, apply)`: a link whose part the host holds as something its parameter is not —
+  a managed enum's class literal (`.whenOff(Activities.Collect.class)`) or a method reference
+  (`.home(Gamebot::goHome)`) — taken apart by `part` and set by `apply` instead of by calling the method.
+
+No source changes since v0.7.0; re-released for updated upstream pins.
+
+No source changes since v0.6.1; re-released for updated upstream pins.
+
+### Fixed
+
+- **0.6.0 republished.** The contract is 0.6.0's, unchanged. Tag `v0.6.0` was pushed while JitPack's builders
+  could not start Maven (`Could not find or load main class org.codehaus.plexus.classworlds.launcher.Launcher`,
+  every build from 2026-10-09 to 2026-10-10), so JitPack serves nothing for it, and a tag that built `Error`
+  stays broken. Depend on 0.6.1, never 0.6.0.
+
 ## [0.8.0] — 2026-10-12
 
 ### Added
