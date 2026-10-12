@@ -15,6 +15,65 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+No source changes since v0.9.0; re-released for updated upstream pins.
+
+### Build
+
+- **JitPack builds with `.jitpack/build.sh`**, the umbrella's `tools/jitpack/build.sh`: Maven 3.9.9 and every
+  dependency from Google's mirror of Maven Central first, with backoff and Maven's 429 retry, so Central's
+  `429 Too Many Requests` no longer loses a tag. The statx shim comes with it.
+
+### Added
+
+- **`PluginValues.classes()`**: the simple names of the bot's own top-level classes, the plugins' holders left out
+  — what a plugin offers beside `createMethod`, so the bot's author picks the class a new method goes in, or types a
+  new one. Defaults to none.
+- **A plugin addresses its values by declaration, never by an id's spelling.** Every `PluginValues` operation
+  takes the plugin's own `ManagedValue` (`open(FLOWS)`, `groups(ACTIVITIES)`, `add(PICTURES, member, value)`),
+  and a constant of an open set is a `PluginValues.Member` (`Member.of("Collect", "WON")`), which owns the
+  `"Group.NAME"` spelling. `voidMethods()` and `createVoidMethod(…)` replace passing two `null`s.
+  `ValueContext.member(ManagedValue)` answers a `Member`, and `writeMember(ManagedValue, Member)` writes one.
+- **`Param.Visibility`**: a plugin parameter is `shown(category, description, Param.Visibility.PUBLIC)`. The
+  annotation element stays a `String`.
+- **`ManagedValue.byGroup(Class, group)`** answers the nested enum's value typed, in an `Optional`.
+- **`RunProperty<T>`**: a run property declared once with how its text reads and writes;
+  `Runs.get(property)` / `Runs.set(property, value)`.
+- **`Held<T, H>`: a call's part the host holds as something the factory does not take**, declared once
+  (`Held.as(Activity.class, Step::activity)`, `Held.list(…)`, `Held.map(…)`, which drops a stray entry) and
+  written at its place with `held.part()` or `held.part(give)`. The host checks each part it read against its
+  kind before anything is built; a part of another kind is not this call. `DeclaredCall.builtFrom(parts ->
+  step(parts.get(ACTIVITY), parts.get(BODY)))` builds a value typed from its held parts,
+  `with(wither, held, apply)` sets a link the same way, and `builtAs(Supplier)` builds a call with no parts as
+  the plugin's own value. The host reads the same parts as before; only the plugin's declaration changes.
+- **A conditional parameter**: `ManagedValue.param(…).shown(…).when(scope -> …)` declares a plugin's parameter
+  only while its condition holds. The condition reads the bot's other values of the plugin through a host-built
+  `ParamScope` (`scope.value(SETTINGS)`), and anything about the computer from the plugin's own code. While it
+  does not hold, the host neither writes the field into a bot nor lists it in the Parameters window or the Runner;
+  a field already written stays. `ManagedValue.appliesIn(scope)` answers it, a condition that throws counting as
+  holding. `PluginValues.open(param)` and `create(param)` now open and write a plugin's own parameter, which is how
+  a plugin window sets one.
+
+A plugin built against this contract needs a host on it: a breaking release, **0.9.0**.
+
+### Removed
+
+Every untyped form the operations above replace, with no deprecation period — a plugin built against 0.8 that
+calls one fails to link on a 0.9 host, and recompiling names what to change:
+
+- The `String`-id `PluginValues` operations (`open(String)`, `members(String)`, `add(String, String, Object)`, …)
+  and their two-`null` forms: pass the `ManagedValue` and a `Member`, or call `voidMethods()` /
+  `createVoidMethod(…)`. A host now implements `open(ManagedValue)`; every other operation is a `default` that
+  refuses as a host with no source tree does.
+- `ValueContext.member(String)` / `writeMember(String, String)`, `ParamShownStep.shown(…, String visibility)`,
+  and `ManagedValue.byGroup(String)` answering `Object`.
+- `Runs.property` / `setProperty` and `Runs.DEBUG_PROPERTY`: a host implements `get` / `set(RunProperty)`, and the
+  debug toggle is `Runs.DEBUG`, a `RunProperty<Boolean>`.
+- `DeclaredCall.components` / `build`, `DeclaredCallType.build`, and `DeclaredCall.with(wither, part,
+  BiFunction<T, Object, T>)`, which took a call apart into a `List<Object>` and built it back by position: declare
+  the part `Held`.
+
 ## [0.9.0] — 2026-10-12
 
 ### Build
