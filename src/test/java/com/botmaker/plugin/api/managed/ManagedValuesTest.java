@@ -2,6 +2,7 @@ package com.botmaker.plugin.api.managed;
 
 import com.botmaker.plugin.api.params.Param;
 import com.botmaker.plugin.api.source.ManagedValue;
+import com.botmaker.plugin.api.source.ParamScope;
 import org.junit.jupiter.api.Test;
 
 import java.lang.annotation.ElementType;
@@ -438,6 +439,38 @@ class ManagedValuesTest {
         assertEquals(boolean.class, doSetup.form());
         assertEquals(com.botmaker.plugin.api.params.Param.PUBLIC, doSetup.visibility());
         assertEquals("", doSetup.category());
+    }
+
+    /** A parameter declared only while the bot's other value says so, read through the host's scope. */
+    @Test
+    void aConditionalParameterAppliesOnlyWhileItsConditionHolds() {
+        ManagedValue<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
+                .startsAs(ManagedValuesTest::doSetup).shown("", "", Param.Visibility.EDITOR).because("Mine.");
+        ManagedValue<java.util.Set<Class<? extends Number>>> skip = ManagedValue.param(Fields.Id.SKIP).in("Sdk")
+                .startsAs(ManagedValuesTest::skip).shown("Run", "What to skip", Param.Visibility.EDITOR)
+                .when(scope -> scope.value(doSetup).orElse(false))
+                .because("Mine.");
+        ParamScope settingUp = new ParamScope() {
+            @Override
+            @SuppressWarnings("unchecked")
+            public <V> java.util.Optional<V> value(ManagedValue<V> value) {
+                return value == doSetup ? java.util.Optional.of((V) Boolean.TRUE) : java.util.Optional.empty();
+            }
+        };
+
+        assertTrue(skip.conditional());
+        assertTrue(skip.appliesIn(settingUp));
+        assertFalse(skip.appliesIn(ParamScope.NONE), "the other value says nothing");
+        assertFalse(skip.appliesIn(null), "no scope reads as an empty one");
+        assertFalse(doSetup.conditional());
+        assertTrue(doSetup.appliesIn(ParamScope.NONE), "an unconditional parameter always applies");
+
+        ManagedValue<Boolean> throwing = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
+                .startsAs(ManagedValuesTest::doSetup).shown("", "", Param.Visibility.EDITOR)
+                .when(scope -> { throw new IllegalStateException("broken"); }).because("Mine.");
+        assertTrue(throwing.appliesIn(ParamScope.NONE), "a condition that throws holds");
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.method(TestValue.Id.FLOW).in("Values")
+                .holds(String.class, "x").when(scope -> true), "only a parameter has a condition");
     }
 
     @Test

@@ -42,6 +42,13 @@ is allowed to make. Additions arrive as `default` methods.
   step(parts.get(ACTIVITY), parts.get(BODY)))` builds a value typed from its held parts,
   `with(wither, held, apply)` sets a link the same way, and `builtAs(Supplier)` builds a call with no parts as
   the plugin's own value. The host reads the same parts as before; only the plugin's declaration changes.
+- **A conditional parameter**: `ManagedValue.param(…).shown(…).when(scope -> …)` declares a plugin's parameter
+  only while its condition holds. The condition reads the bot's other values of the plugin through a host-built
+  `ParamScope` (`scope.value(SETTINGS)`), and anything about the computer from the plugin's own code. While it
+  does not hold, the host neither writes the field into a bot nor lists it in the Parameters window or the Runner;
+  a field already written stays. `ManagedValue.appliesIn(scope)` answers it, a condition that throws counting as
+  holding. `PluginValues.open(param)` and `create(param)` now open and write a plugin's own parameter, which is how
+  a plugin window sets one.
 
 A plugin built against this contract needs a host on it: a breaking release, **0.9.0**.
 

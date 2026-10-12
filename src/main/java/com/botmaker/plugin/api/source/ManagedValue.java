@@ -12,6 +12,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * One value this plugin keeps up to date through its own window, named by the id it is annotated with.
@@ -101,8 +102,17 @@ public final class ManagedValue<T> {
     /** A set of nested enums ({@link SetSteps#ofEnums}): how a constant and a whole enum read as the plugin's. */
     private record Grouped(Ref.Of2<String, String, ?> byName, Class<?> groupType, Ref.Of1<String, ?> byGroup) {}
 
-    /** A parameter ({@link #param}): the field's full type, and what its {@code @Param} says. */
-    private record Field(Type form, String category, String description, String visibility) {}
+    /**
+     * A parameter ({@link #param}): the field's full type, what its {@code @Param} says, and when it applies
+     * ({@code null} for always).
+     */
+    private record Field(Type form, String category, String description, String visibility,
+                         Predicate<? super ParamScope> applies) {
+
+        Field when(Predicate<? super ParamScope> condition) {
+            return new Field(form, category, description, visibility, condition);
+        }
+    }
 
     private final Key key;
     private final String reason;
@@ -249,6 +259,24 @@ public final class ManagedValue<T> {
     /** A parameter's {@code @Param(visibility)}, {@code Param.EDITOR} or {@code Param.PUBLIC}; {@code ""} otherwise. */
     public String visibility() {
         return field == null ? "" : field.visibility();
+    }
+
+    /** Whether this parameter was declared with a condition ({@link Reason#when}). */
+    public boolean conditional() {
+        return field != null && field.applies() != null;
+    }
+
+    /**
+     * Whether this value applies to the bot {@code scope} reads: true for anything but a conditional parameter, and
+     * for one whose condition throws. What the host asks before writing a parameter or listing it.
+     */
+    public boolean appliesIn(ParamScope scope) {
+        if (!conditional()) return true;
+        try {
+            return field.applies().test(scope == null ? ParamScope.NONE : scope);
+        } catch (RuntimeException | LinkageError unreadable) {
+            return true;
+        }
     }
 
     /**
@@ -538,7 +566,7 @@ public final class ManagedValue<T> {
          */
         public Reason<T> shown(String category, String description, Param.Visibility visibility) {
             Field field = new Field(form, category == null ? "" : category, description == null ? "" : description,
-                    (visibility == null ? Param.Visibility.EDITOR : visibility).id());
+                    (visibility == null ? Param.Visibility.EDITOR : visibility).id(), null);
             return new Reason<>(key, holder, Shape.PARAM, type, initial, null, null, field);
         }
     }
@@ -741,6 +769,28 @@ public final class ManagedValue<T> {
             this.grouped = grouped;
             this.field = field;
             this.referred = referred;
+        }
+
+        /**
+         * This parameter, declared only while {@code applies} holds: {@code .when(scope -> scope.value(SETTINGS)
+         * .map(s -> s.runIn() == Where.VM).orElse(false))}. The condition reads the bot's other values of this plugin
+         * through the {@link ParamScope}, and anything about the computer — its system, what is installed — from the
+         * plugin's own code. While it does not hold, the host neither writes the field into a bot that lacks it nor
+         * lists it in the Parameters window or the Runner; a field already written stays, as the bot's Java.
+         *
+         * <p>So <b>the bot's own code must not read a conditional parameter by name</b>: on a bot whose condition
+         * never held, the field is not there. The plugin's runtime reads it by its mark, and a missing one is its
+         * initial value.
+         *
+         * <p>A condition that throws counts as holding: a parameter shown that need not be costs less than one hidden
+         * that should not be.
+         *
+         * @throws IllegalArgumentException for a value that is not a parameter, or no condition
+         */
+        public Reason<T> when(Predicate<? super ParamScope> applies) {
+            if (field == null) throw new IllegalArgumentException("Only a parameter has a condition");
+            if (applies == null) throw new IllegalArgumentException("when needs a condition");
+            return new Reason<>(key, holder, shape, type, initial, byName, grouped, field.when(applies), referred);
         }
 
         /** What owns this value and where to change it instead. */
