@@ -15,6 +15,32 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Added
+
+- **A plugin addresses its values by declaration, never by an id's spelling.** Every `PluginValues` operation
+  takes the plugin's own `ManagedValue` (`open(FLOWS)`, `groups(ACTIVITIES)`, `add(PICTURES, member, value)`),
+  and a constant of an open set is a `PluginValues.Member` (`Member.of("Collect", "WON")`), which owns the
+  `"Group.NAME"` spelling. `voidMethods()` and `createVoidMethod(…)` replace passing two `null`s.
+  `ValueContext.member(ManagedValue)` answers a `Member`, and `writeMember(ManagedValue, Member)` writes one.
+- **`Param.Visibility`**: a plugin parameter is `shown(category, description, Param.Visibility.PUBLIC)`. The
+  annotation element stays a `String`.
+- **`ManagedValue.byGroup(Class, group)`** answers the nested enum's value typed, in an `Optional`.
+- **`RunProperty<T>`**: a run property declared once with how its text reads and writes;
+  `Runs.get(property)` / `Runs.set(property, value)`.
+
+A plugin that calls any of these needs a host on this version or later.
+
+**Source break for a bare `null`:** a call passing a `null` literal where an id or a visibility goes
+(`values.methods(null, null)`, `.shown("Run", "x", null)`) is now ambiguous; cast it, or use `voidMethods()`.
+Compiled plugins are unaffected.
+
+### Deprecated, removed in 0.9.0
+
+- The `String`-id `PluginValues` operations, `ValueContext.member(String)` / `writeMember(String, String)`,
+  `shown(…, String visibility)`, `byGroup(String)` answering `Object`, and `Runs.property` / `setProperty`.
+
 ## [0.8.1] — 2026-10-12
 
 No source changes since v0.8.0; re-released for updated upstream pins.

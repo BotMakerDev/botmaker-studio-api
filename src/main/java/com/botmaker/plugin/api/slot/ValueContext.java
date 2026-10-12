@@ -1,6 +1,8 @@
 package com.botmaker.plugin.api.slot;
 
 import com.botmaker.plugin.api.StudioServices;
+import com.botmaker.plugin.api.source.ManagedValue;
+import com.botmaker.plugin.api.source.PluginValues;
 
 import java.util.Optional;
 
@@ -90,8 +92,8 @@ public interface ValueContext {
     }
 
     /**
-     * The constant of the open set {@code id} this value is written as — {@code "DAILY"} for
-     * {@code Flows.DAILY}, {@code "Collect.WON"} in a set of nested enums — or empty when it names none: a value
+     * The constant of the open set {@code set} this value is written as — {@code DAILY} for
+     * {@code Flows.DAILY}, {@code Collect.WON} in a set of nested enums — or empty when it names none: a value
      * spelled out, a constant of another set, a type's own constant.
      *
      * <p>What a picker over a set shows as picked. {@link #value(Class)} cannot answer it: two constants may hold
@@ -99,18 +101,39 @@ public interface ValueContext {
      *
      * <p>{@code default} for a host older than this method, which answers empty.
      */
+    default Optional<PluginValues.Member> member(ManagedValue<?> set) {
+        return set == null ? Optional.empty() : member(set.id()).flatMap(PluginValues.Member::read);
+    }
+
+    /**
+     * {@link #member(ManagedValue)} spelled.
+     *
+     * @deprecated pass the {@link ManagedValue}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default Optional<String> member(String id) {
         return Optional.empty();
     }
 
     /**
-     * Writes the value as a reference to {@code member} of the open set {@code id} — {@code Flows.DAILY}, its
+     * Writes the value as a reference to {@code member} of the open set {@code set} — {@code Flows.DAILY}, its
      * import added — even when another constant holds an equal value, which {@link #set} cannot tell apart.
      * Empty when written, else the sentence saying why not: no such constant, or none the host can read.
      *
      * <p>{@code default} for a host older than this method, which refuses and writes nothing; an editor shows
      * the sentence. Falling back to {@link #set} would bring back the first equal constant.
      */
+    default Optional<String> writeMember(ManagedValue<?> set, PluginValues.Member member) {
+        if (set == null || member == null) return Optional.of("No constant to write.");
+        return writeMember(set.id(), member.toString());
+    }
+
+    /**
+     * {@link #writeMember(ManagedValue, PluginValues.Member)} spelled.
+     *
+     * @deprecated pass the {@link ManagedValue} and a {@link PluginValues.Member}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default Optional<String> writeMember(String id, String member) {
         return Optional.of("This version of BotMaker cannot write " + member + " by its name; update BotMaker.");
     }

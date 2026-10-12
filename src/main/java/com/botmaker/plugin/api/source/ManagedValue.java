@@ -11,6 +11,7 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * One value this plugin keeps up to date through its own window, named by the id it is annotated with.
@@ -330,7 +331,10 @@ public final class ManagedValue<T> {
      * The value the nested enum {@code group} stands for — what {@code Activities.Collect.class} reads as — made
      * by the plugin from the enum's simple name. Null when this set is not grouped, the plugin refused, or it
      * answered something other than {@link #groupType()}.
+     *
+     * @deprecated use {@link #byGroup(Class, String)}; removed in 0.9.0
      */
+    @Deprecated(forRemoval = true)
     public Object byGroup(String group) {
         if (grouped == null || group == null) return null;
         try {
@@ -339,6 +343,15 @@ public final class ManagedValue<T> {
         } catch (RuntimeException refused) {
             return null;
         }
+    }
+
+    /**
+     * The value the nested enum {@code group} stands for, as {@code as} — {@link #groupType()} or a supertype of
+     * it. Empty when this set is not grouped, the plugin refused, or the value is not an {@code as}.
+     */
+    public <G> Optional<G> byGroup(Class<G> as, String group) {
+        Object made = byGroup(group);
+        return as != null && as.isInstance(made) ? Optional.of(as.cast(made)) : Optional.empty();
     }
 
     /**
@@ -530,13 +543,24 @@ public final class ManagedValue<T> {
         }
 
         /**
-         * The heading it is listed under, the line beside it, and who sees it — {@code Param.PUBLIC} for the
-         * Runner too, {@code Param.EDITOR} for the Parameters window only; anything else reads as the latter.
+         * The heading it is listed under, the line beside it, and who sees it — {@link Param.Visibility#PUBLIC} for
+         * the Runner too, {@link Param.Visibility#EDITOR} for the Parameters window only; {@code null} reads as the
+         * latter.
          */
-        public Reason<T> shown(String category, String description, String visibility) {
+        public Reason<T> shown(String category, String description, Param.Visibility visibility) {
             Field field = new Field(form, category == null ? "" : category, description == null ? "" : description,
-                    Param.PUBLIC.equals(visibility) ? Param.PUBLIC : Param.EDITOR);
+                    (visibility == null ? Param.Visibility.EDITOR : visibility).id());
             return new Reason<>(key, holder, Shape.PARAM, type, initial, null, null, field);
+        }
+
+        /**
+         * {@link #shown(String, String, Param.Visibility)} with the visibility spelled.
+         *
+         * @deprecated pass a {@link Param.Visibility}; removed in 0.9.0
+         */
+        @Deprecated(forRemoval = true)
+        public Reason<T> shown(String category, String description, String visibility) {
+            return shown(category, description, Param.Visibility.fromId(visibility));
         }
     }
 

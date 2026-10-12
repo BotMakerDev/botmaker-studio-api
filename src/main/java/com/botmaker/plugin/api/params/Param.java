@@ -80,6 +80,43 @@ public @interface Param {
     String PUBLIC = "public";
 
     /**
+     * Who sees a parameter, typed: what a plugin's own parameter is declared with
+     * ({@code ManagedValue.param(…).shown(…, Param.Visibility.PUBLIC)}). The annotation element stays a
+     * {@code String} for the reason {@link #EDITOR} gives; {@link #id()} is that string.
+     */
+    enum Visibility {
+
+        /** {@link Param#EDITOR}: the Parameters window only. */
+        EDITOR(Param.EDITOR, "Editor only"),
+
+        /** {@link Param#PUBLIC}: the Runner too. */
+        PUBLIC(Param.PUBLIC, "Editor and Runner");
+
+        private final String id;
+        private final String displayName;
+
+        Visibility(String id, String displayName) {
+            this.id = id;
+            this.displayName = displayName;
+        }
+
+        /** The annotation's spelling: {@code "editor"} or {@code "public"}. */
+        public String id() {
+            return id;
+        }
+
+        /** How a window names it. */
+        public String displayName() {
+            return displayName;
+        }
+
+        /** The visibility {@code id} spells; anything else is {@link #EDITOR}, which shows a parameter to fewer people. */
+        public static Visibility fromId(String id) {
+            return PUBLIC.id.equals(id) ? PUBLIC : EDITOR;
+        }
+    }
+
+    /**
      * The rail heading this parameter appears under, free text, {@code ""} for the section's default group.
      *
      * <p>Free text and not an enumeration: the categories were the SDK plugin's declared list until this

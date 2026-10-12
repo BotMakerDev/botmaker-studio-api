@@ -4,6 +4,7 @@ import com.botmaker.plugin.api.slot.ValueContext;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -18,6 +19,12 @@ import java.util.Optional;
  * returns — the same context a slot on the canvas and a row in the Parameters window are edited through. So a plugin's own window reads
  * and writes its value with the interface it already knows, and no second way to edit a value exists.
  *
+ * <p><b>Addressed by the declaration, never by its id's spelling.</b> Every operation takes the plugin's own
+ * {@link ManagedValue} constant, and a constant of an open set is a {@link Member}: a plugin never spells an id
+ * or a {@code "Group.NAME"}. The operations taking a {@code String} id are the 0.8 form, kept until 0.9.0.
+ * The typed ones are new in 0.8.2: a plugin that calls one needs a host on 0.8.2 or later, since an older host's
+ * contract has no such method to link.
+ *
  * <h2>This is where a plugin's JSON went</h2>
  *
  * <p>Until this interface, a plugin kept its data in {@code plugins/<id>/<name>.json} and a bot read it back
@@ -29,9 +36,11 @@ import java.util.Optional;
  * <h2>What ids are there, open one — and for an open set, its constants</h2>
  *
  * <p>For a value held by one method: what ids are there, and open one. For an open set — a whole class of
- * constants, {@code Pictures} — the same two questions one level down ({@link #members}, {@link #open(String,
- * String)}), plus the five changes a set undergoes: {@link #add}, {@link #rename}, {@link #repoint},
- * {@link #remove}, {@link #moveBefore}. Everything else — where the file is, which buffer is unsaved, how to make
+ * constants, {@code Pictures} — the same two questions one level down ({@link #members(ManagedValue)},
+ * {@link #open(ManagedValue, Member)}), plus the five changes a set undergoes: {@link #add(ManagedValue, Member,
+ * Object) add}, {@link #rename(ManagedValue, Member, String) rename}, {@link #repoint(ManagedValue, Member, Member,
+ * String) repoint}, {@link #remove(ManagedValue, Member) remove}, {@link #moveBefore(ManagedValue, Member, Member)
+ * moveBefore}. Everything else — where the file is, which buffer is unsaved, how to make
  * the write undoable, what refers to a constant, whether the bot still compiles — is the host's, and a plugin asking
  * about any of it would be asking about the editor rather than about its own data.
  *
@@ -57,7 +66,7 @@ public interface PluginValues {
     List<String> ids();
 
     /**
-     * The value behind {@code id}, or empty when there is none to edit.
+     * The value {@code value} declares, or empty when there is none to edit.
      *
      * <p>Empty means <em>no method with that id</em>, <em>its body is not a single return</em>, or <em>its
      * type is one nothing registers</em> — three different sentences to a user, one answer to a plugin,
@@ -67,10 +76,20 @@ public interface PluginValues {
      * the file and takes one history entry. Calling {@link ValueContext#set} repeatedly is fine; each call
      * replaces what the last one wrote.
      */
+    default Optional<ValueContext> open(ManagedValue<?> value) {
+        return open(idOf(value));
+    }
+
+    /**
+     * {@link #open(ManagedValue)} by the id's spelling.
+     *
+     * @deprecated pass the {@link ManagedValue}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     Optional<ValueContext> open(String id);
 
     /**
-     * Writes the class that holds {@code id} when the project has none, and answers why not when it did not.
+     * Writes the class that holds {@code value} when the project has none, and answers why not when it did not.
      *
      * <p>The host creates {@code src/main/java/<bot package>/plugins/<last id segment>/<holder>.java} once —
      * every method-shaped value of the declaring plugin with the same {@link ManagedValue#holder}, each
@@ -78,11 +97,21 @@ public interface PluginValues {
      * user's, as a file a template shipped is. It does not edit {@code main}: the status line says what to add.
      *
      * <p>Only the host can: it alone knows the bot's package and the grammar a fresh value is written in.
-     * Empty when {@code id} is now there to {@link #open}, including when it already was.
+     * Empty when {@code value} is now there to {@link #open}, including when it already was.
      *
-     * @return empty on success, else the sentence to show — no plugin declares {@code id} with a holder, no
+     * @return empty on success, else the sentence to show — no plugin declares {@code value} with a holder, no
      *         project is open, or the file could not be written
      */
+    default Optional<String> create(ManagedValue<?> value) {
+        return create(idOf(value));
+    }
+
+    /**
+     * {@link #create(ManagedValue)} by the id's spelling.
+     *
+     * @deprecated pass the {@link ManagedValue}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default Optional<String> create(String id) {
         return Optional.of(NO_SOURCE_TREE);
     }
@@ -91,9 +120,96 @@ public interface PluginValues {
     //
     // A ManagedValue.openSet is a whole class — @SdkValue(SdkValue.Id.PICTURES) on Pictures — whose public
     // static final constants, or an enum's constants for a set declared ofEnum, the plugin adds, renames and
-    // removes. Every operation below is addressed by the set's id and
-    // one constant's name, and every one is done by binding: the host resolves the constant and changes what
-    // javac says refers to it, never a spelling. Each is total and refuses with the sentence to show.
+    // removes. Every operation below is addressed by the set's declaration and one constant's Member, and every
+    // one is done by binding: the host resolves the constant and changes what javac says refers to it, never a
+    // spelling. Each is total and refuses with the sentence to show.
+
+    /**
+     * One constant of an open set: its name, and for a set of nested enums ({@link ManagedValue#isGrouped}) the
+     * simple name of the enum it is in — {@code Collect.WON} is {@code Member.of("Collect", "WON")}.
+     *
+     * <p>A value, compared by its parts. It owns the one spelling a member crosses as, {@code "Group.NAME"} or
+     * {@code "NAME"} ({@link #toString}), so no plugin joins or splits one by hand.
+     */
+    final class Member {
+
+        private final String group;
+        private final String name;
+
+        private Member(String group, String name) {
+            if (name == null || name.isBlank()) throw new IllegalArgumentException("a member needs a name");
+            if (group != null && group.isBlank()) throw new IllegalArgumentException(name + ": a blank group");
+            this.group = group == null ? null : group.trim();
+            this.name = name.trim();
+        }
+
+        /** A constant of a set of one class: {@code Pictures.ORE} is {@code Member.of("ORE")}. */
+        public static Member of(String name) {
+            return new Member(null, name);
+        }
+
+        /** A constant of the nested enum {@code group}: {@code Activities.Collect.WON}. */
+        public static Member of(String group, String name) {
+            return new Member(Objects.requireNonNull(group, "group"), name);
+        }
+
+        /**
+         * The member {@code spelled} names, {@code "Collect.WON"} or {@code "ORE"} — the spelling a host reads off
+         * the source. Throws for {@code null}, blank, or more than one dot.
+         */
+        public static Member parse(String spelled) {
+            if (spelled == null) throw new IllegalArgumentException("no member spelled");
+            int dot = spelled.indexOf('.');
+            if (dot < 0) return of(spelled);
+            if (spelled.indexOf('.', dot + 1) >= 0) throw new IllegalArgumentException(spelled + " is not a member");
+            return of(spelled.substring(0, dot), spelled.substring(dot + 1));
+        }
+
+        /** {@link #parse}, total: empty for a spelling that names no member. */
+        public static Optional<Member> read(String spelled) {
+            try {
+                return Optional.of(parse(spelled));
+            } catch (IllegalArgumentException notAMember) {
+                return Optional.empty();
+            }
+        }
+
+        /** The nested enum's simple name, or {@code null} in a set of one class. */
+        public String group() {
+            return group;
+        }
+
+        /** The constant's own name: {@code WON}. */
+        public String name() {
+            return name;
+        }
+
+        /** Whether this is a constant of a nested enum. */
+        public boolean grouped() {
+            return group != null;
+        }
+
+        /** This member under {@code newName}, in the same enum. */
+        public Member renamed(String newName) {
+            return new Member(group, newName);
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof Member that && Objects.equals(group, that.group) && name.equals(that.name);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(group, name);
+        }
+
+        /** {@code "Collect.WON"}, or {@code "ORE"} in a set of one class. */
+        @Override
+        public String toString() {
+            return group == null ? name : group + "." + name;
+        }
+    }
 
     /**
      * One place the bot's source refers to a constant, for the list a refusal shows. Built by the host.
@@ -105,9 +221,19 @@ public interface PluginValues {
     record Use(Path file, int line, String text) {}
 
     /**
-     * The names of the constants the open set {@code id} holds, in the order they are written. Empty when the
-     * project has no class carrying {@code id}'s mark.
+     * The constants the open set {@code set} holds, in the order they are written. Empty when the project has no
+     * class carrying its mark; a name the host spelled as no member is left out rather than thrown.
      */
+    default List<Member> members(ManagedValue<?> set) {
+        return members(idOf(set)).stream().flatMap(spelled -> Member.read(spelled).stream()).toList();
+    }
+
+    /**
+     * {@link #members(ManagedValue)} spelled.
+     *
+     * @deprecated pass the {@link ManagedValue}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default List<String> members(String id) {
         return List.of();
     }
@@ -118,6 +244,16 @@ public interface PluginValues {
      * initialiser is not one the grammar reads, and always for an enum set's constant
      * ({@link ManagedValue#isEnum}), whose name is all it has.
      */
+    default Optional<ValueContext> open(ManagedValue<?> set, Member member) {
+        return open(idOf(set), spelled(member));
+    }
+
+    /**
+     * {@link #open(ManagedValue, Member)} spelled.
+     *
+     * @deprecated pass the {@link ManagedValue} and a {@link Member}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default Optional<ValueContext> open(String id, String member) {
         return Optional.empty();
     }
@@ -125,23 +261,54 @@ public interface PluginValues {
     /**
      * Declares {@code public static final <T> member = <value>;} in the open set's class, {@code T} being the
      * value's class and the initialiser written by the grammar. Refused when the name is not a Java name, is
-     * already taken, the value is not of the set's {@link ManagedValue#type() element type}, or it is one no
-     * loaded plugin declares. In an enum set ({@link ManagedValue#isEnum}) it is the bare constant
-     * {@code member}, and {@code value} — what {@link ManagedValue#byName} makes of it — is only checked.
+     * already taken, or the value is one no loaded plugin declares. In an enum set ({@link ManagedValue#isEnum})
+     * it is the bare constant {@code member}, and {@code value} — what {@link ManagedValue#byName} makes of it — is
+     * only checked.
      */
+    default <E> Optional<String> add(ManagedValue<E> set, Member member, E value) {
+        return add(idOf(set), spelled(member), value);
+    }
+
+    /**
+     * {@link #add(ManagedValue, Member, Object)} spelled.
+     *
+     * @deprecated pass the {@link ManagedValue} and a {@link Member}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default Optional<String> add(String id, String member, Object value) {
         return Optional.of(NO_SOURCE_TREE);
     }
 
     /** Every use of the constant outside its own declaration. Empty when it is unused or cannot be resolved. */
+    default List<Use> uses(ManagedValue<?> set, Member member) {
+        return uses(idOf(set), spelled(member));
+    }
+
+    /**
+     * {@link #uses(ManagedValue, Member)} spelled.
+     *
+     * @deprecated pass the {@link ManagedValue} and a {@link Member}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default List<Use> uses(String id, String member) {
         return List.of();
     }
 
     /**
-     * Renames the constant and every use of it — the host's one rename, by binding, refused when the bot would
-     * stop compiling. Exact, so nothing is marked for review.
+     * Renames the constant to {@code newName} — its own name, the enum it is in unchanged — and every use of it:
+     * the host's one rename, by binding, refused when the bot would stop compiling. Exact, so nothing is marked
+     * for review.
      */
+    default Optional<String> rename(ManagedValue<?> set, Member member, String newName) {
+        return rename(idOf(set), spelled(member), newName);
+    }
+
+    /**
+     * {@link #rename(ManagedValue, Member, String)} spelled.
+     *
+     * @deprecated pass the {@link ManagedValue} and a {@link Member}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default Optional<String> rename(String id, String member, String newName) {
         return Optional.of(NO_SOURCE_TREE);
     }
@@ -150,13 +317,34 @@ public interface PluginValues {
      * Points every use of {@code member} at {@code replacement}, another constant of the same set. That is a
      * guess on the user's behalf, so each function it touched is marked {@code @Refactor(note)} where the bot
      * can compile the mark; a blank note marks nothing. Refused when either constant is missing or the result
-     * would add a compile error. The declaration of {@code member} stays: {@link #remove} it after.
+     * would add a compile error. The declaration of {@code member} stays: {@link #remove(ManagedValue, Member)}
+     * it after.
      */
+    default Optional<String> repoint(ManagedValue<?> set, Member member, Member replacement, String note) {
+        return repoint(idOf(set), spelled(member), spelled(replacement), note);
+    }
+
+    /**
+     * {@link #repoint(ManagedValue, Member, Member, String)} spelled.
+     *
+     * @deprecated pass the {@link ManagedValue} and {@link Member}s; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default Optional<String> repoint(String id, String member, String replacement, String note) {
         return Optional.of(NO_SOURCE_TREE);
     }
 
     /** Deletes the constant's declaration. Refused while anything uses it, the uses listed in the sentence. */
+    default Optional<String> remove(ManagedValue<?> set, Member member) {
+        return remove(idOf(set), spelled(member));
+    }
+
+    /**
+     * {@link #remove(ManagedValue, Member)} spelled.
+     *
+     * @deprecated pass the {@link ManagedValue} and a {@link Member}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default Optional<String> remove(String id, String member) {
         return Optional.of(NO_SOURCE_TREE);
     }
@@ -173,9 +361,18 @@ public interface PluginValues {
      * enums): an enum constant reads no other, and moving one changes its {@code ordinal()} and
      * {@code values()}.
      *
-     * <p>New in 0.8.0: a plugin that calls it needs a host on 0.8.0 or later, since an older host's contract has
-     * no such method to link.
+     * <p>The spelled form is new in 0.8.0, this one in 0.8.2: a plugin that calls it needs a host that recent.
      */
+    default Optional<String> moveBefore(ManagedValue<?> set, Member member, Member before) {
+        return moveBefore(idOf(set), spelled(member), spelled(before));
+    }
+
+    /**
+     * {@link #moveBefore(ManagedValue, Member, Member)} spelled.
+     *
+     * @deprecated pass the {@link ManagedValue} and {@link Member}s; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default Optional<String> moveBefore(String id, String member, String before) {
         return Optional.of(NO_SOURCE_TREE);
     }
@@ -184,10 +381,20 @@ public interface PluginValues {
     //
     // A ManagedValue.openSet(…).ofEnums(…) holder is a class of enums nested in it, one per group:
     // Activities { enum Collect implements Outcome { NEXT, WON } }. Every operation above takes a member of such
-    // a set as "Group.NAME" — "Collect.WON" — and members(id) lists them so. The operations below are on whole
+    // a set as Member.of("Collect", "WON"), and members(set) lists them so. The operations below are on whole
     // enums, named by their simple name, and are done by binding as the ones above are.
 
-    /** The simple names of the enums nested in the grouped set {@code id}, in the order they are written. */
+    /** The simple names of the enums nested in the grouped set {@code set}, in the order they are written. */
+    default List<String> groups(ManagedValue<?> set) {
+        return groups(idOf(set));
+    }
+
+    /**
+     * {@link #groups(ManagedValue)} spelled.
+     *
+     * @deprecated pass the {@link ManagedValue}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default List<String> groups(String id) {
         return List.of();
     }
@@ -197,16 +404,46 @@ public interface PluginValues {
      * its last one. Refused when the name is not a Java name or is taken, or {@code constants} is empty: an
      * enum a method returns needs a constant to return.
      */
+    default Optional<String> addGroup(ManagedValue<?> set, String group, List<String> constants) {
+        return addGroup(idOf(set), group, constants);
+    }
+
+    /**
+     * {@link #addGroup(ManagedValue, String, List)} spelled.
+     *
+     * @deprecated pass the {@link ManagedValue}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default Optional<String> addGroup(String id, String group, List<String> constants) {
         return Optional.of(NO_SOURCE_TREE);
     }
 
     /** Renames the nested enum and every use of it — its class literal, its constants' qualifiers — by binding. */
+    default Optional<String> renameGroup(ManagedValue<?> set, String group, String newName) {
+        return renameGroup(idOf(set), group, newName);
+    }
+
+    /**
+     * {@link #renameGroup(ManagedValue, String, String)} spelled.
+     *
+     * @deprecated pass the {@link ManagedValue}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default Optional<String> renameGroup(String id, String group, String newName) {
         return Optional.of(NO_SOURCE_TREE);
     }
 
     /** Deletes the nested enum. Refused while anything uses it or one of its constants, the uses listed. */
+    default Optional<String> removeGroup(ManagedValue<?> set, String group) {
+        return removeGroup(idOf(set), group);
+    }
+
+    /**
+     * {@link #removeGroup(ManagedValue, String)} spelled.
+     *
+     * @deprecated pass the {@link ManagedValue}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default Optional<String> removeGroup(String id, String group) {
         return Optional.of(NO_SOURCE_TREE);
     }
@@ -215,32 +452,66 @@ public interface PluginValues {
 
     /**
      * Every {@code public static} method with no parameter in the bot's own sources returning the nested enum
-     * {@code group} of the grouped set {@code id} — or, with both {@code null}, returning {@code void} — each as
-     * the method reference a bot writes, {@code Collect::body}, in source order.
+     * {@code group} of the grouped set {@code set}, each as the method reference a bot writes,
+     * {@code Collect::body}, in source order.
      *
      * <p>What a plugin offers where a value names "the method that does this": the SDK's flow lists the methods
-     * that can be one activity's body, and the methods that can be its way home. The reference is the text the
-     * value crosses as ({@code docs/architecture/two-strings.md}), compared and never parsed.
+     * that can be one activity's body. The reference is the text the value crosses as
+     * ({@code docs/architecture/two-strings.md}), compared and never parsed.
      */
+    default List<String> methods(ManagedValue<?> set, String group) {
+        return methods(idOf(set), Objects.requireNonNull(group, "group"));
+    }
+
+    /**
+     * Every {@code public static void} method with no parameter in the bot's own sources, as
+     * {@link #methods(ManagedValue, String)} lists them: what can be a flow's way home or its setup.
+     */
+    default List<String> voidMethods() {
+        return methods((String) null, null);
+    }
+
+    /**
+     * {@link #methods(ManagedValue, String)}, or with both {@code null} {@link #voidMethods()}, spelled.
+     *
+     * @deprecated pass the {@link ManagedValue}, or call {@link #voidMethods()}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default List<String> methods(String id, String group) {
         return List.of();
     }
 
     /**
-     * Writes {@code public static <group> method() { return <group>.<its first constant>; }} — or, with
-     * {@code id} and {@code group} null, {@code public static void method() {}} — into the bot's class
+     * Writes {@code public static <group> method() { return <group>.<its first constant>; }} into the bot's class
      * {@code className}, creating the class beside the bot's main one when there is none.
      *
      * <p>Refused when either name is not a Java name, the method is already there, or the bot would not compile.
      *
      * @return the method reference written, {@code Collect::body}, or the sentence saying why nothing was
      */
+    default MethodWrite createMethod(ManagedValue<?> set, String group, String className, String method) {
+        return createMethod(idOf(set), Objects.requireNonNull(group, "group"), className, method);
+    }
+
+    /** {@link #createMethod(ManagedValue, String, String, String)} for {@code public static void method() {}}. */
+    default MethodWrite createVoidMethod(String className, String method) {
+        return createMethod((String) null, null, className, method);
+    }
+
+    /**
+     * {@link #createMethod(ManagedValue, String, String, String)}, or with both {@code null}
+     * {@link #createVoidMethod}, spelled.
+     *
+     * @deprecated pass the {@link ManagedValue}, or call {@link #createVoidMethod}; removed in 0.9.0
+     */
+    @Deprecated(forRemoval = true)
     default MethodWrite createMethod(String id, String group, String className, String method) {
         return new MethodWrite(null, NO_SOURCE_TREE);
     }
 
     /**
-     * What {@link #createMethod} did: the reference written, or why nothing was.
+     * What {@link #createMethod(ManagedValue, String, String, String)} did: the reference written, or why nothing
+     * was.
      *
      * @param reference {@code Collect::body}, or null when refused
      * @param refusal   the sentence to show, or null when written
@@ -255,6 +526,14 @@ public interface PluginValues {
 
     /** What every write answers on a host with no project behind it. */
     String NO_SOURCE_TREE = "This host keeps no source tree.";
+
+    private static String idOf(ManagedValue<?> value) {
+        return Objects.requireNonNull(value, "value").id();
+    }
+
+    private static String spelled(Member member) {
+        return Objects.requireNonNull(member, "member").toString();
+    }
 
     /**
      * A host that keeps no source tree: no ids, nothing to open.

@@ -1,5 +1,6 @@
 package com.botmaker.plugin.api.managed;
 
+import com.botmaker.plugin.api.params.Param;
 import com.botmaker.plugin.api.source.ManagedValue;
 import org.junit.jupiter.api.Test;
 
@@ -273,8 +274,10 @@ class ManagedValuesTest {
         assertNull(set.byName("Collect", " "), "a name the plugin refuses reads as nothing");
         assertNull(set.byName("WON"), "a grouped constant has no single-name reading");
         assertEquals(Group.class, set.groupType());
-        assertEquals(new Group("Collect"), set.byGroup("Collect"));
-        assertNull(set.byGroup(null));
+        assertEquals(new Group("Collect"), set.byGroup(Group.class, "Collect").orElseThrow());
+        assertEquals(new Group("Collect"), set.byGroup(Object.class, "Collect").orElseThrow(), "a supertype reads");
+        assertTrue(set.byGroup(String.class, "Collect").isEmpty(), "another type reads as nothing");
+        assertTrue(set.byGroup(Group.class, null).isEmpty());
     }
 
     @Test
@@ -417,7 +420,8 @@ class ManagedValuesTest {
     @Test
     void aParameterIsTypedByItsMethodAndStartsAsWhatItReturns() {
         ManagedValue<java.util.Set<Class<? extends Number>>> skip = ManagedValue.param(Fields.Id.SKIP).in("Sdk")
-                .startsAs(ManagedValuesTest::skip).shown("Run", "What to skip", "nobody").because("Mine.");
+                .startsAs(ManagedValuesTest::skip).shown("Run", "What to skip", (Param.Visibility) null)
+                .because("Mine.");
         assertTrue(skip.isParam());
         assertEquals(ManagedValue.Shape.PARAM, skip.shape());
         assertEquals(java.util.Set.class, skip.type());
@@ -428,7 +432,7 @@ class ManagedValuesTest {
         assertEquals(com.botmaker.plugin.api.params.Param.EDITOR, skip.visibility());
 
         ManagedValue<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
-                .startsAs(ManagedValuesTest::doSetup).shown(null, null, com.botmaker.plugin.api.params.Param.PUBLIC)
+                .startsAs(ManagedValuesTest::doSetup).shown(null, null, Param.Visibility.PUBLIC)
                 .because("Mine.");
         assertEquals(Boolean.class, doSetup.type());
         assertEquals(boolean.class, doSetup.form());
@@ -437,12 +441,21 @@ class ManagedValuesTest {
     }
 
     @Test
+    void aVisibilityIsTheAnnotationsSpellingAndAnythingElseIsTheEditorOnly() {
+        assertEquals(Param.PUBLIC, Param.Visibility.PUBLIC.id());
+        assertEquals(Param.EDITOR, Param.Visibility.EDITOR.id());
+        assertEquals(Param.Visibility.PUBLIC, Param.Visibility.fromId("public"));
+        assertEquals(Param.Visibility.EDITOR, Param.Visibility.fromId("nobody"));
+        assertEquals(Param.Visibility.EDITOR, Param.Visibility.fromId(null));
+    }
+
+    @Test
     void aParameterNeedsAMarkerFieldsMayCarryAndIsNeverClaimed() {
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(TestValue.Id.FLOW));
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(Fields.Id.SKIP).in("Sdk")
                 .startsAs(() -> java.util.Set.<Class<? extends Number>>of()));
         ManagedValue<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
-                .startsAs(ManagedValuesTest::doSetup).shown("", "", "").because("Mine.");
+                .startsAs(ManagedValuesTest::doSetup).shown("", "", Param.Visibility.EDITOR).because("Mine.");
         List<Boolean> taken = new ArrayList<>();
         ManagedValues.claim(doSetup, taken::add);
         assertTrue(taken.isEmpty());

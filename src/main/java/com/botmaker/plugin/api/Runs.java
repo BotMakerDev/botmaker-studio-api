@@ -1,5 +1,8 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.run.RunProperty;
+
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
 
@@ -132,7 +135,10 @@ public interface Runs {
      * <p>The name is a system property's, and a plugin names only its own: {@code botmaker.launch.target}
      * belongs to the plugin whose runtime reads it. A host that runs no bots keeps nothing and answers
      * {@code null}.
+     *
+     * @deprecated read a declared {@link RunProperty} with {@link #get}; removed in 0.9.0
      */
+    @Deprecated(forRemoval = true)
     default String property(String name) {
         return null;
     }
@@ -140,8 +146,27 @@ public interface Runs {
     /**
      * Sets {@link #property(String)} for every later run on this machine; {@code null} or blank clears it. A run
      * already in flight keeps what it started with. A host that runs no bots ignores it.
+     *
+     * @deprecated write a declared {@link RunProperty} with {@link #set}; removed in 0.9.0
      */
+    @Deprecated(forRemoval = true)
     default void setProperty(String name, String value) {
+    }
+
+    /**
+     * What {@code property} holds on this machine, read as its type; empty when it is unset or its text does not
+     * read. A host that runs no bots answers empty. See {@link #property(String)} for what a run property is.
+     */
+    default <T> Optional<T> get(RunProperty<T> property) {
+        return property == null ? Optional.empty() : property.read(property(property.name()));
+    }
+
+    /**
+     * Sets {@code property} for every later run on this machine; {@code null} clears it. A run already in flight
+     * keeps what it started with. A host that runs no bots ignores it.
+     */
+    default <T> void set(RunProperty<T> property, T value) {
+        if (property != null) setProperty(property.name(), property.write(value));
     }
 
     /**
