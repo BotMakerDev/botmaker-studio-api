@@ -23,8 +23,9 @@ is allowed to make. Additions arrive as `default` methods.
   standard `@Deprecated(forRemoval = true)`, and end its declaration with `.replacedBy(New.class)`
   (`DeclaredType`/`DeclaredCallType`; read back as `PluginType.replacedBy()`, a `default` answering `null`).
   The step refuses a class without `@Deprecated`. Studio then offers the bot's author to migrate the old values;
-  the plugin writes no mapping. `@Migrate` (the author's mapping, a bot method Studio writes and never runs) and
-  `@Migrated` (a value it wrote) join `com.botmaker.plugin.api.meta`, both `SOURCE`.
+  the plugin writes no mapping. `@Migrate(Old.class)` (the author's mapping, a bot method Studio writes and never
+  runs: parameters the old type's parts, or for an enum the constant and a `switch`) and `@Migrated` (an open
+  set's constant it wrote, on a field) join `com.botmaker.plugin.api.meta`, both `SOURCE`.
 
 - **A plugin declares parameters of its own.** `ManagedValue.param(id).in(holder).startsAs(Owner::first)
   .shown(category, description, visibility).because("…")` declares a `@Param` field of the holder that carries
