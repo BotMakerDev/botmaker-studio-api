@@ -112,9 +112,12 @@ public final class ManagedValue<T> {
     private final Ref.Of1<String, ? extends T> byName;
     private final Grouped grouped;
     private final Field field;
+    private final Ref.Of1<String, ? extends T> referred;
 
     private ManagedValue(Key key, String reason, String holder, Shape shape, Class<T> type, T initial,
-                         Ref.Of1<String, ? extends T> byName, Grouped grouped, Field field) {
+                         Ref.Of1<String, ? extends T> byName, Grouped grouped, Field field,
+                         Ref.Of1<String, ? extends T> referred) {
+        this.referred = referred;
         this.key = key;
         this.reason = reason;
         this.holder = holder;
@@ -287,6 +290,29 @@ public final class ManagedValue<T> {
         if (grouped == null || group == null || name == null) return null;
         try {
             return cast(grouped.byName().call(group, name));
+        } catch (RuntimeException refused) {
+            return null;
+        }
+    }
+
+    /**
+     * Whether a reference to one of this open set's constants reads as the constant's name
+     * ({@link SetHolderStep#referredToAs}) rather than as what its initialiser holds.
+     */
+    public boolean isReferredByName() {
+        return referred != null;
+    }
+
+    /**
+     * The value a reference to the constant {@code name} of this set stands for — what {@code Flows.DAILY} inside
+     * another value reads as — made by the plugin from the name alone. Null when this set is not
+     * {@link #isReferredByName() referred to by name}, the plugin refused, or it answered something other than
+     * {@link #type()}.
+     */
+    public T byReference(String name) {
+        if (referred == null || name == null) return null;
+        try {
+            return cast(referred.call(name));
         } catch (RuntimeException refused) {
             return null;
         }
@@ -634,17 +660,51 @@ public final class ManagedValue<T> {
         private final Ref.Of1<String, ? extends E> byName;
         private final Grouped grouped;
 
+        private final Ref.Of1<String, ? extends E> referred;
+
         private SetHolderStep(Key key, Class<E> element, Ref.Of1<String, ? extends E> byName, Grouped grouped) {
+            this(key, element, byName, grouped, null);
+        }
+
+        private SetHolderStep(Key key, Class<E> element, Ref.Of1<String, ? extends E> byName, Grouped grouped,
+                              Ref.Of1<String, ? extends E> referred) {
             this.key = key;
             this.element = element;
             this.byName = byName;
             this.grouped = grouped;
+            this.referred = referred;
+        }
+
+        /**
+         * A reference to one of the set's constants — {@code Flows.DAILY} in {@code Flow.subflow(Flows.DAILY)}, or a
+         * parameter {@code = Flows.DAILY} — reads as what {@code byReference} makes of the constant's name, wherever
+         * it is read, not as what its initialiser holds; the host writes a value equal to that back as the
+         * reference. A constant's own initialiser is still read as its value ({@link PluginValues#open(String,
+         * String)}). For a set
+         * whose constants are told apart by name, not by value: two flows that both start empty, or one just
+         * duplicated from another, are still two flows, and a value that names one must keep naming it. The
+         * initialiser is not read either, so one constant naming another never reads the other's.
+         *
+         * <p>The plugin's value must be of the element type and equal itself by name alone. Only for a set
+         * declared {@link SetSteps#of}: an enum's constants are read by name already.
+         *
+         * @param byReference a method reference from a constant's name to the value that stands for it —
+         *                    {@code BotConstants::flow}
+         * @throws IllegalArgumentException when this set is an enum set, or {@code byReference} is no method
+         *                                  reference
+         */
+        public SetHolderStep<E> referredToAs(Ref.Of1<String, ? extends E> byReference) {
+            if (byName != null || grouped != null) {
+                throw new IllegalArgumentException(key.id() + ": an enum's constants are read by name already");
+            }
+            Ref.resolve(byReference);
+            return new SetHolderStep<>(key, element, null, null, byReference);
         }
 
         /** The class {@code holder} — {@code "Pictures"} — created empty when a project has none. */
         public Reason<E> in(String holder) {
             return new Reason<>(key, requireText(holder, "holder"), Shape.OPEN_SET, element, null, byName, grouped,
-                    null);
+                    null, referred);
         }
     }
 
@@ -659,9 +719,16 @@ public final class ManagedValue<T> {
         private final Ref.Of1<String, ? extends T> byName;
         private final Grouped grouped;
         private final Field field;
+        private final Ref.Of1<String, ? extends T> referred;
 
         private Reason(Key key, String holder, Shape shape, Class<T> type, T initial,
                        Ref.Of1<String, ? extends T> byName, Grouped grouped, Field field) {
+            this(key, holder, shape, type, initial, byName, grouped, field, null);
+        }
+
+        private Reason(Key key, String holder, Shape shape, Class<T> type, T initial,
+                       Ref.Of1<String, ? extends T> byName, Grouped grouped, Field field,
+                       Ref.Of1<String, ? extends T> referred) {
             this.key = key;
             this.holder = holder;
             this.shape = shape;
@@ -670,12 +737,13 @@ public final class ManagedValue<T> {
             this.byName = byName;
             this.grouped = grouped;
             this.field = field;
+            this.referred = referred;
         }
 
         /** What owns this value and where to change it instead. */
         public ManagedValue<T> because(String reason) {
             return new ManagedValue<>(key, requireText(reason, "reason"), holder, shape, type, initial, byName,
-                    grouped, field);
+                    grouped, field, referred);
         }
     }
 

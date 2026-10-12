@@ -19,6 +19,19 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **A constant of an open set can be referred to by its name.** `ManagedValue.openSet(id).of(T.class)
+  .referredToAs(Owner::byName)` makes a reference to one of the set's constants inside another value
+  (`Flows.DAILY` in `Flow.subflow(Flows.DAILY)`) read as what `byName` makes of the constant's name. The
+  initialiser is not read, and the host writes a value equal to that back as the reference. Use it for a set
+  whose constants are told apart by name, not by value: two flows that both start empty are still two flows.
+  Read back as `isReferredByName()` and `byReference(name)`.
+
+- **A class can be written by several factories.** `DeclaredCall.when(predicate)` limits a declaration to the
+  values it accepts; `ComponentType.writes(value)` (a `default` answering true) is what the host asks. Declare
+  the class once per factory. The host reads a call of any of them, and writes a value with the first
+  declaration of its class that accepts it. A link name may also be declared twice with different part types
+  (`.whenOff(Class)` and `.whenOff(Flow)`): the host reads it as the one whose part reads.
+
 - **A plugin moves one constant of its open set above another.** `PluginValues.moveBefore(id, member, before)`
   declares `member` just above `before` when it is written below it, so `before`'s initialiser may read it:
   javac refuses a static field read above its declaration. The SDK's flow editor needs it when a flow runs

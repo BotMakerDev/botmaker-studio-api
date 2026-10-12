@@ -92,6 +92,23 @@ public final class DeclaredCall<T> implements ComponentType<T> {
         return new DeclaredCall<>(shape.withBuild(build));
     }
 
+    /**
+     * This call, writing only the values {@code writes} accepts — for a class written by several factories,
+     * each declared on its own: the SDK's {@code Flow.Step} is {@code Flow.activity(…)} for an activity's card
+     * and {@code Flow.subflow(…)} for a sub-flow's. The host reads a call of any of them, and writes a value with
+     * the first declaration of its class that accepts it, in declaration order. Without it a call writes every
+     * value of its class.
+     */
+    public DeclaredCall<T> when(Predicate<? super T> writes) {
+        if (writes == null) throw new IllegalArgumentException("when needs a predicate");
+        return new DeclaredCall<>(shape.withWrites(writes));
+    }
+
+    @Override
+    public boolean writes(T value) {
+        return shape.writes().test(value);
+    }
+
     @Override
     public Class<T> type() {
         return shape.type();

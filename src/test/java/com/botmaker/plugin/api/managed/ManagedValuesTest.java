@@ -218,6 +218,28 @@ class ManagedValuesTest {
         assertNull(set.byName(null));
     }
 
+    /** What a reference to the constant {@code name} stands for; refuses a blank name. */
+    public static String referenced(String name) {
+        if (name.isBlank()) throw new IllegalArgumentException("no name");
+        return "→" + name;
+    }
+
+    @Test
+    void aSetReferredToByNameReadsAReferenceAsTheName() {
+        ManagedValue<String> set = ManagedValue.openSet(TestValue.Id.SET).of(String.class)
+                .referredToAs(ManagedValuesTest::referenced).in("Set").because("Mine.");
+
+        assertTrue(set.isReferredByName());
+        assertFalse(set.isEnum(), "its constants are still fields with initialisers");
+        assertEquals("→DAILY", set.byReference("DAILY"));
+        assertNull(set.byReference(" "), "a name the plugin refuses reads as nothing");
+        assertFalse(ManagedValue.openSet(TestValue.Id.SET).of(String.class).in("Set").because("Mine.")
+                .isReferredByName());
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.ENUM_SET)
+                .ofEnum(Label.class, ManagedValuesTest::named).referredToAs(name -> null),
+                "an enum's constants are read by name already");
+    }
+
     @Test
     void anEnumSetNeedsAnInterfaceAndAMethodReference() {
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.ENUM_SET)

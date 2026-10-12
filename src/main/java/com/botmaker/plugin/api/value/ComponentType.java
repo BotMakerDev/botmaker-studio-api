@@ -139,6 +139,21 @@ public interface ComponentType<T> {
     }
 
     /**
+     * Whether this declaration writes {@code value}: true by default. A class written by several factories is
+     * declared once per factory, each answering for its own values ({@link DeclaredCall#when}); the host writes a
+     * value with the first declaration of its class that answers true.
+     */
+    default boolean writes(T value) {
+        return true;
+    }
+
+    /** {@link #writes} against a value the host holds as {@code Object}; see {@link #componentsOf}. */
+    @SuppressWarnings("unchecked")
+    default boolean writesAny(Object value) {
+        return writes((T) value);
+    }
+
+    /**
      * {@link #components} against a value the host holds as {@code Object}.
      *
      * <p>The one unchecked cast in the design, kept here so no caller writes its own. It is sound because

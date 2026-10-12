@@ -73,6 +73,21 @@ class WitherTest {
         }
     }
 
+    /** A class written by two factories: each declaration writes its own values, and every value by default. */
+    @Test
+    void aDeclarationWritesOnlyTheValuesItsWhenAccepts() {
+        DeclaredCall<Task> named = ComponentType.part(Task.class).writtenAs(Task::of, Task::name)
+                .when(task -> !task.name().contains(" "));
+        DeclaredCall<Task> spread = ComponentType.part(Task.class).writtenAsEach(Task::all, task -> List.of(task.name()))
+                .when(task -> task.name().contains(" "));
+
+        assertTrue(named.writes(Task.of("Collect")));
+        assertFalse(named.writesAny(Task.of("Collect ore")));
+        assertTrue(spread.writes(Task.of("Collect ore")));
+        assertTrue(TASK.writes(Task.of("Collect ore")), "no when: every value");
+        assertThrows(IllegalArgumentException.class, () -> TASK.when(null));
+    }
+
     @Test
     void theFactorysPartsAloneBuildWhatTheFactoryMakes() {
         assertEquals(Task.of("Collect"), TASK.build(List.of("Collect")));

@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * What a declared call is made of — the factory, how a value comes apart, how it is built back, the constants
@@ -25,7 +26,7 @@ import java.util.function.Function;
  */
 record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
                     Function<T, List<Object>> components, Function<List<Object>, T> build, List<Field> constants,
-                    List<Wither<T>> withers) {
+                    List<Wither<T>> withers, Predicate<? super T> writes) {
 
     /** A call to {@code factory}, taken apart by {@code accessors} in its part order and built back by invoking it. */
     static <T> CallShape<T> of(Class<T> type, Ref factory, boolean spreadLast, List<Function<? super T, ?>> accessors) {
@@ -44,7 +45,7 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
         }
         checkResult(type, factory);
         return new CallShape<>(type, factory, parts, taking(accessors, spreadLast), invoking(type, factory),
-                List.of(), List.of());
+                List.of(), List.of(), value -> true);
     }
 
     /** A record written as its canonical constructor, taken apart by its accessors. */
@@ -72,18 +73,23 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
     }
 
     CallShape<T> withComponents(Function<T, List<Object>> components) {
-        return new CallShape<>(type, factory, parts, components, build, constants, withers);
+        return new CallShape<>(type, factory, parts, components, build, constants, withers, writes);
     }
 
     CallShape<T> withBuild(Function<List<Object>, T> build) {
-        return new CallShape<>(type, factory, parts, components, build, constants, withers);
+        return new CallShape<>(type, factory, parts, components, build, constants, withers, writes);
     }
 
     /** The {@code public static final} fields of {@link #type} holding exactly these values. */
     CallShape<T> withConstants(Object... values) {
         List<Field> found = new ArrayList<>(values.length);
         for (Object value : values) found.add(constant(value));
-        return new CallShape<>(type, factory, parts, components, build, List.copyOf(found), withers);
+        return new CallShape<>(type, factory, parts, components, build, List.copyOf(found), withers, writes);
+    }
+
+    /** This shape writing only the values {@code writes} accepts; see {@link DeclaredCall#when}. */
+    CallShape<T> withWrites(Predicate<? super T> writes) {
+        return new CallShape<>(type, factory, parts, components, build, constants, withers, writes);
     }
 
     /**
@@ -102,7 +108,7 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
         }
         List<Wither<T>> more = new ArrayList<>(withers);
         more.add(wither);
-        return new CallShape<>(type, factory, parts, components, build, constants, List.copyOf(more));
+        return new CallShape<>(type, factory, parts, components, build, constants, List.copyOf(more), writes);
     }
 
     /** Every part: the factory's, then one per wither. */
