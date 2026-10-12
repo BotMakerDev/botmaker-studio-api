@@ -53,7 +53,7 @@ no back door. If the SDK needs something this module does not expose, the contra
 - **The catalog degrades, never throws** (`catalog.md`). **No Jackson here.**
 - **japicmp fails on any incompatible change, with no ignore list**; the baseline is `v0.7.0`, and the next
   release is `--studio-api 0.8.0`, which adds `ManagedValue.param`, `ValueContext.member`/`writeMember`,
-  `PluginType.replacedBy` and `@Migrate`/`@Migrated`
+  `PluginType.replacedBy`, `@Migrate`/`@Migrated` and `PluginValues.moveBefore`
   (`japicmp.md`).
 
 ## Style

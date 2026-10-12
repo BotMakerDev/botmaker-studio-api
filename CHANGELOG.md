@@ -19,6 +19,15 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **A plugin moves one constant of its open set above another.** `PluginValues.moveBefore(id, member, before)`
+  declares `member` just above `before` when it is written below it, so `before`'s initialiser may read it:
+  javac refuses a static field read above its declaration. The SDK's flow editor needs it when a flow runs
+  another flow declared after it. The declaration moves whole, javadoc and annotations included, and no use
+  changes. The host refuses the move when the bot would no longer compile, and always in an enum set, where it
+  would change `ordinal()`. Nothing is written when the constant is already above. A `default` (a plugin that
+  implements `PluginValues` still compiles), but a plugin that calls it needs a 0.8.0 host: an older one has no
+  such method to link.
+
 - **A plugin moves its values to a new type without converting them.** Keep the old class, mark it with the
   standard `@Deprecated(forRemoval = true)`, and end its declaration with `.replacedBy(New.class)`
   (`DeclaredType`/`DeclaredCallType`; read back as `PluginType.replacedBy()`, a `default` answering `null`).

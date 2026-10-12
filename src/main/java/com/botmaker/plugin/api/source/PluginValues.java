@@ -30,9 +30,9 @@ import java.util.Optional;
  *
  * <p>For a value held by one method: what ids are there, and open one. For an open set — a whole class of
  * constants, {@code Pictures} — the same two questions one level down ({@link #members}, {@link #open(String,
- * String)}), plus the four changes a set undergoes: {@link #add}, {@link #rename}, {@link #repoint},
- * {@link #remove}. Everything else — where the file is, which buffer is unsaved, how to make the write
- * undoable, what refers to a constant, whether the bot still compiles — is the host's, and a plugin asking
+ * String)}), plus the five changes a set undergoes: {@link #add}, {@link #rename}, {@link #repoint},
+ * {@link #remove}, {@link #moveBefore}. Everything else — where the file is, which buffer is unsaved, how to make
+ * the write undoable, what refers to a constant, whether the bot still compiles — is the host's, and a plugin asking
  * about any of it would be asking about the editor rather than about its own data.
  *
  * <p><b>By binding, never by spelling.</b> A find-and-replace over how a plugin guesses its names are spelled
@@ -158,6 +158,25 @@ public interface PluginValues {
 
     /** Deletes the constant's declaration. Refused while anything uses it, the uses listed in the sentence. */
     default Optional<String> remove(String id, String member) {
+        return Optional.of(NO_SOURCE_TREE);
+    }
+
+    /**
+     * Declares {@code member} just above {@code before}, another constant of the same set, when it is written
+     * below it; nothing is written when it already comes first. What a plugin asks when one constant's initialiser
+     * is to read another: javac refuses a static field read above its declaration, so the one read moves up.
+     *
+     * <p>The declaration moves whole, its javadoc and annotations with it; nothing that uses it changes. Refused
+     * when either constant is missing, they are one constant, {@code member} shares its declaration with another
+     * field, or the bot would not compile after the move — {@code member}'s own initialiser reads a constant
+     * declared between the two. Always refused in an enum set ({@link ManagedValue#isEnum}, a set of nested
+     * enums): an enum constant reads no other, and moving one changes its {@code ordinal()} and
+     * {@code values()}.
+     *
+     * <p>New in 0.8.0: a plugin that calls it needs a host on 0.8.0 or later, since an older host's contract has
+     * no such method to link.
+     */
+    default Optional<String> moveBefore(String id, String member, String before) {
         return Optional.of(NO_SOURCE_TREE);
     }
 
