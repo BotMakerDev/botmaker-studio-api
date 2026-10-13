@@ -234,6 +234,15 @@ public interface StudioPlugin {
     }
 
     /**
+     * How a bot built on this plugin is laid out, said to the AI assistant that drives Studio: where each kind
+     * of work goes, what to name and how, what to read before an image. The host gives it to the assistant
+     * beside this plugin's tools, under the plugin's name. Empty: the plugin expects no layout of its own.
+     */
+    default String assistantGuide() {
+        return "";
+    }
+
+    /**
      * The static method Studio's ▶ Try runs one statement through, {@code (Runnable body, Class<?>... values)}
      * — see {@link com.botmaker.plugin.api.assist.TrialEntry}. Empty: this plugin's bots cannot try a
      * statement on its own, only run whole.

@@ -33,6 +33,7 @@ class StudioPluginDefaultsTest {
         assertEquals(List.of(), older.runOverlayParts());
         assertTrue(older.overlayPart().isEmpty());
         assertEquals(List.of(), older.assistantTools());
+        assertEquals("", older.assistantGuide());
         assertTrue(older.trialEntry().isEmpty());
         // The lifecycle half is a default too, and both ends of it: a host that tells every plugin which
         // project it has must not need to know which of them have heard of the idea.

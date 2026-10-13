@@ -17,8 +17,6 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
-No source changes since v0.9.0; re-released for updated upstream pins.
-
 ### Build
 
 - **JitPack builds with `.jitpack/build.sh`**, the umbrella's `tools/jitpack/build.sh`: Maven 3.9.9 and every
@@ -26,6 +24,10 @@ No source changes since v0.9.0; re-released for updated upstream pins.
   `429 Too Many Requests` no longer loses a tag. The statx shim comes with it.
 
 ### Added
+
+- **`StudioPlugin.assistantGuide()`**, declared with `PluginDeclaration.assistantGuide(String)`: how a bot built on
+  the plugin is laid out, in plain sentences, which the host gives the AI assistant beside the plugin's tools.
+  Defaults to empty; a plugin built against an older contract says nothing.
 
 - **`PluginValues.classes()`**: the simple names of the bot's own top-level classes, the plugins' holders left out
   — what a plugin offers beside `createMethod`, so the bot's author picks the class a new method goes in, or types a

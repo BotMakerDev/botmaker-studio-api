@@ -34,6 +34,7 @@ import java.util.function.Supplier;
  *                 .runOverlay(() -> SdkRunOverlay.ALL)
  *                 .overlay(() -> SdkOverlay.PART)
  *                 .assistant(() -> SdkAssist.ALL)
+ *                 .assistantGuide(SdkAssist.GUIDE)
  *                 .trial(Bot::trial));
  *     }
  * }
@@ -68,7 +69,7 @@ public final class PluginDeclaration {
         /** The name shown in Manage Plugins and wherever a contribution is attributed. */
         public PluginDeclaration named(String displayName) {
             String shown = displayName == null || displayName.isBlank() ? id : displayName;
-            return new PluginDeclaration(id, shown, null, null, null, null, null, null, null, null, null, null, null);
+            return new PluginDeclaration(id, shown, null, null, null, null, null, null, null, null, null, null, "", null);
         }
     }
 
@@ -84,6 +85,7 @@ public final class PluginDeclaration {
     private final Supplier<? extends List<? extends RunOverlayPart>> runOverlay;
     private final Supplier<OverlayPart> overlay;
     private final Supplier<? extends List<? extends AssistantTool<?>>> assistant;
+    private final String guide;
     private final Method trial;
 
     private PluginDeclaration(String id, String displayName, Supplier<PaletteCatalog> catalog,
@@ -96,7 +98,7 @@ public final class PluginDeclaration {
                               Supplier<? extends List<? extends RunOverlayPart>> runOverlay,
                               Supplier<OverlayPart> overlay,
                               Supplier<? extends List<? extends AssistantTool<?>>> assistant,
-                              Method trial) {
+                              String guide, Method trial) {
         this.id = id;
         this.displayName = displayName;
         this.catalog = catalog;
@@ -109,61 +111,72 @@ public final class PluginDeclaration {
         this.runOverlay = runOverlay;
         this.overlay = overlay;
         this.assistant = assistant;
+        this.guide = guide;
         this.trial = trial;
     }
 
     /** The types this plugin owns — {@link StudioPlugin#types()}. */
     public PluginDeclaration types(Supplier<? extends List<? extends PluginType<?>>> types) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay, assistant, trial);
+                runOverlay, overlay, assistant, guide, trial);
     }
 
     /** The calls inside its values that are not types of their own — {@link StudioPlugin#componentTypes()}. */
     public PluginDeclaration parts(Supplier<? extends List<? extends ComponentType<?>>> parts) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay, assistant, trial);
+                runOverlay, overlay, assistant, guide, trial);
     }
 
     /** The editors a type cannot choose for itself — {@link StudioPlugin#slotEditors()}. */
     public PluginDeclaration editors(Supplier<? extends List<? extends SlotEditor>> editors) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay, assistant, trial);
+                runOverlay, overlay, assistant, guide, trial);
     }
 
     /** The managed values its windows keep — {@link StudioPlugin#managedValues()}. */
     public PluginDeclaration values(Supplier<? extends List<? extends ManagedValue<?>>> values) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay, assistant, trial);
+                runOverlay, overlay, assistant, guide, trial);
     }
 
     /** Its toolbar buttons — {@link StudioPlugin#toolbarItems()}. */
     public PluginDeclaration toolbar(Supplier<? extends List<? extends ToolbarItem>> toolbar) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay, assistant, trial);
+                runOverlay, overlay, assistant, guide, trial);
     }
 
     /** What only it can read off the screen for a recording — {@link StudioPlugin#recordedValues()}. */
     public PluginDeclaration recorded(Supplier<? extends List<? extends RecordedValue<?>>> recorded) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay, assistant, trial);
+                runOverlay, overlay, assistant, guide, trial);
     }
 
     /** What it shows in the host's run overlay while the bot runs — {@link StudioPlugin#runOverlayParts()}. */
     public PluginDeclaration runOverlay(Supplier<? extends List<? extends RunOverlayPart>> runOverlay) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay, assistant, trial);
+                runOverlay, overlay, assistant, guide, trial);
     }
 
     /** Its part of the overlay editor: targets, watched screen, tools, probes — {@link StudioPlugin#overlayPart()}. */
     public PluginDeclaration overlay(Supplier<OverlayPart> overlay) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay, assistant, trial);
+                runOverlay, overlay, assistant, guide, trial);
     }
 
     /** The tools it offers the AI assistant — {@link StudioPlugin#assistantTools()}. */
     public PluginDeclaration assistant(Supplier<? extends List<? extends AssistantTool<?>>> assistant) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay, assistant, trial);
+                runOverlay, overlay, assistant, guide, trial);
+    }
+
+    /**
+     * How a bot built on this plugin is laid out, for the AI assistant that builds one —
+     * {@link StudioPlugin#assistantGuide()}. Plain sentences: where each kind of work goes, what to name and
+     * how, what to read before an image. Point it at a {@code static final String}.
+     */
+    public PluginDeclaration assistantGuide(String guide) {
+        return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
+                runOverlay, overlay, assistant, guide == null ? "" : guide.strip(), trial);
     }
 
     /**
@@ -177,13 +190,13 @@ public final class PluginDeclaration {
      */
     public PluginDeclaration trial(TrialEntry trial) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay, assistant, TrialEntry.resolve(Objects.requireNonNull(trial, "trial")));
+                runOverlay, overlay, assistant, guide, TrialEntry.resolve(Objects.requireNonNull(trial, "trial")));
     }
 
     /** A palette built by hand, overriding the one the host discovers — rarely wanted; see {@link StudioPlugin#catalog()}. */
     public PluginDeclaration catalog(Supplier<PaletteCatalog> catalog) {
         return new PluginDeclaration(id, displayName, catalog, types, parts, editors, values, toolbar, recorded,
-                runOverlay, overlay, assistant, trial);
+                runOverlay, overlay, assistant, guide, trial);
     }
 
     String id() {
@@ -234,6 +247,10 @@ public final class PluginDeclaration {
 
     List<AssistantTool<?>> assistant() {
         return list(assistant);
+    }
+
+    String guide() {
+        return guide;
     }
 
     Optional<Method> trial() {

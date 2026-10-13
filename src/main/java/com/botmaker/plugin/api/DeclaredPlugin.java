@@ -107,6 +107,11 @@ public class DeclaredPlugin implements StudioPlugin {
     }
 
     @Override
+    public final String assistantGuide() {
+        return declaration.guide();
+    }
+
+    @Override
     public final Optional<Method> trialEntry() {
         return declaration.trial();
     }

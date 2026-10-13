@@ -90,6 +90,16 @@ class DeclaredPluginTest {
     }
 
     @Test
+    void theAssistantsGuideIsTheDeclaredTextTrimmed() {
+        assertEquals("", new Declared(new AtomicInteger()).assistantGuide());
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.g").named("G")
+                .assistantGuide("\n  One activity per chore.\n")) {};
+        assertEquals("One activity per chore.", plugin.assistantGuide());
+        assertEquals("", new DeclaredPlugin(StudioPlugin.id("com.example.n").named("N")
+                .assistantGuide(null)) {}.assistantGuide());
+    }
+
+    @Test
     void aBlankNameIsTheId() {
         StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.x").named(" ")) {};
         assertEquals("com.example.x", plugin.displayName());
