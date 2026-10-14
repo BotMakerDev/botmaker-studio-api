@@ -391,7 +391,8 @@ public final class ManagedValue<T> {
 
     /**
      * <b>The way to declare a parameter of the plugin's own</b> — a {@code @Param} field in its holder that the
-     * person running the bot sets, and the bot reads by name — {@code Bot.runFlow(Sdk.flow, Sdk.doSetup, …)}:
+     * person running the bot sets, and the plugin's runtime reads by its mark — {@code Bot.runFlow(Sdk.class)} reads
+     * {@code Sdk.flow}:
      *
      * <pre>{@code
      * public static final ManagedValue<Boolean> DO_SETUP = ManagedValue.param(SdkValue.Id.DO_SETUP)
