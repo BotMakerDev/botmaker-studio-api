@@ -25,6 +25,9 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`TrialEntry.TARGET`**, the system property `botmaker.trial.target`: when a trial runs one of the bot's methods
+  whole, Studio sets it to `com.bot.Collect#body` (binary class name) before calling the entry, and clears it for a
+  single statement, so a plugin can do what its run does before that method.
 - **`StudioPlugin.assistantGuide()`**, declared with `PluginDeclaration.assistantGuide(String)`: how a bot built on
   the plugin is laid out, in plain sentences, which the host gives the AI assistant beside the plugin's tools.
   Defaults to empty; a plugin built against an older contract says nothing.

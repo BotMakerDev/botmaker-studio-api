@@ -16,9 +16,17 @@ import java.lang.reflect.Modifier;
  * caller (never into the project's sources) from the method this names, so the plugin writes no Java.
  *
  * <p>A body that throws is the trial's failure, reported like a run's; the entry need not catch it.
+ *
+ * <p>When the body is one of the bot's methods run whole (▶ Run on a target, the assistant's
+ * {@code run_activity}), Studio sets the system property {@link #TARGET} to that method before calling the entry,
+ * and clears it for a single statement: a plugin may do what its run does before that method (the SDK goes home
+ * first when the activity's card does).
  */
 @FunctionalInterface
 public interface TrialEntry extends Ref {
+
+    /** The system property naming the method a trial runs whole, {@code com.bot.Collect#body} (binary class name). */
+    String TARGET = "botmaker.trial.target";
 
     void run(Runnable body, Class<?>... values);
 
