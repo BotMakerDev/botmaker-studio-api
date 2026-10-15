@@ -71,6 +71,16 @@ public interface StudioServices {
     }
 
     /**
+     * The open project's undo history, the one the host's ↶/↷ walk — see {@link History}.
+     *
+     * <p>{@code default} for the reason {@link #runs()} is: a host with no editor answers {@link History#NONE},
+     * whose batch just runs its writes, so a plugin never asks whether undo is supported.
+     */
+    default History history() {
+        return History.NONE;
+    }
+
+    /**
      * Says one line in the host's own status area, where it says what it is doing.
      *
      * <p>For the running commentary a long action owes its user — <em>Starting…</em>, <em>Listening on

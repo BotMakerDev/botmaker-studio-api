@@ -25,6 +25,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`StudioServices.history()`, the host's undo** (`History`): `undo()`, `redo()`, `canUndo()`/`canRedo()`, the
+  next step's label each way, `onChanged` and `batch(label, writes)`, which records several `PluginValues` writes
+  as one step. A plugin window's ↶ is the editor's, in the same order as the user's edits. Additive: the default
+  is `History.NONE`, whose batch just runs its writes.
+
 - **`PluginValues.booleanMethods()` and `createBooleanMethod(className, method)`**: the bot's `public static
   boolean` methods that take nothing, as `Class::method`, and a new one written as `return false;`, so a plugin's
   window can offer "only while…" without reading Java. Both `default`: an older host answers none and refuses.
