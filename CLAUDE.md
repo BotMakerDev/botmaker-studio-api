@@ -26,6 +26,7 @@ on 2026-10-05).
 | `PluginType`/`EditableType`/`ComponentType` semantics | `value-vocabulary.md` |
 | `PaletteCatalog`, `SourceOrder`, `MemberId` | `catalog.md` |
 | `botmaker.japicmp.baseline`, a japicmp failure | `japicmp.md` |
+| `assist/` (`AssistantTool`, `takesOneOf`, `ToolSchema`, `@Describe`, `@Key`): flat on the wire, sealed in Java | `../docs/refactor/38-llm-edits.md` §6, §6a |
 
 ## What this module is
 

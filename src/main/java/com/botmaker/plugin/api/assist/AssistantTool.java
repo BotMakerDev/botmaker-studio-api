@@ -103,7 +103,7 @@ public final class AssistantTool<P extends Record> {
         this.handler = handler;
     }
 
-    /** The first step: the tool's name, {@code snake_case}, unique within its plugin: {@code "crop_picture"}. */
+    /** The first step: the tool's name, {@code snake_case}, unique within its plugin: {@code "cut_picture"}. */
     public static Describing named(String name) {
         if (name == null || !NAME.matcher(name).matches()) {
             throw new IllegalArgumentException("A tool name is snake_case, at most 48 characters: " + name);

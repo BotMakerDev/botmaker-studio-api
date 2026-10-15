@@ -8,7 +8,7 @@
  * <pre>{@code
  * record Crop(@Describe("the picture's name") String name, int x, int y, int width, int height) {}
  *
- * static final AssistantTool<Crop> CROP = AssistantTool.named("crop_picture")
+ * static final AssistantTool<Crop> CROP = AssistantTool.named("cut_picture")
  *         .describedAs("Cuts a picture out of the watched screen and adds it to Pictures")
  *         .takes(Crop.class)
  *         .handledBy(SdkAssist::crop);
