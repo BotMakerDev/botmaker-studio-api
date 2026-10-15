@@ -331,6 +331,15 @@ public interface PluginValues {
     }
 
     /**
+     * Every {@code public static boolean} method with no parameter in the bot's own sources, as
+     * {@link #methods(ManagedValue, String)} lists them: what can say when something holds — a way into a screen
+     * open only while an event runs.
+     */
+    default List<String> booleanMethods() {
+        return List.of();
+    }
+
+    /**
      * The simple names of the bot's own top-level classes a method can be written into, in source order —
      * {@code Gamebot}, {@code Collect} — the plugins' value holders left out.
      *
@@ -355,6 +364,14 @@ public interface PluginValues {
 
     /** {@link #createMethod(ManagedValue, String, String, String)} for {@code public static void method() {}}. */
     default MethodWrite createVoidMethod(String className, String method) {
+        return new MethodWrite(null, NO_SOURCE_TREE);
+    }
+
+    /**
+     * {@link #createMethod(ManagedValue, String, String, String)} for
+     * {@code public static boolean method() { return false; }}: the author writes when it holds.
+     */
+    default MethodWrite createBooleanMethod(String className, String method) {
         return new MethodWrite(null, NO_SOURCE_TREE);
     }
 

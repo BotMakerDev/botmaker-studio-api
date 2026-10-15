@@ -25,6 +25,9 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`PluginValues.booleanMethods()` and `createBooleanMethod(className, method)`**: the bot's `public static
+  boolean` methods that take nothing, as `Class::method`, and a new one written as `return false;`, so a plugin's
+  window can offer "only while…" without reading Java. Both `default`: an older host answers none and refuses.
 - **`TrialEntry.TARGET`**, the system property `botmaker.trial.target`: when a trial runs one of the bot's methods
   whole, Studio sets it to `com.bot.Collect#body` (binary class name) before calling the entry, and clears it for a
   single statement, so a plugin can do what its run does before that method.
