@@ -13,7 +13,7 @@ import java.util.List;
  * optional, with {@link Field#actions()} naming the actions that take it. Which of them an action needs is
  * {@link Action#required()}; the tool refuses a call that leaves one out or sends a field its action does not
  * take, so the host need not say it in the schema's own terms (no {@code oneOf}, which some assistants read
- * poorly).
+ * poorly). A list of a sealed interface's records is the same, element by element ({@link Field#oneOf()}).
  */
 public final class ToolSchema {
 
@@ -45,9 +45,10 @@ public final class ToolSchema {
         private final List<String> choices;
         private final List<Field> fields;
         private final List<String> actions;
+        private final List<Action> oneOf;
 
         Field(String name, ToolParam.Kind kind, String description, boolean optional, List<String> choices,
-              List<Field> fields, List<String> actions) {
+              List<Field> fields, List<String> actions, List<Action> oneOf) {
             this.name = name;
             this.kind = kind;
             this.description = description == null ? "" : description;
@@ -55,6 +56,7 @@ public final class ToolSchema {
             this.choices = List.copyOf(choices);
             this.fields = List.copyOf(fields);
             this.actions = List.copyOf(actions);
+            this.oneOf = List.copyOf(oneOf);
         }
 
         /** The key the assistant sends. */
@@ -93,6 +95,15 @@ public final class ToolSchema {
         /** For an action tool's field, the ids of the actions that take it; empty when every action does, or for any other tool. */
         public List<String> actions() {
             return actions;
+        }
+
+        /**
+         * For a {@link ToolParam.Kind#RECORD_LIST} of a sealed interface, its records as actions: each element is
+         * flat, its {@code action} first and that action's fields beside it, as an action tool's top level is, and
+         * {@link #fields()} is their union. Empty for any other field.
+         */
+        public List<Action> oneOf() {
+            return oneOf;
         }
     }
 

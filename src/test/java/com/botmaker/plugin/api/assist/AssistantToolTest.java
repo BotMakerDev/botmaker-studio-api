@@ -85,7 +85,7 @@ class AssistantToolTest {
         assertFalse(CROP.invoke(with(base, "y", new java.math.BigInteger("9007199254740993")), null).isRefused());
         assertRefused(with(base, "shape", "star"), "one of [box, circle]");
         assertRefused(with(base, "tags", List.of(1)), "list of text");
-        assertRefused(with(base, "name", 5), "'name' is text");
+        assertRefused(with(base, "name", List.of("ore")), "'name' is text");
         assertRefused(with(base, "colour", "red"), "no parameter [colour]");
         assertRefused(with(base, "name", " "), "a name is needed");
     }
@@ -275,6 +275,99 @@ class AssistantToolTest {
         nulls.put("to", null);
         nulls.put("bogus", null);
         assertEquals("start a", EDIT_MAP.invoke(nulls, null).parts().getFirst().text());
+    }
+
+    sealed interface Step {
+        @Describe("Inserts a block")
+        record Insert(@Describe("the body") String bodyId, int index) implements Step {
+        }
+
+        record Delete(String blockId) implements Step {
+        }
+    }
+
+    record Steps(String file, List<Step> edits) {
+    }
+
+    static final AssistantTool<Steps> STEPS = AssistantTool.named("steps").describedAs("Edits in one go")
+            .takes(Steps.class).handledBy((steps, context) -> AgentReply.text(steps.edits().stream().map(step ->
+                    switch (step) {
+                        case Step.Insert insert -> "insert " + insert.bodyId() + "@" + insert.index();
+                        case Step.Delete delete -> "delete " + delete.blockId();
+                    }).toList().toString()));
+
+    @Test
+    void aListOfActionsIsFlatElementByElement() {
+        ToolSchema.Field edits = STEPS.schema().fields().get(1);
+        assertEquals(ToolParam.Kind.RECORD_LIST, edits.kind());
+        assertEquals(List.of("action", "bodyId", "index", "blockId"),
+                edits.fields().stream().map(ToolSchema.Field::name).toList());
+        assertEquals(List.of("insert", "delete"), edits.oneOf().stream().map(ToolSchema.Action::id).toList());
+        assertEquals("Inserts a block", edits.oneOf().getFirst().description());
+        assertEquals(List.of("insert"), edits.fields().get(1).actions());
+        assertEquals(List.of(), STEPS.schema().actions(), "the tool itself takes no action");
+
+        assertEquals("[insert b@2, delete x]", STEPS.invoke(Map.of("file", "F", "edits", List.of(
+                Map.of("action", "insert", "bodyId", "b", "index", 2),
+                Map.of("action", "delete", "blockId", "x"))), null).parts().getFirst().text());
+        assertRefusedBy(STEPS, Map.of("file", "F", "edits", List.of(Map.of("bodyId", "b"))),
+                "'edits[0].action' is required: one of [insert, delete]");
+        assertRefusedBy(STEPS, Map.of("file", "F", "edits", List.of(Map.of("action", "delete", "blockId", "x"),
+                Map.of("action", "insert", "bodyId", "b"))), "'edits[1].index' is required for insert");
+        assertRefusedBy(STEPS, Map.of("file", "F", "edits", List.of(Map.of("action", "delete", "blockId", "x",
+                "index", 1))), "'edits[0]': delete does not take [index]; it takes [blockId]");
+        assertRefusedBy(STEPS, Map.of("file", "F", "edits", List.of(Map.of("action", "delete", "colour", "red"))),
+                "'edits[0]' has no field [colour]; it takes [action, bodyId, index, blockId]");
+    }
+
+    record Keyword(@Describe("the class") @Key("class") String className,
+                   @Describe(value = "seconds", optional = true) @Key("wait") Integer seconds) {
+    }
+
+    record Twice(String a, @Key("a") String b) {
+    }
+
+    @Test
+    void aComponentIsSentUnderItsKey() {
+        AssistantTool<Keyword> tool = AssistantTool.named("k").describedAs("k").takes(Keyword.class)
+                .handledBy((k, c) -> AgentReply.text(k.className() + " " + k.seconds()));
+        assertEquals(List.of("class", "wait"), tool.schema().fields().stream().map(ToolSchema.Field::name).toList());
+        assertEquals("Main 3", tool.invoke(Map.of("class", "Main", "wait", 3), null).parts().getFirst().text());
+        assertRefusedBy(tool, Map.of("className", "Main"), "'class' is required");
+        assertDeclarationRefused(() -> AssistantTool.named("t").describedAs("t").takes(Twice.class)
+                .handledBy((p, c) -> null), "two components are sent as 'a'");
+        assertDeclarationRefused(() -> AssistantTool.named("t").describedAs("t").takes(BlankKey.class)
+                .handledBy((p, c) -> null), "@Key is a snake_case key, not ''");
+    }
+
+    record BlankKey(@Key("") String a) {
+    }
+
+    sealed interface Nest {
+        record Deeper(List<Nest> inner) implements Nest {
+        }
+    }
+
+    record Nested(List<Nest> nest) {
+    }
+
+    record Lenient(String value, @Describe(value = "a shape", optional = true) Shape shape,
+                   @Describe(value = "values", optional = true) Map<String, String> values) {
+    }
+
+    @Test
+    void aBareLiteralIsTextAndAnEmptyOptionalChoiceIsLeftOut() {
+        AssistantTool<Lenient> tool = AssistantTool.named("l").describedAs("l").takes(Lenient.class)
+                .handledBy((l, c) -> AgentReply.text(l.value() + " " + l.shape() + " " + l.values()));
+        assertEquals("5 null null", tool.invoke(Map.of("value", 5, "shape", ""), null).parts().getFirst().text());
+        assertEquals("true BOX null", tool.invoke(Map.of("value", true, "shape", "box"), null).parts().getFirst()
+                .text());
+        Map<String, Object> blank = new HashMap<>();
+        blank.put("x", null);
+        assertEquals("a null {x=}", tool.invoke(Map.of("value", "a", "values", blank), null).parts().getFirst()
+                .text());
+        assertDeclarationRefused(() -> AssistantTool.named("n").describedAs("n").takes(Nested.class)
+                .handledBy((p, c) -> null), "holds itself");
     }
 
     sealed interface Clashing {

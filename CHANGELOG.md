@@ -33,6 +33,13 @@ is allowed to make. Additions arrive as `default` methods.
   chosen action's record. Each permitted record is an action, its id the record's name in `snake_case`, its
   `@Describe` (now allowed on a type) what it does. On the wire it is flat, `action` plus the union of the actions'
   fields, and the tool refuses a field the action does not take or one it needs, in a sentence. Additive.
+- **A list of actions**: a component may be a `List` of a sealed interface of records, each element flat as an
+  action tool's call is (`ToolSchema.Field.oneOf()`), so one call carries several edits of different kinds. A
+  refusal names the element: `'edits[1].index' is required for insert`.
+- **`@Key("class")` sends a component under another key**, for a key that cannot be a component's name: a Java
+  keyword (`class`, `package`) or `wait`. A new annotation, so `@Describe` is unchanged.
+- **Leniency an assistant needs**: a text component takes a bare number or `true` as its text, a map's `null`
+  value is `""`, and an optional enum sent as `""` is left out.
 - **`StudioServices.history()`, the host's undo** (`History`): `undo()`, `redo()`, `canUndo()`/`canRedo()`, the
   next step's label each way, `onChanged` and `batch(label, writes)`, which records several `PluginValues` writes
   as one step. A plugin window's ↶ is the editor's, in the same order as the user's edits. Additive: the default

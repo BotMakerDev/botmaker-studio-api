@@ -35,7 +35,11 @@
  *
  * <p>The assistant sends {@code action} ({@code "rename"}, {@code "set_start"}) and that action's fields flat beside
  * it ({@link com.botmaker.plugin.api.assist.ToolSchema}); the tool refuses, in a sentence, a field the action does
- * not take and a field it needs that is missing.
+ * not take and a field it needs that is missing. A component may also be a {@code List} of such a sealed interface,
+ * each element one action, flat the same way: one call, several edits of different kinds.
+ *
+ * <p>A component whose wire key cannot be its Java name ({@code class}, {@code package}, {@code wait}) takes
+ * {@link com.botmaker.plugin.api.assist.Key}: {@code @Key("wait") Integer seconds}.
  *
  * <p><b>What a tool may change is what the plugin already may.</b> It writes the plugin's own values through
  * {@code services().pluginValues()}, which the host gates exactly as it gates the plugin's own windows. It is

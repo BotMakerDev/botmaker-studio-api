@@ -32,7 +32,8 @@ import java.util.regex.Pattern;
  * bad tool fails the plugin's own class initialisation and tests rather than an assistant's call.
  *
  * <p>A component is {@code String}, {@code boolean}, {@code int}, {@code long}, {@code double} (or their boxes),
- * an enum, a nested record, a {@code List} of {@code String}, of an enum or of a record, or a
+ * an enum, a nested record, a {@code List} of {@code String}, of an enum, of a record or of a sealed interface of
+ * records (each element one of its actions, flat as {@link Taking#takesOneOf}'s are), or a
  * {@code Map<String, String>}. A record may not hold itself, however deep.
  *
  * <p>The host serves the tool under a name prefixed with the plugin's, so two plugins' {@code screenshot}s do
@@ -70,6 +71,17 @@ public final class AssistantTool<P extends Record> {
     public static final String ACTION = "action";
 
     private static final Pattern NAME = Pattern.compile("[a-z][a-z0-9_]{0,47}");
+
+    /**
+     * Each sealed interface a list component holds, read into its actions once: its declaration already checked
+     * it, so a call only builds from it.
+     */
+    private static final ClassValue<Actions<?>> LISTED_ACTIONS = new ClassValue<>() {
+        @Override
+        protected Actions<?> computeValue(Class<?> sealed) {
+            return Actions.of(sealed.getName(), sealed);
+        }
+    };
 
     private final String name;
     private final String description;
@@ -254,6 +266,11 @@ public final class AssistantTool<P extends Record> {
         }
 
         static <S> Actions<S> of(String tool, Class<S> sealed) {
+            return of(tool, sealed, new HashSet<>());
+        }
+
+        /** {@code inside} holds the records around a list of these actions, which none may hold. */
+        static <S> Actions<S> of(String tool, Class<S> sealed, Set<Class<?>> inside) {
             if (sealed == null || !sealed.isInterface() || !sealed.isSealed()) {
                 throw new IllegalArgumentException(tool + ": an action tool takes a sealed interface of records");
             }
@@ -276,7 +293,7 @@ public final class AssistantTool<P extends Record> {
                 if (byId.containsKey(id)) {
                     throw new IllegalArgumentException(tool + ": two actions are named " + id);
                 }
-                List<ToolSchema.Field> fields = fieldsOf(type, new HashSet<>());
+                List<ToolSchema.Field> fields = fieldsOf(type, inside);
                 for (ToolSchema.Field field : fields) {
                     if (field.name().equals(ACTION)) {
                         throw new IllegalArgumentException(type.getName() + "." + ACTION + ": '" + ACTION
@@ -303,24 +320,30 @@ public final class AssistantTool<P extends Record> {
 
             List<ToolSchema.Field> wire = new ArrayList<>();
             wire.add(new ToolSchema.Field(ACTION, ToolParam.Kind.CHOICE, "", false, List.copyOf(byId.keySet()),
-                    List.of(), List.of()));
+                    List.of(), List.of(), List.of()));
             for (ToolSchema.Field field : union.values()) {
                 List<String> by = takers.get(field.name());
                 wire.add(new ToolSchema.Field(field.name(), field.kind(), field.description(), true, field.choices(),
-                        field.fields(), by.size() == byId.size() ? List.of() : by));
+                        field.fields(), by.size() == byId.size() ? List.of() : by, field.oneOf()));
             }
             return new Actions<>(Collections.unmodifiableMap(byId), Collections.unmodifiableMap(union),
                     new ToolSchema(wire, described));
         }
 
         OneOf<S> build(Map<String, ?> sent) {
+            return new OneOf<>(build(sent, ""));
+        }
+
+        /** The action {@code sent} chose; {@code at} prefixes each key in a refusal ({@code "edits[2]."}). */
+        S build(Map<String, ?> sent, String at) {
             Object chosen = sent.get(ACTION);
             if (chosen == null) {
-                throw new IllegalArgumentException("'" + ACTION + "' is required: one of " + byId.keySet());
+                throw new IllegalArgumentException("'" + at + ACTION + "' is required: one of " + byId.keySet());
             }
             Act act = byId.get(chosen.toString().trim().toLowerCase(Locale.ROOT));
             if (act == null) {
-                throw new IllegalArgumentException("'" + ACTION + "' is one of " + byId.keySet() + ", not " + chosen);
+                throw new IllegalArgumentException("'" + at + ACTION + "' is one of " + byId.keySet() + ", not "
+                        + chosen);
             }
             Map<String, Object> rest = new LinkedHashMap<>(sent);
             rest.remove(ACTION);
@@ -330,21 +353,26 @@ public final class AssistantTool<P extends Record> {
             if (!unknown.isEmpty()) {
                 List<String> takes = new ArrayList<>(List.of(ACTION));
                 takes.addAll(union.keySet());
-                throw new IllegalArgumentException("no parameter " + unknown + "; it takes " + takes);
+                throw new IllegalArgumentException(at.isEmpty()
+                        ? "no parameter " + unknown + "; it takes " + takes
+                        : "'" + at.substring(0, at.length() - 1) + "' has no field " + unknown + "; it takes " + takes);
             }
             List<String> own = act.fields().stream().map(ToolSchema.Field::name).toList();
             List<String> foreign = rest.keySet().stream().filter(k -> !own.contains(k)).toList();
             if (!foreign.isEmpty()) {
-                throw new IllegalArgumentException(act.id() + " does not take " + foreign + "; it takes " + own);
+                throw new IllegalArgumentException((at.isEmpty() ? "" : "'" + at.substring(0, at.length() - 1) + "': ")
+                        + act.id() + " does not take " + foreign + "; it takes " + own);
             }
             @SuppressWarnings("unchecked")
-            S action = (S) record(act.type(), act.fields(), rest, "", " for " + act.id());
-            return new OneOf<>(action);
+            S action = (S) record(act.type(), act.fields(), rest, at, " for " + act.id());
+            return action;
         }
 
         /** Whether two actions' fields of one name hold the same, whatever each says of it. */
         private static boolean sameShape(ToolSchema.Field a, ToolSchema.Field b) {
-            if (a.kind() != b.kind() || !a.choices().equals(b.choices()) || a.fields().size() != b.fields().size()) {
+            if (a.kind() != b.kind() || !a.choices().equals(b.choices()) || a.fields().size() != b.fields().size()
+                    || !a.oneOf().stream().map(ToolSchema.Action::id).toList()
+                    .equals(b.oneOf().stream().map(ToolSchema.Action::id).toList())) {
                 return false;
             }
             for (int i = 0; i < a.fields().size(); i++) {
@@ -380,6 +408,11 @@ public final class AssistantTool<P extends Record> {
             ToolSchema.Field field = fields.get(i);
             unknown.remove(field.name());
             Object value = sent.get(field.name());
+            // An optional choice sent empty is one left out: "" was how an assistant said "the default".
+            if (field.optional() && field.kind() == ToolParam.Kind.CHOICE && value instanceof CharSequence text
+                    && text.toString().isBlank()) {
+                value = null;
+            }
             if (value == null) {
                 if (!field.optional()) {
                     throw new IllegalArgumentException("'" + at + field.name() + "' is required" + needed);
@@ -414,7 +447,10 @@ public final class AssistantTool<P extends Record> {
         Class<?> target = component.getType();
         return switch (field.kind()) {
             case TEXT -> {
-                if (sent instanceof CharSequence text) yield text.toString();
+                // A number or a yes sent bare is its text: assistants send a slot's 5 or true unquoted.
+                if (sent instanceof CharSequence || sent instanceof Number || sent instanceof Boolean) {
+                    yield sent.toString();
+                }
                 throw new IllegalArgumentException(key + " is text, not " + sent);
             }
             case YES_NO -> {
@@ -464,12 +500,15 @@ public final class AssistantTool<P extends Record> {
             case RECORD -> record(target.asSubclass(Record.class), field.fields(), object(key, sent, field), path + ".",
                     "");
             case RECORD_LIST -> {
-                Class<? extends Record> element = element(component.getGenericType(), 0).asSubclass(Record.class);
-                List<Record> records = new ArrayList<>();
+                Class<?> element = element(component.getGenericType(), 0);
+                Actions<?> actions = element.isRecord() ? null : LISTED_ACTIONS.get(element);
+                List<Object> records = new ArrayList<>();
                 int i = 0;
                 for (Object each : list(key, sent, "objects")) {
                     String at = path + "[" + i++ + "]";
-                    records.add(record(element, field.fields(), object("'" + at + "'", each, field), at + ".", ""));
+                    Map<String, Object> object = object("'" + at + "'", each, field);
+                    records.add(actions != null ? actions.build(object, at + ".")
+                            : record(element.asSubclass(Record.class), field.fields(), object, at + ".", ""));
                 }
                 yield List.copyOf(records);
             }
@@ -477,7 +516,7 @@ public final class AssistantTool<P extends Record> {
                 if (!(sent instanceof Map<?, ?> map)) throw new IllegalArgumentException(key + " is an object of text");
                 Map<String, String> texts = new LinkedHashMap<>();
                 for (Map.Entry<?, ?> entry : map.entrySet()) {
-                    Object value = entry.getValue();
+                    Object value = entry.getValue() == null ? "" : entry.getValue();
                     if (!(value instanceof CharSequence || value instanceof Number || value instanceof Boolean)) {
                         throw new IllegalArgumentException(key + "'s " + entry.getKey() + " is text, not " + value);
                     }
@@ -561,13 +600,27 @@ public final class AssistantTool<P extends Record> {
                 case CHOICE_LIST -> names(element(generic, 0));
                 default -> List.of();
             };
-            List<ToolSchema.Field> nested = switch (kind) {
-                case RECORD -> fieldsOf(raw.asSubclass(Record.class), inside);
-                case RECORD_LIST -> fieldsOf(element(generic, 0).asSubclass(Record.class), inside);
-                default -> List.of();
-            };
-            fields.add(new ToolSchema.Field(component.getName(), kind, describe == null ? "" : describe.value(),
-                    optional, choices, nested, List.of()));
+            List<ToolSchema.Field> nested = List.of();
+            List<ToolSchema.Action> oneOf = List.of();
+            if (kind == ToolParam.Kind.RECORD) {
+                nested = fieldsOf(raw.asSubclass(Record.class), inside);
+            } else if (kind == ToolParam.Kind.RECORD_LIST && element(generic, 0).isRecord()) {
+                nested = fieldsOf(element(generic, 0).asSubclass(Record.class), inside);
+            } else if (kind == ToolParam.Kind.RECORD_LIST) {
+                ToolSchema each = Actions.of(where, element(generic, 0), inside).schema();
+                nested = each.fields();
+                oneOf = each.actions();
+            }
+            Key sentAs = component.getAnnotation(Key.class);
+            if (sentAs != null && !NAME.matcher(sentAs.value()).matches()) {
+                throw new IllegalArgumentException(where + ": @Key is a snake_case key, not '" + sentAs.value() + "'");
+            }
+            String key = sentAs == null ? component.getName() : sentAs.value();
+            if (fields.stream().anyMatch(f -> f.name().equals(key))) {
+                throw new IllegalArgumentException(where + ": two components are sent as '" + key + "'");
+            }
+            fields.add(new ToolSchema.Field(key, kind, describe == null ? "" : describe.value(),
+                    optional, choices, nested, List.of(), oneOf));
         }
         inside.remove(type);
         return List.copyOf(fields);
@@ -591,14 +644,16 @@ public final class AssistantTool<P extends Record> {
             Class<?> element = element(generic, 0);
             if (element == String.class) return ToolParam.Kind.TEXT_LIST;
             if (element != null && element.isEnum()) return ToolParam.Kind.CHOICE_LIST;
-            if (element != null && element.isRecord()) return ToolParam.Kind.RECORD_LIST;
+            if (element != null && (element.isRecord() || element.isInterface() && element.isSealed())) {
+                return ToolParam.Kind.RECORD_LIST;
+            }
         }
         if (raw == Map.class && element(generic, 0) == String.class && element(generic, 1) == String.class) {
             return ToolParam.Kind.TEXT_MAP;
         }
         throw new IllegalArgumentException(where + " is a " + generic.getTypeName() + "; a tool parameter is"
-                + " String, boolean, int, long, double, an enum, a record, a List of String, of an enum or of a"
-                + " record, or Map<String, String>");
+                + " String, boolean, int, long, double, an enum, a record, a List of String, of an enum, of a"
+                + " record or of a sealed interface of records, or Map<String, String>");
     }
 
     /** The {@code index}th type argument of {@code generic} when it is a plain class; {@code null} otherwise. */

@@ -7,7 +7,7 @@ import java.util.List;
  * the tool's parameter record. A nested record's fields and an action tool's actions are in the whole tree,
  * {@link AssistantTool#schema()}, which is what a host writes the assistant's schema from.
  *
- * @param name        the component's name, which is the key the assistant sends
+ * @param name        the key the assistant sends: the component's name, or its {@link Key}
  * @param kind        what it holds
  * @param description the component's {@link Describe} sentence, {@code ""} without one
  * @param optional    whether the assistant may leave it out
@@ -36,7 +36,10 @@ public record ToolParam(String name, Kind kind, String description, boolean opti
         TEXT_LIST("array"),
         /** A nested record: an object of its own components, {@link ToolSchema.Field#fields()}. */
         RECORD("object"),
-        /** {@code List} of a record: an array of objects. */
+        /**
+         * {@code List} of a record, or of a sealed interface of records: an array of objects. In a list of a sealed
+         * interface, each object is one of its actions ({@link ToolSchema.Field#oneOf()}).
+         */
         RECORD_LIST("array"),
         /** {@code List} of an enum: an array of its constants' names, {@link ToolParam#choices()}. */
         CHOICE_LIST("array"),
