@@ -3,14 +3,15 @@ package com.botmaker.plugin.api.assist;
 import java.util.List;
 
 /**
- * One parameter of an {@link AssistantTool}, as its input schema says it: derived from a component of the
- * tool's parameter record, read by the host to write the schema the assistant sees.
+ * One top-level parameter of an {@link AssistantTool}, as its input schema says it: derived from a component of
+ * the tool's parameter record. A nested record's fields and an action tool's actions are in the whole tree,
+ * {@link AssistantTool#schema()}, which is what a host writes the assistant's schema from.
  *
  * @param name        the component's name, which is the key the assistant sends
  * @param kind        what it holds
  * @param description the component's {@link Describe} sentence, {@code ""} without one
  * @param optional    whether the assistant may leave it out
- * @param choices     for {@link Kind#CHOICE}, the values it accepts; empty otherwise
+ * @param choices     for {@link Kind#CHOICE} and {@link Kind#CHOICE_LIST}, the values it accepts; empty otherwise
  */
 public record ToolParam(String name, Kind kind, String description, boolean optional, List<String> choices) {
 
@@ -32,7 +33,15 @@ public record ToolParam(String name, Kind kind, String description, boolean opti
         /** An enum: one of {@link ToolParam#choices()}, its constants' names. */
         CHOICE("string"),
         /** {@code List<String>}. */
-        TEXT_LIST("array");
+        TEXT_LIST("array"),
+        /** A nested record: an object of its own components, {@link ToolSchema.Field#fields()}. */
+        RECORD("object"),
+        /** {@code List} of a record: an array of objects. */
+        RECORD_LIST("array"),
+        /** {@code List} of an enum: an array of its constants' names, {@link ToolParam#choices()}. */
+        CHOICE_LIST("array"),
+        /** {@code Map<String, String>}: an object of text, its keys the assistant's. */
+        TEXT_MAP("object");
 
         private final String jsonType;
 

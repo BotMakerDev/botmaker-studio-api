@@ -25,6 +25,14 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **An assistant tool's parameters may nest**: a record component may be a record, a `List` of records, a `List`
+  of an enum, or a `Map<String, String>`, besides the scalars, enums and `List<String>`. A batch is a list of
+  records instead of text lines to parse. `AssistantTool.schema()` (`ToolSchema`) is the whole tree a host writes
+  the schema from; `params()` stays the top level, with the new `ToolParam.Kind` constants.
+- **One tool for a family of actions: `takesOneOf(sealedInterface)`**, handled by an `ActionHandler` that gets the
+  chosen action's record. Each permitted record is an action, its id the record's name in `snake_case`, its
+  `@Describe` (now allowed on a type) what it does. On the wire it is flat, `action` plus the union of the actions'
+  fields, and the tool refuses a field the action does not take or one it needs, in a sentence. Additive.
 - **`StudioServices.history()`, the host's undo** (`History`): `undo()`, `redo()`, `canUndo()`/`canRedo()`, the
   next step's label each way, `onChanged` and `batch(label, writes)`, which records several `PluginValues` writes
   as one step. A plugin window's ↶ is the editor's, in the same order as the user's edits. Additive: the default

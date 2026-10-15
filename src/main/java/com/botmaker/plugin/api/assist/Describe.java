@@ -12,9 +12,13 @@ import java.lang.annotation.Target;
  * <p>A component without one is described by its name only. {@link #optional()} lets the assistant leave it
  * out: the handler then sees {@code null}, so an optional component must be a reference type
  * ({@code Integer}, not {@code int}) — the declaration refuses an optional primitive.
+ *
+ * <p>On an action record of a tool declared by {@link AssistantTool.Taking#takesOneOf}, it says what that action
+ * does ({@link ToolSchema.Action#description()}); {@link #optional()} means nothing there. On any other type it is
+ * not read.
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.RECORD_COMPONENT)
+@Target({ElementType.RECORD_COMPONENT, ElementType.TYPE})
 public @interface Describe {
 
     /** One sentence, as the assistant reads it. */

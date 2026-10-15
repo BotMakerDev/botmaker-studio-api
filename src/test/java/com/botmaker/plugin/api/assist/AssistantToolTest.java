@@ -163,6 +163,162 @@ class AssistantToolTest {
         assertTrue(new DeclaredPlugin(StudioPlugin.id("com.example.n").named("N")) {}.trialEntry().isEmpty());
     }
 
+    record Box(@Describe("its name") String name, int x, @Describe(value = "skipped", optional = true) Integer w) {
+    }
+
+    record Crops(Box first, List<Box> boxes, List<Shape> shapes, @Describe(value = "values", optional = true)
+            Map<String, String> values) {
+    }
+
+    static AgentReply crops(Crops crops, AgentContext context) {
+        return AgentReply.text(crops.toString());
+    }
+
+    static final AssistantTool<Crops> CROPS = AssistantTool.named("crop_pictures").describedAs("Cuts several")
+            .takes(Crops.class).handledBy(AssistantToolTest::crops);
+
+    @Test
+    void nestedRecordsListsAndMapsAreTheSchemaToo() {
+        ToolSchema schema = CROPS.schema();
+        assertTrue(schema.actions().isEmpty());
+        assertEquals(List.of(ToolParam.Kind.RECORD, ToolParam.Kind.RECORD_LIST, ToolParam.Kind.CHOICE_LIST,
+                ToolParam.Kind.TEXT_MAP), schema.fields().stream().map(ToolSchema.Field::kind).toList());
+        ToolSchema.Field boxes = schema.fields().get(1);
+        assertEquals(List.of("name", "x", "w"), boxes.fields().stream().map(ToolSchema.Field::name).toList());
+        assertEquals("its name", boxes.fields().getFirst().description());
+        assertTrue(boxes.fields().get(2).optional());
+        assertEquals(List.of("box", "circle"), schema.fields().get(2).choices());
+        assertEquals(List.of(ToolParam.Kind.RECORD, ToolParam.Kind.RECORD_LIST, ToolParam.Kind.CHOICE_LIST,
+                ToolParam.Kind.TEXT_MAP), CROPS.params().stream().map(ToolParam::kind).toList());
+
+        Map<String, Object> sent = Map.of("first", Map.of("name", "a", "x", 1),
+                "boxes", List.of(Map.of("name", "b", "x", 2, "w", 3)), "shapes", List.of("Box", "circle"),
+                "values", Map.of("speed", 2));
+        AgentReply reply = CROPS.invoke(sent, null);
+        assertFalse(reply.isRefused(), reply.parts().getFirst().text());
+        assertEquals("Crops[first=Box[name=a, x=1, w=null], boxes=[Box[name=b, x=2, w=3]], shapes=[BOX, CIRCLE],"
+                + " values={speed=2}]", reply.parts().getFirst().text());
+
+        assertRefusedBy(CROPS, with(sent, "boxes", List.of(Map.of("x", 2))), "'boxes[0].name' is required");
+        assertRefusedBy(CROPS, with(sent, "boxes", List.of(Map.of("name", "b", "x", "two"))),
+                "'boxes[0].x' is a whole number");
+        assertRefusedBy(CROPS, with(sent, "first", Map.of("name", "a", "x", 1, "z", 0)),
+                "'first' has no field [z]; it takes [name, x, w]");
+        assertRefusedBy(CROPS, with(sent, "first", "a 1"), "'first' is an object of [name, x, w]");
+        assertRefusedBy(CROPS, with(sent, "shapes", List.of("star")), "one of [box, circle]");
+        assertRefusedBy(CROPS, with(sent, "values", Map.of("speed", List.of())), "is text");
+        assertRefusedBy(CROPS, with(sent, "shapes", java.util.Arrays.asList("box", null)), "not null");
+        assertFalse(CROPS.invoke(with(sent, "unsent", null), null).isRefused(), "a key sent as null is left out");
+    }
+
+    /** What a screen map edit does, one record per action. */
+    sealed interface MapEdit {
+        @Describe("Renames a screen")
+        record Rename(@Describe("the screen") String screen, @Describe("its new name") String to) implements MapEdit {
+        }
+
+        record Delete(String screen, @Describe(value = "even if used", optional = true) Boolean force)
+                implements MapEdit {
+        }
+
+        record SetStart(String screen) implements MapEdit {
+        }
+    }
+
+    static AgentReply edit(MapEdit edit, AgentContext context) {
+        return AgentReply.text(switch (edit) {
+            case MapEdit.Rename r -> "rename " + r.screen() + " " + r.to();
+            case MapEdit.Delete d -> "delete " + d.screen() + " " + d.force();
+            case MapEdit.SetStart s -> "start " + s.screen();
+        });
+    }
+
+    static final AssistantTool<AssistantTool.OneOf<MapEdit>> EDIT_MAP = AssistantTool.named("edit_map")
+            .describedAs("Edits the screen map").takesOneOf(MapEdit.class).handledBy(AssistantToolTest::edit);
+
+    @Test
+    void anActionToolIsFlatOnTheWireAndSealedInJava() {
+        ToolSchema schema = EDIT_MAP.schema();
+        assertEquals(List.of("action", "screen", "to", "force"),
+                schema.fields().stream().map(ToolSchema.Field::name).toList());
+        ToolSchema.Field action = schema.fields().getFirst();
+        assertEquals(ToolParam.Kind.CHOICE, action.kind());
+        assertFalse(action.optional());
+        assertEquals(List.of("rename", "delete", "set_start"), action.choices());
+        assertTrue(schema.fields().stream().skip(1).allMatch(ToolSchema.Field::optional));
+        assertEquals(List.of(), schema.fields().get(1).actions(), "every action takes the screen");
+        assertEquals(List.of("rename"), schema.fields().get(2).actions());
+        assertEquals("the screen", schema.fields().get(1).description(), "the first sentence said wins");
+        ToolSchema.Action rename = schema.actions().getFirst();
+        assertEquals("Renames a screen", rename.description());
+        assertEquals(List.of("screen", "to"), rename.required());
+        assertEquals(List.of("screen", "force"), schema.actions().get(1).fields());
+        assertEquals(List.of("screen"), schema.actions().get(1).required());
+        assertEquals(AssistantTool.OneOf.class, EDIT_MAP.paramsType());
+
+        assertEquals("rename a b", EDIT_MAP.invoke(Map.of("action", "rename", "screen", "a", "to", "b"), null)
+                .parts().getFirst().text());
+        assertEquals("delete a null", EDIT_MAP.invoke(Map.of("action", "Delete", "screen", "a"), null)
+                .parts().getFirst().text());
+        assertEquals("start a", EDIT_MAP.invoke(Map.of("action", "set_start", "screen", "a"), null)
+                .parts().getFirst().text());
+
+        assertRefusedBy(EDIT_MAP, Map.of("screen", "a"), "'action' is required: one of [rename, delete, set_start]");
+        assertRefusedBy(EDIT_MAP, Map.of("action", "move", "screen", "a"), "'action' is one of [rename, delete,"
+                + " set_start], not move");
+        assertRefusedBy(EDIT_MAP, Map.of("action", "rename", "screen", "a"), "'to' is required for rename");
+        assertRefusedBy(EDIT_MAP, Map.of("action", "set_start", "screen", "a", "to", "b"),
+                "set_start does not take [to]; it takes [screen]");
+        assertRefusedBy(EDIT_MAP, Map.of("action", "rename", "screen", "a", "to", "b", "colour", "red"),
+                "no parameter [colour]; it takes [action, screen, to, force]");
+        Map<String, Object> nulls = new HashMap<>(Map.of("action", "set_start", "screen", "a"));
+        nulls.put("to", null);
+        nulls.put("bogus", null);
+        assertEquals("start a", EDIT_MAP.invoke(nulls, null).parts().getFirst().text());
+    }
+
+    sealed interface Clashing {
+        record One(String screen) implements Clashing {
+        }
+
+        record Two(int screen) implements Clashing {
+        }
+    }
+
+    sealed interface Keyed {
+        record One(String action) implements Keyed {
+        }
+    }
+
+    interface Open {
+    }
+
+    record Tree(String name, List<Tree> children) {
+    }
+
+    @Test
+    void aShapeTheWireCannotSayIsRefusedWhenDeclared() {
+        assertDeclarationRefused(() -> AssistantTool.named("x").describedAs("x").takesOneOf(Clashing.class),
+                "Two.screen holds what another action's 'screen' does not");
+        assertDeclarationRefused(() -> AssistantTool.named("x").describedAs("x").takesOneOf(Keyed.class),
+                "'action' is the action's own key");
+        assertDeclarationRefused(() -> AssistantTool.named("x").describedAs("x").takesOneOf(Open.class),
+                "a sealed interface of records");
+        assertDeclarationRefused(() -> AssistantTool.named("x").describedAs("x").takes(Tree.class)
+                .handledBy((p, c) -> null), "holds itself");
+    }
+
+    private static void assertDeclarationRefused(Runnable declare, String says) {
+        IllegalArgumentException refused = assertThrows(IllegalArgumentException.class, declare::run);
+        assertTrue(refused.getMessage().contains(says), refused.getMessage());
+    }
+
+    private static void assertRefusedBy(AssistantTool<?> tool, Map<String, Object> sent, String says) {
+        AgentReply reply = tool.invoke(sent, null);
+        assertTrue(reply.isRefused(), sent.toString());
+        assertTrue(reply.parts().getFirst().text().contains(says), reply.parts().getFirst().text());
+    }
+
     private static void assertRefused(Map<String, Object> sent, String says) {
         AgentReply reply = CROP.invoke(sent, null);
         assertTrue(reply.isRefused(), sent.toString());

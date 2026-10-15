@@ -18,7 +18,24 @@
  * their names, types and {@link com.botmaker.plugin.api.assist.Describe} sentences, and the host hands the
  * handler a record built from what the assistant sent. A component of a type the schema cannot say is refused
  * when the tool is declared, with the component named. The handler answers an
- * {@link com.botmaker.plugin.api.assist.AgentReply}: text, an image, or a refusal.
+ * {@link com.botmaker.plugin.api.assist.AgentReply}: text, an image, or a refusal. A component may be a nested
+ * record or a list of records, so a batch is a {@code List<Box>}, never lines of text to parse.
+ *
+ * <p><b>One tool for one family of actions</b>, rather than a tool per verb: {@code takesOneOf} a sealed interface
+ * whose records are the actions, and a handler that {@code switch}es over them.
+ *
+ * <pre>{@code
+ * sealed interface Edit {
+ *     @Describe("Renames a screen") record Rename(String screen, String to) implements Edit {}
+ *     record SetStart(String screen) implements Edit {}
+ * }
+ * static final AssistantTool<AssistantTool.OneOf<Edit>> EDIT_MAP = AssistantTool.named("edit_map")
+ *         .describedAs("Edits the screen map").takesOneOf(Edit.class).handledBy(MapTools::edit);
+ * }</pre>
+ *
+ * <p>The assistant sends {@code action} ({@code "rename"}, {@code "set_start"}) and that action's fields flat beside
+ * it ({@link com.botmaker.plugin.api.assist.ToolSchema}); the tool refuses, in a sentence, a field the action does
+ * not take and a field it needs that is missing.
  *
  * <p><b>What a tool may change is what the plugin already may.</b> It writes the plugin's own values through
  * {@code services().pluginValues()}, which the host gates exactly as it gates the plugin's own windows. It is
