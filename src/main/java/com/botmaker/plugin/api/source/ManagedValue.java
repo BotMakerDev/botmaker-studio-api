@@ -9,6 +9,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Optional;
@@ -34,8 +35,9 @@ import java.util.function.Predicate;
  * sites — and the whole class is the plugin's window's, so the canvas may not add to it, rename in it or
  * delete from it. There {@link #type()} is the class of each constant: see {@link #openSet}. Which of the two
  * a value is, is its {@link #shape()}. An open set is a class of {@code public static final} fields, an enum
- * of bare names implementing {@link #type()} ({@link #isEnum()}), or a class of such enums nested in it
- * ({@link #isGrouped()}).
+ * of bare names implementing {@link #type()} ({@link #isEnum()}), a class of such enums nested in it
+ * ({@link #isGrouped()}), or a class of subclasses of {@link #type()} nested in it, each with its one instance as
+ * a constant ({@link #isClasses()}).
  *
  * <p><b>A third shape, a parameter</b> ({@link #param}, 2026-10-11): on a <b>field</b> that also carries
  * {@code @Param}, a value the person running the bot picks — {@code Sdk.doSetup}. The host writes the field when
@@ -103,6 +105,12 @@ public final class ManagedValue<T> {
     private record Grouped(Ref.Of2<String, String, ?> byName, Class<?> groupType, Ref.Of1<String, ?> byGroup) {}
 
     /**
+     * A set of nested classes ({@link SetSteps#ofClasses}): the type of each one's managed fields, how a reference
+     * to one of them reads, and the method each class overrides to say the rest of it.
+     */
+    private record Classes(Class<?> fieldType, Ref.Of2<String, String, ?> byField, Method setup) {}
+
+    /**
      * A parameter ({@link #param}): the field's full type, what its {@code @Param} says, and when it applies
      * ({@code null} for always).
      */
@@ -124,11 +132,13 @@ public final class ManagedValue<T> {
     private final Grouped grouped;
     private final Field field;
     private final Ref.Of1<String, ? extends T> referred;
+    private final Classes classes;
 
     private ManagedValue(Key key, String reason, String holder, Shape shape, Class<T> type, T initial,
                          Ref.Of1<String, ? extends T> byName, Grouped grouped, Field field,
-                         Ref.Of1<String, ? extends T> referred) {
+                         Ref.Of1<String, ? extends T> referred, Classes classes) {
         this.referred = referred;
+        this.classes = classes;
         this.key = key;
         this.reason = reason;
         this.holder = holder;
@@ -325,6 +335,48 @@ public final class ManagedValue<T> {
     }
 
     /**
+     * Whether this open set is a class of classes nested in it ({@link SetSteps#ofClasses}) — each a subclass of
+     * {@link #type()} with one constant holding its one instance, its own fields and its setup method — rather
+     * than one class's constants.
+     */
+    public boolean isClasses() {
+        return classes != null;
+    }
+
+    /**
+     * The class of a nested class's managed fields ({@link ClassesStep#fields}): each instance field whose
+     * declared type is it or a subtype. Null when this set is not {@link #isClasses() of classes}.
+     */
+    public Class<?> fieldType() {
+        return classes == null ? null : classes.fieldType();
+    }
+
+    /**
+     * The value a reference to the field {@code field} of the class whose constant is {@code member} stands for —
+     * {@code Screens.MARKET.beerBuy} read by a host that cannot load the bot's class is what this makes of
+     * {@code ("MARKET", "beerBuy")}. Null when this set is not of classes, the plugin refused, or it answered
+     * something other than {@link #fieldType()}.
+     */
+    public Object byField(String member, String field) {
+        if (classes == null || member == null || field == null) return null;
+        try {
+            Object made = classes.byField().call(member, field);
+            return classes.fieldType().isInstance(made) ? made : null;
+        } catch (RuntimeException refused) {
+            return null;
+        }
+    }
+
+    /**
+     * The method of {@link #type()} each nested class overrides, whose one {@code return} is the rest of the class
+     * ({@link FieldsStep#setup}): what the host reads, writes, and declares in a class it adds.
+     * Null when this set is not of classes.
+     */
+    public Method setup() {
+        return classes == null ? null : classes.setup();
+    }
+
+    /**
      * Whether a reference to one of this open set's constants reads as the constant's name
      * ({@link SetHolderStep#referredToAs}) rather than as what its initialiser holds.
      */
@@ -429,6 +481,14 @@ public final class ManagedValue<T> {
      *         .groupedAs(Activity.class, BotConstants::activity)
      *         .in("Activities")
      *         .because("Activities are managed in 🔀 Activity Flow.");
+     *
+     * public static final ManagedValue<Screen> SCREEN_MAP = ManagedValue.openSet(SdkValue.Id.SCREEN_MAP)
+     *         .ofClasses(Screen.class)                      // classes nested in the holder: class Market extends Screen
+     *         .fields(Input.class, BotConstants::input)     // their fields: Screens.MARKET.beerBuy
+     *         .setup(Screen::setup)                         // the method each overrides with one return
+     *         .referredToAs(BotConstants::screen)
+     *         .in("Screens")
+     *         .because("The screen map is managed in 🗺 Screens.");
      * }</pre>
      *
      * @throws IllegalArgumentException when the enum is not nested in a {@link ManagedMarker} annotation
@@ -652,6 +712,119 @@ public final class ManagedValue<T> {
             Ref.resolve(byName);
             return new GroupStep<>(key, element, byName);
         }
+
+        /**
+         * Classes of the bot's own <b>nested in the holder class</b>, each a {@code public static final} subclass of
+         * {@code element} with one constant holding its one instance — its members are instance fields, and one
+         * method it overrides says the rest of it:
+         *
+         * <pre>{@code
+         * @SdkValue(SdkValue.Id.SCREEN_MAP)
+         * public final class Screens {
+         *     public static final class Market extends Screen {
+         *         public final Button beerBuy = Button.of(Pictures.BEER_BUY);
+         *         public final Button close = Button.of(Pictures.CLOSE);
+         *         @Override public Setup setup() {
+         *             return Setup.named("Market").from(Screens.HOME.market).back(Screens.MARKET.close);
+         *         }
+         *     }
+         *     public static final Market MARKET = new Market();
+         * }
+         * }</pre>
+         *
+         * <p>For a set whose members have parts other values point at one by one: a method can take
+         * {@code Screens.MARKET.beerBuy}, and javac refuses a field the class has not got. The constant
+         * ({@code MARKET}) is the member; the host adds, renames and removes a whole class with its constant
+         * ({@link PluginValues#addClass}, {@link PluginValues#renameGroup}, {@link PluginValues#removeGroup}), and a
+         * field with the operations on one constant, as {@code Member.of("MARKET", "beerBuy")}. Each field's
+         * initialiser and the setup's {@code return} are values the grammar reads and writes, as any constant's
+         * initialiser is. The holder is created as an empty {@code public final class}.
+         *
+         * @param element the class every nested one extends — {@code Screen}; a class, neither final nor an
+         *                interface, so a bot's class can extend it
+         * @throws IllegalArgumentException when {@code element} is missing, an interface, final, primitive or an
+         *                                  array
+         */
+        public <E> ClassesStep<E> ofClasses(Class<E> element) {
+            if (element == null) throw new IllegalArgumentException(key.id() + ": no element type given");
+            if (element.isInterface() || element.isPrimitive() || element.isArray()
+                    || Modifier.isFinal(element.getModifiers())) {
+                throw new IllegalArgumentException(key.id() + ": a bot's class extends its element type, so "
+                        + element.getName() + " must be a class that is not final");
+            }
+            return new ClassesStep<>(key, element);
+        }
+    }
+
+    /** After {@link SetSteps#ofClasses}: what a nested class's fields are. */
+    public static final class ClassesStep<E> {
+
+        private final Key key;
+        private final Class<E> element;
+
+        private ClassesStep(Key key, Class<E> element) {
+            this.key = key;
+            this.element = element;
+        }
+
+        /**
+         * The class's managed fields: its {@code public final} instance fields of {@code field} or a subtype, in the
+         * order they are written. A reference to one — {@code Screens.MARKET.beerBuy}, or {@code MARKET.close} inside
+         * the holder — reads as what {@code byReference} makes of the constant's and the field's names, wherever it
+         * is read, and a value equal to that is written back as the reference. Its initialiser is read only when the
+         * field itself is opened ({@link PluginValues#open(ManagedValue, PluginValues.Member)}).
+         *
+         * @param field       the plugin's class for one field — {@code Input}
+         * @param byReference a method reference from a constant's name and a field's name to the value standing for
+         *                    that field — {@code BotConstants::input}; it must equal itself by those names alone
+         * @throws IllegalArgumentException when {@code field} is missing or {@code byReference} is no method reference
+         */
+        public <F> FieldsStep<E> fields(Class<F> field, Ref.Of2<String, String, ? extends F> byReference) {
+            if (field == null) throw new IllegalArgumentException(key.id() + ": no field type given");
+            Ref.resolve(byReference);
+            return new FieldsStep<>(key, element, field, byReference);
+        }
+    }
+
+    /** After {@link ClassesStep#fields}: the method each nested class overrides. */
+    public static final class FieldsStep<E> {
+
+        private final Key key;
+        private final Class<E> element;
+        private final Class<?> field;
+        private final Ref.Of2<String, String, ?> byField;
+
+        private FieldsStep(Key key, Class<E> element, Class<?> field, Ref.Of2<String, String, ?> byField) {
+            this.key = key;
+            this.element = element;
+            this.field = field;
+            this.byField = byField;
+        }
+
+        /**
+         * The method of the element type each nested class overrides with one {@code return <expression>;} — the
+         * rest of the class, say its name and how it is reached — which the host reads and writes as a value of the
+         * method's return type ({@link PluginValues#open(ManagedValue, PluginValues.Member)} on
+         * {@code Member.of("MARKET")}). A method rather than a constructor argument: the expression may name the
+         * class's own fields, which a {@code super(…)} call cannot, so the plugin's runtime calls it once the
+         * instance is built.
+         *
+         * @param method a method reference to a public, non-static, non-final method of the element type that
+         *               takes nothing and returns the value — {@code Screen::setup}
+         * @throws IllegalArgumentException when {@code method} is no such reference
+         */
+        public SetHolderStep<E> setup(Ref.Of1<? super E, ?> method) {
+            if (!(Ref.resolve(method) instanceof Method setup) || setup.getParameterCount() != 0
+                    || setup.getReturnType() == void.class
+                    || Modifier.isStatic(setup.getModifiers())
+                    || Modifier.isFinal(setup.getModifiers())
+                    || !Modifier.isPublic(setup.getModifiers())
+                    || !setup.getDeclaringClass().isAssignableFrom(element)) {
+                throw new IllegalArgumentException(key.id() + ": setup names a public method of "
+                        + element.getName() + " taking nothing, returning a value, that a subclass can override");
+            }
+            return new SetHolderStep<>(key, element, null, null, null, new Classes(field, byField, setup));
+        }
     }
 
     /** After {@link SetSteps#ofEnums}: what a whole nested enum reads as. */
@@ -684,7 +857,10 @@ public final class ManagedValue<T> {
         }
     }
 
-    /** After {@link SetSteps#of}, {@link SetSteps#ofEnum} or {@link GroupStep#groupedAs}: the class that is the set. */
+    /**
+     * After {@link SetSteps#of}, {@link SetSteps#ofEnum}, {@link GroupStep#groupedAs} or {@link FieldsStep#setup}:
+     * the class that is the set.
+     */
     public static final class SetHolderStep<E> {
 
         private final Key key;
@@ -693,18 +869,20 @@ public final class ManagedValue<T> {
         private final Grouped grouped;
 
         private final Ref.Of1<String, ? extends E> referred;
+        private final Classes classes;
 
         private SetHolderStep(Key key, Class<E> element, Ref.Of1<String, ? extends E> byName, Grouped grouped) {
-            this(key, element, byName, grouped, null);
+            this(key, element, byName, grouped, null, null);
         }
 
         private SetHolderStep(Key key, Class<E> element, Ref.Of1<String, ? extends E> byName, Grouped grouped,
-                              Ref.Of1<String, ? extends E> referred) {
+                              Ref.Of1<String, ? extends E> referred, Classes classes) {
             this.key = key;
             this.element = element;
             this.byName = byName;
             this.grouped = grouped;
             this.referred = referred;
+            this.classes = classes;
         }
 
         /**
@@ -718,7 +896,8 @@ public final class ManagedValue<T> {
          * initialiser is not read either, so one constant naming another never reads the other's.
          *
          * <p>The plugin's value must be of the element type and equal itself by name alone. Only for a set
-         * declared {@link SetSteps#of}: an enum's constants are read by name already.
+         * declared {@link SetSteps#of} or {@link SetSteps#ofClasses} — where {@code Screens.MARKET} names the class
+         * whose one instance it holds: an enum's constants are read by name already.
          *
          * @param byReference a method reference from a constant's name to the value that stands for it —
          *                    {@code BotConstants::flow}
@@ -730,13 +909,13 @@ public final class ManagedValue<T> {
                 throw new IllegalArgumentException(key.id() + ": an enum's constants are read by name already");
             }
             Ref.resolve(byReference);
-            return new SetHolderStep<>(key, element, null, null, byReference);
+            return new SetHolderStep<>(key, element, null, null, byReference, classes);
         }
 
         /** The class {@code holder} — {@code "Pictures"} — created empty when a project has none. */
         public Reason<E> in(String holder) {
             return new Reason<>(key, requireText(holder, "holder"), Shape.OPEN_SET, element, null, byName, grouped,
-                    null, referred);
+                    null, referred, classes);
         }
     }
 
@@ -752,15 +931,17 @@ public final class ManagedValue<T> {
         private final Grouped grouped;
         private final Field field;
         private final Ref.Of1<String, ? extends T> referred;
+        private final Classes classes;
 
         private Reason(Key key, String holder, Shape shape, Class<T> type, T initial,
                        Ref.Of1<String, ? extends T> byName, Grouped grouped, Field field) {
-            this(key, holder, shape, type, initial, byName, grouped, field, null);
+            this(key, holder, shape, type, initial, byName, grouped, field, null, null);
         }
 
         private Reason(Key key, String holder, Shape shape, Class<T> type, T initial,
                        Ref.Of1<String, ? extends T> byName, Grouped grouped, Field field,
-                       Ref.Of1<String, ? extends T> referred) {
+                       Ref.Of1<String, ? extends T> referred, Classes classes) {
+            this.classes = classes;
             this.key = key;
             this.holder = holder;
             this.shape = shape;
@@ -791,13 +972,14 @@ public final class ManagedValue<T> {
         public Reason<T> when(Predicate<? super ParamScope> applies) {
             if (field == null) throw new IllegalArgumentException("Only a parameter has a condition");
             if (applies == null) throw new IllegalArgumentException("when needs a condition");
-            return new Reason<>(key, holder, shape, type, initial, byName, grouped, field.when(applies), referred);
+            return new Reason<>(key, holder, shape, type, initial, byName, grouped, field.when(applies), referred,
+                    classes);
         }
 
         /** What owns this value and where to change it instead. */
         public ManagedValue<T> because(String reason) {
             return new ManagedValue<>(key, requireText(reason, "reason"), holder, shape, type, initial, byName,
-                    grouped, field, referred);
+                    grouped, field, referred, classes);
         }
     }
 

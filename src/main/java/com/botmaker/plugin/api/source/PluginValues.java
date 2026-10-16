@@ -107,7 +107,10 @@ public interface PluginValues {
 
     /**
      * One constant of an open set: its name, and for a set of nested enums ({@link ManagedValue#isGrouped}) the
-     * simple name of the enum it is in — {@code Collect.WON} is {@code Member.of("Collect", "WON")}.
+     * simple name of the enum it is in — {@code Collect.WON} is {@code Member.of("Collect", "WON")}. In a set of
+     * nested classes ({@link ManagedValue#isClasses}) a field is named by the constant holding its class's
+     * instance — {@code Screens.MARKET.beerBuy} is {@code Member.of("MARKET", "beerBuy")} — and
+     * {@code Member.of("MARKET")} is the class itself.
      *
      * <p>A value, compared by its parts. It owns the one spelling a member crosses as, {@code "Group.NAME"} or
      * {@code "NAME"} ({@link #toString}), so no plugin joins or splits one by hand.
@@ -304,6 +307,28 @@ public interface PluginValues {
 
     /** Deletes the nested enum. Refused while anything uses it or one of its constants, the uses listed. */
     default Optional<String> removeGroup(ManagedValue<?> set, String group) {
+        return Optional.of(NO_SOURCE_TREE);
+    }
+
+    // ── a set of nested classes ─────────────────────────────────────────────────────────────────────────
+    //
+    // A ManagedValue.openSet(…).ofClasses(…) holder is a class of classes nested in it, each with the constant that
+    // holds its one instance: Screens { static final class Market extends Screen { Button beerBuy = …; setup() }
+    // static final Market MARKET = new Market(); }. The constant is the group: groups(set) lists MARKET, and
+    // renameGroup and removeGroup rename or delete the class and its constant together (the class keeps the
+    // constant's name in UpperCamelCase when it had it). A field is Member.of("MARKET", "beerBuy"): members(set)
+    // lists every class's fields, and open, add, uses, rename, repoint and remove act on one — add declaring
+    // public final <its class> beerBuy = <value>; in the class. Member.of("MARKET") is the class itself: open
+    // reads and writes what its setup method returns. moveBefore is refused for both.
+
+    /**
+     * Declares {@code public static final class <Member> extends <element> { @Override public <S> setup() { return
+     * <setup>; } }} and {@code public static final <Member> member = new <Member>();} after the set's last class,
+     * the class named after {@code member} in UpperCamelCase ({@code FAVORED_SHOP} is {@code FavoredShop}) and the
+     * setup written by the grammar as a value of the setup method's return type. Refused when the set is not of
+     * classes, a name is not a Java name or is taken, or {@code setup} is one no loaded plugin declares.
+     */
+    default Optional<String> addClass(ManagedValue<?> set, String member, Object setup) {
         return Optional.of(NO_SOURCE_TREE);
     }
 

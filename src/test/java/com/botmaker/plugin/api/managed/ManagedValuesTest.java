@@ -289,6 +289,78 @@ class ManagedValuesTest {
                 .ofEnums(Label.class, ManagedValuesTest::inGroup).groupedAs(Group.class, name -> new Group(name)));
     }
 
+    /** The element of a set of classes: what a bot's nested class extends. */
+    public abstract static class Sheet {
+        public abstract Label setup();
+
+        public final Label helper() {
+            return new Named("helper");
+        }
+    }
+
+    /** What a reference to a whole class stands for, made from its constant's name. */
+    public static final class NamedSheet extends Sheet {
+        private final String name;
+
+        NamedSheet(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public Label setup() {
+            return new Named(name);
+        }
+    }
+
+    /** One field of a nested class, made from its class's constant and its own name. */
+    public record Cell(String sheet, String name) {}
+
+    public static Cell cell(String sheet, String name) {
+        if (name.isBlank()) throw new IllegalArgumentException("no name");
+        return new Cell(sheet, name);
+    }
+
+    public static Sheet sheet(String name) {
+        return new NamedSheet(name);
+    }
+
+    @Test
+    void aSetOfClassesReadsAFieldByItsConstantAndNameAndNamesItsSetup() throws Exception {
+        ManagedValue<Sheet> set = ManagedValue.openSet(TestValue.Id.ENUM_SET)
+                .ofClasses(Sheet.class)
+                .fields(Cell.class, ManagedValuesTest::cell)
+                .setup(Sheet::setup)
+                .referredToAs(ManagedValuesTest::sheet)
+                .in("Sheets").because("Mine.");
+
+        assertTrue(set.isClasses());
+        assertTrue(set.isOpenSet());
+        assertFalse(set.isGrouped(), "a set of classes is no set of enums");
+        assertFalse(set.isEnum());
+        assertEquals(Cell.class, set.fieldType());
+        assertEquals(new Cell("MARKET", "beerBuy"), set.byField("MARKET", "beerBuy"));
+        assertNull(set.byField("MARKET", " "), "a name the plugin refuses reads as nothing");
+        assertNull(set.byField(null, "beerBuy"));
+        assertEquals(Sheet.class.getMethod("setup"), set.setup());
+        assertTrue(set.isReferredByName(), "a class's constant is referred to by name");
+        assertEquals("MARKET", ((Named) set.byReference("MARKET").setup()).name());
+    }
+
+    @Test
+    void aSetOfClassesNeedsAnOpenClassAndAnOverridableSetup() {
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.ENUM_SET)
+                .ofClasses(Label.class), "an interface is no class to extend");
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.ENUM_SET)
+                .ofClasses(NamedSheet.class), "a final class cannot be extended");
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.ENUM_SET)
+                .ofClasses(Sheet.class).fields(Cell.class, (s, n) -> new Cell(s, n)), "a lambda is refused");
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.ENUM_SET)
+                .ofClasses(Sheet.class).fields(Cell.class, ManagedValuesTest::cell).setup(Sheet::helper),
+                "a final method cannot be overridden");
+        assertTrue(ManagedValue.openSet(TestValue.Id.ENUM_SET).of(Named.class).in("Names").because("Mine.")
+                .setup() == null, "a set of one class has no setup");
+    }
+
     static final class OneThrows {
 
         @TestValue(TestValue.Id.THROWS)

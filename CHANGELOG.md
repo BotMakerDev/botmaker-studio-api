@@ -36,6 +36,17 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **An open set may be a class of nested classes** (2026-10-16): `ManagedValue.openSet(id).ofClasses(Screen.class)
+  .fields(Input.class, BotConstants::input).setup(Screen::setup)`. The holder nests `public static final class
+  Market extends Screen { public final Button beerBuy = …; @Override public Setup setup() { return …; } }` beside its
+  constant `public static final Market MARKET = new Market();`, so a value can name one field of one member —
+  `Screens.MARKET.beerBuy`, read as what `fields`' method makes of `("MARKET", "beerBuy")` and written back as that
+  reference — and javac refuses a field the class has not got. `ManagedValue.isClasses()`, `fieldType()`,
+  `byField(member, field)` and `setup()` read the declaration. In `PluginValues` a field is
+  `Member.of("MARKET", "beerBuy")` (`members`, `open`, `add`, `uses`, `rename`, `repoint`, `remove`), the class
+  itself `Member.of("MARKET")` (`open` reads and writes what its setup returns), and `groups`, `renameGroup` and
+  `removeGroup` act on whole classes; the new `addClass(set, member, setup)` declares one. Additive: a plugin built
+  against 0.9 is unaffected.
 - **An assistant tool's parameters may nest**: a record component may be a record, a `List` of records, a `List`
   of an enum, or a `Map<String, String>`, besides the scalars, enums and `List<String>`. A batch is a list of
   records instead of text lines to parse. `AssistantTool.schema()` (`ToolSchema`) is the whole tree a host writes
