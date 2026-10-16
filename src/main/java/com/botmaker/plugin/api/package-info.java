@@ -21,7 +21,7 @@
  * {@code slot} (editing one value), {@code toolbar} (a button), {@code source} (a plugin's values in the
  * bot's Java), {@code value} (the value vocabulary), {@code record} (what a recorded gesture writes),
  * {@code palette} (the curation annotations), {@code params} and {@code managed} (the two annotations on a
- * bot's own declarations) and {@code meta} ({@code @ReplacedBy}, {@code @Refactor}). A new type goes in the
+ * bot's own declarations) and {@code meta} ({@code @Migrate}, {@code @Refactor}). A new type goes in the
  * package of its surface, not at this root.
  *
  * <h2>The one dependency</h2>

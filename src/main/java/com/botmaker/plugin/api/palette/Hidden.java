@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  *
  * <p>This is the exact claim the annotation makes, and no wider: it does not mean <em>not versioned
  * surface</em>. Versioning is
- * {@link com.botmaker.plugin.api.meta.ReplacedBy}'s business and {@code @Deprecated}'s; a package called
+ * the bot author's {@link com.botmaker.plugin.api.meta.Migrate} rules' business and {@code @Deprecated}'s; a package called
  * {@code internal} is how a module says what is freely breakable. Neither needs an annotation whose real job
  * is a menu.
  *

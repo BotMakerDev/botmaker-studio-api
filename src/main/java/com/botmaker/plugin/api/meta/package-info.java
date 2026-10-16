@@ -1,31 +1,22 @@
 /**
- * What a plugin says <em>about</em> its own surface over time, as opposed to what the surface is.
+ * The marks a host and a bot's author write on a bot's own code as it moves between versions of the APIs it
+ * calls. A plugin writes none of them, and says nothing about its own changes.
  *
- * <p>One annotation lives here: {@link com.botmaker.plugin.api.meta.ReplacedBy}, the forward pointer a
- * renamed or retired element carries to whatever takes its place. It is the whole compatibility vocabulary,
- * and that is a deliberate narrowing.
+ * <p>{@link com.botmaker.plugin.api.meta.Migrate} is the author's rule: what one element of an old API — a
+ * method, a constructor, a field, a whole type — becomes, named by the rule's own signature and kept in the bot.
+ * The host resolves the old element against the jar the bot moves <em>from</em> and substitutes the rule at each
+ * use, so a plugin may delete or reshape any element outright: no version has to carry the old and the new side
+ * by side, and no {@link java.lang.Deprecated} is needed for the move to work.
+ * {@link com.botmaker.plugin.api.meta.Migrated} marks a managed value such a rule wrote beside its original.
  *
- * <p>A second faces the other way: {@link com.botmaker.plugin.api.meta.Refactor} is
- * what a host writes on a <em>bot's</em> function when a refactor had to guess there — a plugin upgrade, a
- * signature change, a plugin's own rewrite — so the user can find and review it.
+ * <p>{@link com.botmaker.plugin.api.meta.Refactor} is what a host writes on a bot's function when a refactor had
+ * to guess there — a site no rule could rewrite, a rule only seeded, a signature change — so the user can find
+ * and review it.
  *
- * <p>Two more face the bot too: {@link com.botmaker.plugin.api.meta.Migrate} is the author's mapping from one
- * type's values to another's, kept in the bot, and {@link com.botmaker.plugin.api.meta.Migrated} marks a value
- * such a mapping wrote. A plugin that moves its values to a new type says so with the standard
- * {@link java.lang.Deprecated} and {@link com.botmaker.plugin.api.value.PluginType#replacedBy()}; it never
- * writes the mapping.
- *
- * <p>{@code @Replaces}, the back edge, existed because a host upgrading a bot holds only two jars: the
- * version the bot pins and the version it is moving to. A bot jumping 1.0 → 3.0 could not see a pointer added
- * in 2.0 on an element deleted in 3.0, so the surviving element had to name what it replaced. It goes because
- * the SDK now <b>never deletes</b> a public {@code api.*} element — a rename adds the new name, deprecates
- * the old and points one at the other, and both stay — which is enforced by japicmp rather than by an
- * annotation. Under that rule the target jar always still carries the forward pointer, and one end answers
- * every upgrade including a skipped one.
- *
- * <p>{@code @Since} went with it. It grouped a <i>what's new</i> list by version, which the release's own
- * changelog already says; a version written on an element is a second record of a fact the release notes
- * carry, and it drifts.
+ * <p>{@code @ReplacedBy}, the plugin's forward pointer to whatever took a retired element's place, went on
+ * 2026-10-16: a pointer said <em>where</em> an element went but not how its arguments carry over
+ * ({@code marker(x)} becoming {@code markers(List.of(x))}), it held its targets as text, and it made every
+ * removal wait a version. {@code @Replaces}, its back edge, and {@code @Since} had gone before it.
  *
  * <p>{@link com.botmaker.plugin.api.palette.Hidden} used to live here too, as {@code @Internal}, on the
  * argument that declining to offer a member was one consequence of the larger claim <em>not versioned

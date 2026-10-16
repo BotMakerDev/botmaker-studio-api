@@ -91,16 +91,6 @@ public interface PluginType<T> {
     }
 
     /**
-     * The type that takes this one's place, or {@code null}. Set only on a type its class marks
-     * {@link Deprecated}: the plugin keeps the old class while bots still hold values of it, and the host offers
-     * the bot's author to migrate those values to this type — copying them, never converting them itself. The
-     * pointer only suggests: the author may migrate to any type. <b>Read, never loaded</b>, like {@link #type()}.
-     */
-    default Class<?> replacedBy() {
-        return null;
-    }
-
-    /**
      * A small, non-interactive picture of the value — a swatch, a thumbnail, a label — or {@code null}.
      *
      * <p>Shown where a value appears but is not edited: beside a declared choice in the list an author picks

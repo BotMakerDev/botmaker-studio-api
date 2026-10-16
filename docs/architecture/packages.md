@@ -26,8 +26,8 @@
   their non-`@Hidden` members reach, derived by `PaletteCatalog.of` (2026-09-30). `@Hidden` is member-only:
   that member is not offered and reaches nothing. Facades and categories are listed alphabetically by label;
   `@Palette.order` is deleted.
-- `…api.meta` — **`@ReplacedBy`** (a rename's forward pointer; `CLASS` retention, because Studio reads it out
-  of a jar it never loads and it stays out of every running bot's reflection data) and **`@Refactor(value,
-  done)`**, the mark on a function where a refactor wrote a value the user never chose; **`@Migrate`** (a
-  bot's method mapping one type's values to another, written by Studio from the author's steps, never run) and
-  **`@Migrated`** (a managed value such a method wrote and nobody edited since), all three `SOURCE`.
+- `…api.meta` — **`@Refactor(value, done)`**, the mark on a function where a refactor wrote a value the user
+  never chose; **`@Migrate`** (a bot's rule saying what one element of an old API becomes — a method,
+  constructor, field or whole type, named by the rule's own signature — written by the bot's author, never run)
+  and **`@Migrated`** (a managed value such a rule wrote and nobody edited since), all three `SOURCE`. A plugin
+  says nothing about its own changes: `@ReplacedBy` went on 2026-10-16, when the author's rules took its place.

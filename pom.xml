@@ -67,8 +67,10 @@
              installs this one from main.
              v0.9.0 the same way on 2026-10-12: every String-id PluginValues operation, ValueContext.member/
              writeMember(String…), Runs.property/setProperty, byGroup(String), shown(…, String) and
-             DeclaredCall.components/build went for their typed forms (Member, RunProperty, Held). -->
-        <botmaker.japicmp.baseline>v0.9.0</botmaker.japicmp.baseline>
+             DeclaredCall.components/build went for their typed forms (Member, RunProperty, Held).
+             v0.10.0 the same way on 2026-10-16: @ReplacedBy and PluginType/DeclaredType/DeclaredCallType
+             .replacedBy went, and @Migrate became a rule for any element (Kind, Self, name). -->
+        <botmaker.japicmp.baseline>v0.10.0</botmaker.japicmp.baseline>
         <botmaker.japicmp.skip>false</botmaker.japicmp.skip>
     </properties>
 

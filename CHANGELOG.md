@@ -17,6 +17,17 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
+### Changed (breaking, 0.10.0)
+
+- **`@Migrate` is the bot author's rule for any element of an old API**, not only a type's values: a method,
+  constructor, field or whole type (`Migrate.Kind`), named by the rule's own signature (its name, its parameter
+  types, `@Migrate.Self` on the receiver), the owner by `value()` or, when that type is gone, by `name()`. The
+  host substitutes the rule at every use in the project; managed values are still copied, `@Migrated`.
+- **Removed: `@ReplacedBy`, `PluginType.replacedBy()`, `DeclaredType.replacedBy(Class)` and
+  `DeclaredCallType.replacedBy(Class)`.** A plugin says nothing about its own changes and may delete an element
+  outright; the bot's author writes what replaces it. A plugin built against 0.9 that calls `replacedBy` fails
+  to link: drop the call.
+
 ### Build
 
 - **JitPack builds with `.jitpack/build.sh`**, the umbrella's `tools/jitpack/build.sh`: Maven 3.9.9 and every
