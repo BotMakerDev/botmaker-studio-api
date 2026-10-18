@@ -32,10 +32,10 @@
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- JavaFX 25 LTS, pinned to its newest patch rather than the bare GA. It is the version the
-             whole platform shares: the contract, the toolkit, the CLI (compile-only) and Studio all
-             read this number, and javafx-controls is compiled against one exact javafx-graphics. -->
-        <javafx.version>25.0.4</javafx.version>
+        <!-- JavaFX 27, the newest GA. It is the version the whole platform shares: the contract, the
+             toolkit, the CLI (compile-only) and Studio all read this number, and javafx-controls is
+             compiled against one exact javafx-graphics. -->
+        <javafx.version>27</javafx.version>
         <junit.version>5.10.2</junit.version>
         <!-- The published tag japicmp compares this build against. Bumped automatically now, by
              release.sh's bump_japicmp_baseline, in each release commit — it was `v1.0.0` until 2026-09-02,
