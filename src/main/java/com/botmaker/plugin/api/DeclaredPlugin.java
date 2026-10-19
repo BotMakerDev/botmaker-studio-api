@@ -23,19 +23,19 @@ import java.util.Optional;
  * public final class DiscordPlugin extends DeclaredPlugin {
  *     public DiscordPlugin() {
  *         super(StudioPlugin.id("com.example.discord").named("Discord")
- *                 .types(() -> DiscordTypes.ALL)
+ *                 .types(DiscordTypes.class)
  *                 .toolbar(() -> DiscordToolbar.ALL));
  *     }
  * }
  * }</pre>
  *
- * <p>Each surface asks its supplier every time the host asks, and keeps nothing: the lists are
- * {@code static final} constants, built once when their class loads, and the host keeps what it gets for the
- * bound project. {@link #projectOpened} and {@link #projectClosing} are the two methods left to override,
- * because they are not lists — a plugin holding something the operating system counts releases it in the
- * second.
+ * <p>Each surface asks its supplier, or reads its holder classes' fields, every time the host asks, and keeps
+ * nothing: the values are {@code static final} constants, built once when their class loads, and the host
+ * keeps what it gets for the bound project. {@link #projectOpened} and {@link #projectClosing} are the two
+ * methods left to override, because they are not lists — a plugin holding something the operating system
+ * counts releases it in the second.
  *
- * <p>Each list is a supplier, so nothing is built while the plugin is constructed.
+ * <p>Each list is a supplier or a holder class, so nothing is built while the plugin is constructed.
  */
 public class DeclaredPlugin implements StudioPlugin {
 

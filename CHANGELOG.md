@@ -17,6 +17,14 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
+### Added
+
+- **Types and managed values are named by the class that holds them**: `.types(MyTypes.class)`,
+  `.values(MyValues.class)`. The plugin contributes every `public static final` `PluginType`, `ComponentType` or
+  `ManagedValue` field there, and each element of a list field, in field order, once each. A new type is declared
+  by writing its field; the hand-kept `ALL` list, which failed silently when one was left out, is no longer needed.
+  `types(…)` gives the parts too, so `.parts(…)` is rarely wanted. The supplier forms stay. Additive.
+
 ### Changed
 
 - **A method reference compiled by ECJ is named as such.** ECJ (Eclipse, VS Code's Java) compiles a serializable

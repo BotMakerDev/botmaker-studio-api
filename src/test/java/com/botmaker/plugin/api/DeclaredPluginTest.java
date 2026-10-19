@@ -4,6 +4,8 @@ import com.botmaker.plugin.api.managed.ManagedMarker;
 import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.source.ManagedValue;
+import com.botmaker.plugin.api.value.ComponentType;
+import com.botmaker.plugin.api.value.DeclaredCall;
 import com.botmaker.plugin.api.value.PluginType;
 import org.junit.jupiter.api.Test;
 
@@ -104,6 +106,79 @@ class DeclaredPluginTest {
         StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.x").named(" ")) {};
         assertEquals("com.example.x", plugin.displayName());
         assertThrows(IllegalArgumentException.class, () -> StudioPlugin.id(" "));
+    }
+
+    public record Mark() {
+        public static Mark make() {
+            return new Mark();
+        }
+    }
+
+    static final AtomicInteger LAZY_INITIALISED = new AtomicInteger();
+
+    static final class Lazy {
+        static {
+            LAZY_INITIALISED.incrementAndGet();
+        }
+
+        public static final PluginType<Character> LETTER = PluginType.value(char.class).fresh(() -> 'a')
+                .editor(() -> ctx -> null).writtenAsLiteral();
+    }
+
+    static final class Types {
+        public static final PluginType<Integer> COUNT = PluginType.value(int.class).fresh(() -> 0)
+                .editor(() -> ctx -> null).writtenAsLiteral();
+        public static final DeclaredCall<Mark> MARK = ComponentType.part(Mark.class).writtenAs(Mark::make);
+        public static final PluginType<String> LABEL = PluginType.value(String.class).fresh(() -> "")
+                .editor(() -> ctx -> null).writtenAsLiteral();
+        public static final List<DeclaredCall<Mark>> MARKS = List.of(
+                ComponentType.part(Mark.class).writtenAs(Mark::make));
+        public static final List<PluginType<?>> ALL = List.of(LABEL, COUNT);
+        static final PluginType<Boolean> HIDDEN = PluginType.value(boolean.class).fresh(() -> false)
+                .editor(() -> ctx -> null).writtenAsLiteral();
+        public static final String NOT_A_TYPE = "x";
+    }
+
+    static final class Values {
+        public static final ManagedValue<String> NOTE_TOO = NOTE;
+        public static final List<ManagedValue<?>> ALL = List.of(NOTE);
+    }
+
+    @Test
+    void aHolderClassGivesItsFieldsInDeclaredOrderOnceEach() {
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.h").named("H")
+                .types(Types.class).values(Values.class)) {};
+        assertEquals(List.of(Types.COUNT, Types.LABEL), plugin.types(), "a type is not a part; ALL adds nothing");
+        assertEquals(List.of(Types.MARK, Types.MARKS.getFirst()), plugin.componentTypes(),
+                "a list field gives its elements");
+        assertEquals(List.of(NOTE), plugin.managedValues());
+    }
+
+    @Test
+    void aHolderIsInitialisedOnlyWhenTheHostAsks() {
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.i").named("I")
+                .types(Lazy.class)) {};
+        assertEquals(0, LAZY_INITIALISED.get(), "naming a class must not initialise it");
+        assertEquals(List.of(Lazy.LETTER), plugin.types());
+        assertEquals(1, LAZY_INITIALISED.get());
+    }
+
+    @Test
+    void aListAndAHolderAreBothKept() {
+        PluginType<Long> big = PluginType.value(long.class).fresh(() -> 0L).editor(() -> ctx -> null)
+                .writtenAsLiteral();
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.j").named("J")
+                .types(Types.class).types(() -> List.of(big, Types.COUNT))) {};
+        assertEquals(List.of(big, Types.COUNT, Types.LABEL), plugin.types());
+    }
+
+    @Test
+    void aHolderStepNeedsAClass() {
+        IllegalArgumentException none = assertThrows(IllegalArgumentException.class,
+                () -> StudioPlugin.id("com.example.k").named("K").types(new Class<?>[0]));
+        assertTrue(none.getMessage().contains(".types(MyTypes.class)"), none.getMessage());
+        assertThrows(IllegalArgumentException.class,
+                () -> StudioPlugin.id("com.example.k").named("K").values((Class<?>) null));
     }
 
     @Test

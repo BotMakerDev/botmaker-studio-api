@@ -4,10 +4,14 @@ Every surface a plugin fills is declared through small final step classes, each 
 valid next, so the compiler walks an author through a declaration and an incomplete one does not compile (the
 maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare itself):
 
-- **The plugin**: `StudioPlugin.id(ID).named(NAME).types(() -> …).parts(…).editors(…).values(…).toolbar(…)
-  .recorded(…)`, a `PluginDeclaration` handed to `DeclaredPlugin`'s constructor. Each surface is a supplier,
-  asked when the host asks and cached nowhere: the lists are `static final` constants, and a list built in
-  the constructor would load its classes — JavaFX among them — on a headless host.
+- **The plugin**: `StudioPlugin.id(ID).named(NAME).types(MyTypes.class).editors(…).values(MyValues.class)
+  .toolbar(…).recorded(…)`, a `PluginDeclaration` handed to `DeclaredPlugin`'s constructor. Types (with their
+  parts) and managed values are named by their holder classes: the host takes each `public static final` field
+  of the kind, or each element of a list field, in field order, once each (2026-10-19, so no hand-kept `ALL`
+  list can miss one). The other surfaces are ordered lists behind a supplier; `types(Supplier)`,
+  `parts(Supplier)` and `values(Supplier)` stay for a list computed at run time. Each is read when the host
+  asks and cached nowhere: a list built in the constructor would load its classes — JavaFX among them — on a
+  headless host.
 - **A type**: `PluginType.value(X.class)` → `fresh(…)` | `firstConstant()` | `filledBy(Owner::method)` →
   `editor(() -> E::draw)` → optional `preview(…)` → `writtenAs(Owner::factory, X::part, …)` |
   `writtenAsEach(…)` | `writtenAsRecord()` | `writtenAsConstant()` | `writtenAsLiteral()` | `writtenAsParts()`

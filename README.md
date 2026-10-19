@@ -24,7 +24,7 @@ public final class ExamplePlugin extends DeclaredPlugin {
 
     public ExamplePlugin() {
         super(StudioPlugin.id(ID).named("Greetings")
-                .types(() -> ExampleTypes.ALL)
+                .types(ExampleTypes.class)                    // every type field of the class
                 .editors(() -> ExampleEditors.ALL));
     }
 }
@@ -34,23 +34,22 @@ public final class ExampleTypes {
             .fresh(() -> new Greeting("world", 1))     // what a new one is
             .editor(() -> GreetingEditor::of)          // how a person edits one
             .writtenAsRecord();                        // how the host writes its Java
-
-    public static final List<PluginType<?>> ALL = List.of(GREETING);
 }
 ```
 
-Each step after `named` is optional, and each list sits behind a supplier, so a headless host (the
-registry's CI, `botmaker plugin validate`) constructs the plugin without loading JavaFX. The steps lead the
+Each step after `named` is optional. Types and managed values are named by the class holding them: the host
+takes every `public static final` one there, in field order, so a new type is declared by writing its field.
+The other surfaces are ordered lists behind a supplier. Neither is read before the host asks, so a headless
+host (the registry's CI, `botmaker plugin validate`) constructs the plugin without loading JavaFX. The steps lead the
 author through what the host needs: the compiler refuses a type with no fresh value or no way to be
 written. Factories are method references (`writtenAs(Owner::factory, Type::part, …)`), never strings.
 
 | step | what it declares |
 |---|---|
 | **palette** | usually nothing: every `@Palette` class in the plugin's jar is offered, each public member unless `@Hidden`; `catalog(…)` builds one by hand |
-| `types` | a type this plugin owns: what a new one is, how it is edited, how its Java is written |
-| `parts` | calls inside a value that are not types of their own |
+| `types` | the classes holding the types this plugin owns (what a new one is, how it is edited, how its Java is written) and the calls inside a value that are not types of their own |
 | `editors` | an editor chosen by the call or the parameter around a value (`SlotEditor.onParameter(…)`) |
-| `values` | **managed values**: values a window of the plugin keeps in the bot's own Java |
+| `values` | the classes holding its **managed values**: values a window of the plugin keeps in the bot's own Java |
 | `toolbar`, `recorded`, `runOverlay`, `overlay`, `assistant` | a toolbar button, recorded input, what a run draws, the overlay editor's tools, assistant tools |
 | `trial` | ▶ Try: a method reference (`.trial(Bot::trial)`), not a supplier |
 
