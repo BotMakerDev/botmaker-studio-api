@@ -153,8 +153,13 @@ public interface Ref extends Serializable {
         String name = form.getImplMethodName();
         String owner = form.getImplClass().replace('/', '.');
         if (name.startsWith("lambda$")) {
+            // javac names a lambda lambda$method$N; ECJ (Eclipse, VS Code's Java) writes lambda$N, and also
+            // compiles a serializable Owner::method into one, so the reference in the source is not the fault.
+            boolean ecj = name.matches("lambda\\$\\d+");
             throw new IllegalArgumentException("A lambda in " + owner + " was given where a method reference"
-                    + " (Owner::method) was expected: the host can only write a call it can name");
+                    + " (Owner::method) was expected: the host can only write a call it can name"
+                    + (ecj ? ". This class was compiled by ECJ (Eclipse, VS Code), which turns a method reference"
+                    + " into a lambda: build it with javac, mvn clean install" : ""));
         }
         ClassLoader loader = ref.getClass().getClassLoader();
         try {
