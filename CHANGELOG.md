@@ -38,6 +38,15 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Changed
 
+- **`ManagedValue` is split by shape** (breaking, inside the `v0.11.0` already pinned ahead). It is a sealed class
+  permitting `ManagedParam`, `ManagedMethod` and `ManagedOpenSet`; an open set is one of `ManagedOpenSet.OfConstants`,
+  `OneEnum`, `EnumGroups` or `ManagedClasses`. Each carries only its own parts. The entry points are the same
+  (`ManagedValue.param/method/openSet`) and end in the subtype, so a field may be typed `ManagedParam<Greeting>`;
+  `ManagedValue<Greeting>` still compiles. `openSet(…).ofEnumGroups(…)` names what `ofEnums(…)` did. Each shape's
+  steps moved into its own class (`ManagedParam.Steps` …), so a source naming a step class (`ManagedValue.Reason
+  .when`, `SetHolderStep`) breaks; a declaration written as one chain does not. A method value has no `when` and
+  an enum set no `referredToAs`, refused by the compiler now rather than at load. The old accessors
+  (`shape()`, `isParam()`, `byName(…)` …) stay on `ManagedValue` until the hosts switch on the subtype.
 - **A method reference compiled by ECJ is named as such.** ECJ (Eclipse, VS Code's Java) compiles a serializable
   `Owner::method` into a lambda; the refusal now says so and to build with javac.
 

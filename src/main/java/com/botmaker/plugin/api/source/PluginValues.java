@@ -281,7 +281,7 @@ public interface PluginValues {
 
     // ── a set of nested enums ───────────────────────────────────────────────────────────────────────────
     //
-    // A ManagedValue.openSet(…).ofEnums(…) holder is a class of enums nested in it, one per group:
+    // A ManagedValue.openSet(…).ofEnumGroups(…) holder is a class of enums nested in it, one per group:
     // Activities { enum Collect implements Outcome { NEXT, WON } }. Every operation above takes a member of such
     // a set as Member.of("Collect", "WON"), and members(set) lists them so. The operations below are on whole
     // enums, named by their simple name, and are done by binding as the ones above are.

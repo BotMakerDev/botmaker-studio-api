@@ -1,70 +1,65 @@
 package com.botmaker.plugin.api.source;
 
 import com.botmaker.plugin.api.managed.ManagedMarker;
-import com.botmaker.plugin.api.params.Param;
-import com.botmaker.plugin.api.value.Ref;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.function.Predicate;
+import java.util.function.Function;
 
 /**
- * One value this plugin keeps up to date through its own window, named by the id it is annotated with.
+ * A value your plugin keeps in the bot's own Java: Studio writes it into a class of the bot's, finds it again by
+ * your plugin's mark, and stops the canvas from editing it any other way than yours.
  *
- * <p><b>Declare each one once, as a constant, and use the constant everywhere</b>: in
- * {@code StudioPlugin.managedValues()}, in the plugin's runtime half through
- * {@link com.botmaker.plugin.api.managed.ManagedValues#claim}, and in its own window to open the value. The id
- * then exists in exactly one place, and {@link #type()} is what lets the runtime hand the sink a {@code T} and
- * the window read one without a cast.
+ * <p><b>Pick the shape by who changes the value</b>; each entry point walks you through its steps, and each shape
+ * is its own type:
  *
- * <p><b>What matches</b>: a method or type in the bot's own Java marked with this value's id — the plugin's
- * own {@link ManagedMarker} annotation holding a constant of the enum nested in it,
- * {@code @SdkValue(SdkValue.Id.FLOW)}, which javac checks. A bot has the annotation on its classpath through
- * the plugin that brings it at {@code compile}.
+ * <table>
+ *   <caption>The three shapes</caption>
+ *   <tr><th>Who changes it</th><th>Declare with</th><th>You get</th><th>In the bot</th></tr>
+ *   <tr><td>the person running the bot, in the Runner or the Parameters window</td><td>{@link #param}</td>
+ *       <td>{@link ManagedParam}</td><td>{@code @Param public static boolean doSetup = true;}</td></tr>
+ *   <tr><td>a window of your plugin, one value</td><td>{@link #method}</td><td>{@link ManagedMethod}</td>
+ *       <td>{@code public static Flow flow() { return …; }}</td></tr>
+ *   <tr><td>a window of your plugin, a set the user grows</td><td>{@link #openSet}</td>
+ *       <td>{@link ManagedOpenSet}</td><td>a class of constants, an enum, a class of enums or of classes</td></tr>
+ * </table>
  *
- * <p><b>Two shapes, one marker.</b> On a <b>method</b> it is a fixed value the plugin shipped a declaration
- * for — the host rewrites the expression that method returns and never adds or removes a method. On a
- * <b>type</b> it is an open set the user grows — a class of constants the rest of the bot names at its use
- * sites — and the whole class is the plugin's window's, so the canvas may not add to it, rename in it or
- * delete from it. There {@link #type()} is the class of each constant: see {@link #openSet}. Which of the two
- * a value is, is its {@link #shape()}. An open set is a class of {@code public static final} fields, an enum
- * of bare names implementing {@link #type()} ({@link #isEnum()}), a class of such enums nested in it
- * ({@link #isGrouped()}), or a class of subclasses of {@link #type()} nested in it, each with its one instance as
- * a constant ({@link #isClasses()}).
+ * <p>No window of your own yet? Declare a parameter: Studio writes it when a bot adds your plugin, and its
+ * Parameters window edits it with your type's editor.
  *
- * <p><b>A third shape, a parameter</b> ({@link #param}, 2026-10-11): on a <b>field</b> that also carries
- * {@code @Param}, a value the person running the bot picks — {@code Sdk.doSetup}. The host writes the field when
- * the holder lacks it and keeps its declaration (name, type, annotations) the plugin's; its value is edited like
- * any parameter's, in the Parameters window and the Runner. The bot reads the field itself, so nothing is
- * claimed at run time.
+ * <p><b>The mark.</b> Every managed value is named by a constant of an enum nested in an annotation of your
+ * plugin's, meta-annotated {@link ManagedMarker} — {@code @SdkValue(SdkValue.Id.FLOW)} — so javac checks the id.
+ * The bot carries the annotation, so it reaches the bot through your plugin at {@code compile}. The declaration
+ * refuses a mark without {@code RUNTIME} retention, whose {@code @Target} leaves out where the shape puts it, or
+ * whose {@code value()} is not that enum.
  *
- * <p><b>Where it goes when it is missing.</b> A project that never had the plugin's file has no
- * marked method to open, and nothing else would ever write one. {@code holder} and {@code type} are
- * what the host needs to write it once ({@link PluginValues#create}, or on every bind): the class the value
- * lives in, under {@code plugins/<last segment of the plugin's id>/}, and the type the method returns. What the method first
- * returns is {@code initial}, written by the host's grammar as any value is; with none, the type's own fresh
- * value — which a type declared only by its parts ({@code ComponentType}) has not got. A value with no holder
- * can only be opened, never created.
+ * <p><b>Declare each one once, as a {@code public static final} field</b>, and use the field everywhere: the
+ * plugin's {@code .values(YourValues.class)} collects it, its runtime half claims it
+ * ({@link com.botmaker.plugin.api.managed.ManagedValues#claim}), and its window opens it
+ * ({@link PluginValues}). {@link #type()} lets each of them read a {@code T} without a cast.
  *
- * <p>Plain data, like every other contribution: the host reads the id as text and does the matching itself,
- * so no plugin code runs while a file is drawn.
+ * <p><b>Where it goes.</b> {@code .in("Sdk")} names the bot's class that holds it, by its simple name, because the
+ * class is the bot's and your plugin never compiles against it. A bot without one gets it under
+ * {@code plugins/<the last segment of your plugin's id>/}.
  *
- * <p><b>A class, not a record</b>: only {@link #method} and {@link #openSet}'s steps build one.
- * A record's public canonical constructor changes when a component is added, and every plugin compiled
- * against the old one would throw {@code NoSuchMethodError}; through the steps a new component is a new step.
+ * <p>Plain data, like every other contribution: a host reads the id as text and matches it itself, so no plugin
+ * code runs while a file is drawn. Only the steps build one, so a new part is a new step and never a changed
+ * constructor.
  *
- * @param <T> the value's class
+ * @param <T> the value's class; for an open set, the class of each member
  */
-public final class ManagedValue<T> {
+public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam, ManagedOpenSet {
 
-    /** Where the marker annotation goes, and so what the host may change. */
+    /**
+     * Where the marker annotation goes. A host that has not moved to the subtypes reads it here; a new one switches
+     * on {@link ManagedMethod}, {@link ManagedParam} and {@link ManagedOpenSet} instead.
+     */
     public enum Shape {
         /** On a method: one value, the expression the method returns. */
         METHOD("method", "a managed value"),
@@ -93,7 +88,7 @@ public final class ManagedValue<T> {
     }
 
     /** The id and the binary name of the plugin's marker annotation. */
-    private record Key(String id, String marker) {
+    record Key(String id, String marker) {
 
         static Key of(Enum<?> constant, ElementType on) {
             if (constant == null) throw new IllegalArgumentException("A managed value needs an id");
@@ -101,53 +96,93 @@ public final class ManagedValue<T> {
         }
     }
 
-    /** A set of nested enums ({@link SetSteps#ofEnums}): how a constant and a whole enum read as the plugin's. */
-    private record Grouped(Ref.Of2<String, String, ?> byName, Class<?> groupType, Ref.Of1<String, ?> byGroup) {}
+    private final Key key;
+    private final String holder;
+    private final Class<T> type;
+    private final String reason;
 
-    /**
-     * A set of nested classes ({@link SetSteps#ofClasses}): the type of each one's managed fields, how a reference
-     * to one of them reads, and the method each class overrides to say the rest of it.
-     */
-    private record Classes(Class<?> fieldType, Ref.Of2<String, String, ?> byField, Method setup) {}
-
-    /**
-     * A parameter ({@link #param}): the field's full type, what its {@code @Param} says, and when it applies
-     * ({@code null} for always).
-     */
-    private record Field(Type form, String category, String description, String visibility,
-                         Predicate<? super ParamScope> applies) {
-
-        Field when(Predicate<? super ParamScope> condition) {
-            return new Field(form, category, description, visibility, condition);
-        }
+    ManagedValue(Key key, String holder, Class<T> type, String reason) {
+        this.key = key;
+        this.holder = holder;
+        this.type = type;
+        this.reason = reason;
     }
 
-    private final Key key;
-    private final String reason;
-    private final String holder;
-    private final Shape shape;
-    private final Class<T> type;
-    private final T initial;
-    private final Ref.Of1<String, ? extends T> byName;
-    private final Grouped grouped;
-    private final Field field;
-    private final Ref.Of1<String, ? extends T> referred;
-    private final Classes classes;
+    Key key() {
+        return key;
+    }
 
-    private ManagedValue(Key key, String reason, String holder, Shape shape, Class<T> type, T initial,
-                         Ref.Of1<String, ? extends T> byName, Grouped grouped, Field field,
-                         Ref.Of1<String, ? extends T> referred, Classes classes) {
-        this.referred = referred;
-        this.classes = classes;
-        this.key = key;
-        this.reason = reason;
-        this.holder = holder;
-        this.shape = shape;
-        this.type = type;
-        this.initial = initial;
-        this.byName = byName;
-        this.grouped = grouped;
-        this.field = field;
+    /**
+     * <b>A parameter of your plugin's</b>: a {@code @Param} field in the bot that the person running it sets, and
+     * your plugin's runtime reads by its mark — {@code Bot.runFlow(Sdk.class)} reads {@code Sdk.flow}:
+     *
+     * <pre>{@code
+     * public static final ManagedParam<Boolean> DO_SETUP = ManagedValue.param(SdkValue.Id.DO_SETUP)
+     *         .in("Sdk")
+     *         .startsAs(SdkParams::doSetup)           // its type, and the value a written field starts as
+     *         .shown("Run", "Set the game up first", Param.Visibility.PUBLIC)
+     *         .because("The SDK reads this parameter. Change its value in the Runner or Project ▸ Parameters.");
+     * }</pre>
+     *
+     * <p>The field is named after the id, camel-cased — {@code DO_SETUP} is {@code doSetup} — and marked with it,
+     * {@code @SdkValue(SdkValue.Id.DO_SETUP) @Param(…) public static boolean doSetup = true;}. The host appends it
+     * to the holder whenever the holder lacks a field carrying the id, and never lets the Parameters window
+     * rename, retype, re-describe or remove it: the bot's own code names the field.
+     *
+     * @throws IllegalArgumentException when the enum is not nested in such an annotation, or its {@code @Target}
+     *                                  leaves out fields
+     */
+    public static ManagedParam.Steps param(Enum<?> id) {
+        return new ManagedParam.Steps(Key.of(id, ElementType.FIELD));
+    }
+
+    /**
+     * <b>One value a window of your plugin edits</b>: a method in the bot marked with the id, whose one
+     * {@code return} the host rewrites — {@code @SdkValue(SdkValue.Id.FLOW)}:
+     *
+     * <pre>{@code
+     * public static final ManagedMethod<Flow> FLOW = ManagedValue.method(SdkValue.Id.FLOW)
+     *         .in("Sdk")                              // the class that holds it | .openedOnly()
+     *         .holds(Flow.class, Flow.NONE)           // what it returns, and what a created one starts as
+     *         .because("This is the bot's activity flow. Draw it in 🔀 Activity Flow.");
+     * }</pre>
+     *
+     * @throws IllegalArgumentException when the enum is not nested in such an annotation
+     */
+    public static ManagedMethod.Steps method(Enum<?> id) {
+        return new ManagedMethod.Steps(Key.of(id, ElementType.METHOD));
+    }
+
+    /**
+     * <b>A set the user grows through a window of your plugin</b>: a class of the bot's marked with the id —
+     * {@code @SdkValue(SdkValue.Id.PICTURES)} — whose members the rest of the bot names, created empty. The next
+     * step picks what a member is ({@link ManagedOpenSet} lists the four):
+     *
+     * <pre>{@code
+     * public static final ManagedOpenSet.OfConstants<ImageTemplate> PICTURES = ManagedValue.openSet(SdkValue.Id.PICTURES)
+     *         .of(ImageTemplate.class)                // the class of each constant
+     *         .in("Pictures")
+     *         .because("Picture constants are managed in 🖼 Manage Pictures.");
+     *
+     * public static final ManagedOpenSet.EnumGroups<Outcome> ACTIVITIES = ManagedValue.openSet(SdkValue.Id.ACTIVITIES)
+     *         .ofEnumGroups(Outcome.class, BotConstants::outcome)  // enums nested in the holder: enum Collect { NEXT }
+     *         .groupedAs(Activity.class, BotConstants::activity)
+     *         .in("Activities")
+     *         .because("Activities are managed in 🔀 Activity Flow.");
+     *
+     * public static final ManagedClasses<Screen> SCREEN_MAP = ManagedValue.openSet(SdkValue.Id.SCREEN_MAP)
+     *         .ofClasses(Screen.class)                      // classes nested in the holder: class Market extends Screen
+     *         .fields(Input.class, BotConstants::input)     // their fields: Screens.MARKET.beerBuy
+     *         .setup(Screen::setup)                         // the method each overrides with one return
+     *         .referredToAs(BotConstants::screen)
+     *         .in("Screens")
+     *         .because("The screen map is managed in 🗺 Screens.");
+     * }</pre>
+     *
+     * @throws IllegalArgumentException when the enum is not nested in a {@link ManagedMarker} annotation
+     */
+    public static ManagedOpenSet.Steps openSet(Enum<?> id) {
+        return new ManagedOpenSet.Steps(Key.of(id, ElementType.TYPE));
     }
 
     /** The id: {@link #idOf} its constant — {@code "com.botmaker.sdk.api.bot.SdkValue$Id.FLOW"}. */
@@ -176,8 +211,8 @@ public final class ManagedValue<T> {
 
     /**
      * The binary name of the annotation {@code constant}'s enum is nested in, refused unless that annotation
-     * has the shape {@link ManagedMarker} asks for — marked, runtime-retained, placeable {@code on} a method or
-     * a type as the value's shape needs, its {@code value()} that enum — checked once, when the plugin
+     * has the shape {@link ManagedMarker} asks for — marked, runtime-retained, placeable {@code on} a method, a
+     * field or a type as the value's shape needs, its {@code value()} that enum — checked once, when the plugin
      * declares the value.
      */
     private static String markerOf(Enum<?> constant, ElementType on) {
@@ -215,786 +250,23 @@ public final class ManagedValue<T> {
     }
 
     /**
-     * The simple name of the class that holds it — {@code "Sdk"}, {@code "Pictures"} — or null when the host
-     * may not create it.
+     * The simple name of the bot's class that holds it — {@code "Sdk"}, {@code "Pictures"} — or null for a method
+     * value the host may open and never create ({@link ManagedMethod.Steps#openedOnly}).
      */
     public String holder() {
         return holder;
     }
 
-    /** Whether the annotation goes on a method or on the holder. */
-    public Shape shape() {
-        return shape;
-    }
-
     /**
-     * The class the marked method returns, or — for an open set — the class of each constant, or — for a
-     * parameter — the field's class, boxed when it is a primitive.
+     * The class of the value — for an open set, of each member; for a parameter, the field's class, boxed when it
+     * is a primitive.
      */
     public Class<T> type() {
         return type;
     }
 
     /**
-     * The type the host writes: a parameter's whole field type — {@code Set<Class<? extends Outcome>>},
-     * {@code boolean} — which {@link #type()} cannot say; {@link #type()} for any other shape.
-     */
-    public Type form() {
-        return field == null ? type : field.form();
-    }
-
-    /**
-     * What a created method first returns, or null for the type's fresh value; for a parameter, what the field
-     * is first set to, null written as {@code null}.
-     */
-    public T initial() {
-        return initial;
-    }
-
-    /** Whether this is a parameter ({@link #param}) — the marker on a {@code @Param} field. */
-    public boolean isParam() {
-        return shape == Shape.PARAM;
-    }
-
-    /** A parameter's {@code @Param(category)}; {@code ""} for any other shape. */
-    public String category() {
-        return field == null ? "" : field.category();
-    }
-
-    /** A parameter's {@code @Param(description)}; {@code ""} for any other shape. */
-    public String description() {
-        return field == null ? "" : field.description();
-    }
-
-    /** A parameter's {@code @Param(visibility)}, {@code Param.EDITOR} or {@code Param.PUBLIC}; {@code ""} otherwise. */
-    public String visibility() {
-        return field == null ? "" : field.visibility();
-    }
-
-    /** Whether this parameter was declared with a condition ({@link Reason#when}). */
-    public boolean conditional() {
-        return field != null && field.applies() != null;
-    }
-
-    /**
-     * Whether this value applies to the bot {@code scope} reads: true for anything but a conditional parameter, and
-     * for one whose condition throws. What the host asks before writing a parameter or listing it.
-     */
-    public boolean appliesIn(ParamScope scope) {
-        if (!conditional()) return true;
-        try {
-            return field.applies().test(scope == null ? ParamScope.NONE : scope);
-        } catch (RuntimeException | LinkageError unreadable) {
-            return true;
-        }
-    }
-
-    /**
-     * Whether this open set is an enum of the bot's ({@link SetSteps#ofEnum}), each member a bare constant
-     * whose name is the whole of it, rather than a class of {@code public static final} fields.
-     */
-    public boolean isEnum() {
-        return byName != null;
-    }
-
-    /**
-     * The value the enum constant {@code name} of this set stands for, made by the plugin from the name alone —
-     * what a host that cannot load the bot's enum reads {@code Outcomes.WON} as. Null when this is no enum set,
-     * the plugin's function refused the name, or it answered something other than {@link #type()}.
-     */
-    public T byName(String name) {
-        if (byName == null || name == null) return null;
-        try {
-            return cast(byName.call(name));
-        } catch (RuntimeException refused) {
-            return null;
-        }
-    }
-
-    /**
-     * Whether this open set is a class of enums nested in it ({@link SetSteps#ofEnums}) — one enum per group,
-     * each a set of bare constants — rather than one class's constants.
-     */
-    public boolean isGrouped() {
-        return grouped != null;
-    }
-
-    /**
-     * The value the constant {@code name} of the nested enum {@code group} stands for —
-     * {@code Activities.Collect.WON} read by a host that cannot load the bot's enum is what this makes of
-     * {@code ("Collect", "WON")}. Null when this set is not {@link #isGrouped() grouped}, the plugin refused, or
-     * it answered something other than {@link #type()}.
-     */
-    public T byName(String group, String name) {
-        if (grouped == null || group == null || name == null) return null;
-        try {
-            return cast(grouped.byName().call(group, name));
-        } catch (RuntimeException refused) {
-            return null;
-        }
-    }
-
-    /**
-     * Whether this open set is a class of classes nested in it ({@link SetSteps#ofClasses}) — each a subclass of
-     * {@link #type()} with one constant holding its one instance, its own fields and its setup method — rather
-     * than one class's constants.
-     */
-    public boolean isClasses() {
-        return classes != null;
-    }
-
-    /**
-     * The class of a nested class's managed fields ({@link ClassesStep#fields}): each instance field whose
-     * declared type is it or a subtype. Null when this set is not {@link #isClasses() of classes}.
-     */
-    public Class<?> fieldType() {
-        return classes == null ? null : classes.fieldType();
-    }
-
-    /**
-     * The value a reference to the field {@code field} of the class whose constant is {@code member} stands for —
-     * {@code Screens.MARKET.beerBuy} read by a host that cannot load the bot's class is what this makes of
-     * {@code ("MARKET", "beerBuy")}. Null when this set is not of classes, the plugin refused, or it answered
-     * something other than {@link #fieldType()}.
-     */
-    public Object byField(String member, String field) {
-        if (classes == null || member == null || field == null) return null;
-        try {
-            Object made = classes.byField().call(member, field);
-            return classes.fieldType().isInstance(made) ? made : null;
-        } catch (RuntimeException refused) {
-            return null;
-        }
-    }
-
-    /**
-     * The method of {@link #type()} each nested class overrides, whose one {@code return} is the rest of the class
-     * ({@link FieldsStep#setup}): what the host reads, writes, and declares in a class it adds.
-     * Null when this set is not of classes.
-     */
-    public Method setup() {
-        return classes == null ? null : classes.setup();
-    }
-
-    /**
-     * Whether a reference to one of this open set's constants reads as the constant's name
-     * ({@link SetHolderStep#referredToAs}) rather than as what its initialiser holds.
-     */
-    public boolean isReferredByName() {
-        return referred != null;
-    }
-
-    /**
-     * The value a reference to the constant {@code name} of this set stands for — what {@code Flows.DAILY} inside
-     * another value reads as — made by the plugin from the name alone. Null when this set is not
-     * {@link #isReferredByName() referred to by name}, the plugin refused, or it answered something other than
-     * {@link #type()}.
-     */
-    public T byReference(String name) {
-        if (referred == null || name == null) return null;
-        try {
-            return cast(referred.call(name));
-        } catch (RuntimeException refused) {
-            return null;
-        }
-    }
-
-    /**
-     * The plugin's class for a whole nested enum — what a class literal of one, {@code Activities.Collect.class},
-     * reads as wherever a value is read. Null when this set is not {@link #isGrouped() grouped}.
-     */
-    public Class<?> groupType() {
-        return grouped == null ? null : grouped.groupType();
-    }
-
-    /**
-     * The value the nested enum {@code group} stands for — what {@code Activities.Collect.class} reads as — made
-     * by the plugin from the enum's simple name, as {@code as}: {@link #groupType()} or a supertype of it. Empty
-     * when this set is not grouped, the plugin refused, or the value is not an {@code as}.
-     */
-    public <G> Optional<G> byGroup(Class<G> as, String group) {
-        if (grouped == null || group == null || as == null) return Optional.empty();
-        try {
-            Object made = grouped.byGroup().call(group);
-            return grouped.groupType().isInstance(made) && as.isInstance(made)
-                    ? Optional.of(as.cast(made)) : Optional.empty();
-        } catch (RuntimeException refused) {
-            return Optional.empty();
-        }
-    }
-
-    /**
-     * <b>The way to declare a method-shaped value</b>, step by step. {@code id} is a constant of the enum nested
-     * in the plugin's {@link ManagedMarker} annotation, which a bot marks the method with —
-     * {@code @SdkValue(SdkValue.Id.FLOW)}:
-     *
-     * <pre>{@code
-     * public static final ManagedValue<Flow> FLOW = ManagedValue.method(SdkValue.Id.FLOW)
-     *         .in("Sdk")                              // the class that holds it | .openedOnly()
-     *         .holds(Flow.class, Flow.NONE)           // what it returns, and what a created one starts as
-     *         .because("This is the bot's activity flow. Draw it in 🔀 Activity Flow.");
-     * }</pre>
-     *
-     * @throws IllegalArgumentException when the enum is not nested in such an annotation
-     */
-    public static MethodSteps method(Enum<?> id) {
-        return new MethodSteps(Key.of(id, ElementType.METHOD));
-    }
-
-    /**
-     * <b>The way to declare a parameter of the plugin's own</b> — a {@code @Param} field in its holder that the
-     * person running the bot sets, and the plugin's runtime reads by its mark — {@code Bot.runFlow(Sdk.class)} reads
-     * {@code Sdk.flow}:
-     *
-     * <pre>{@code
-     * public static final ManagedValue<Boolean> DO_SETUP = ManagedValue.param(SdkValue.Id.DO_SETUP)
-     *         .in("Sdk")
-     *         .startsAs(SdkParams::doSetup)           // its type, and the value a written field starts as
-     *         .shown("Run", "Set the game up first", Param.PUBLIC)
-     *         .because("The SDK reads this parameter. Change its value in the Runner or Project ▸ Parameters.");
-     * }</pre>
-     *
-     * <p>The field is named after the id, camel-cased — {@code DO_SETUP} is {@code doSetup} — and marked with it,
-     * {@code @SdkValue(SdkValue.Id.DO_SETUP) @Param(…) public static boolean doSetup = true;}. The host appends it
-     * to the holder whenever the holder lacks a field carrying the id, and never lets the Parameters window
-     * rename, retype, re-describe or remove it: the bot's own code names the field.
-     *
-     * @throws IllegalArgumentException when the enum is not nested in such an annotation, or its {@code @Target}
-     *                                  leaves out fields
-     */
-    public static ParamSteps param(Enum<?> id) {
-        return new ParamSteps(Key.of(id, ElementType.FIELD));
-    }
-
-    /**
-     * <b>The way to declare an open set</b> — a class of constants the user grows, which a bot marks the holder
-     * class with — {@code @SdkValue(SdkValue.Id.PICTURES)} — created empty in the holder:
-     *
-     * <pre>{@code
-     * public static final ManagedValue<ImageTemplate> PICTURES = ManagedValue.openSet(SdkValue.Id.PICTURES)
-     *         .of(ImageTemplate.class)                // the class of each constant
-     *         .in("Pictures")
-     *         .because("Picture constants are managed in 🖼 Manage Pictures.");
-     *
-     * public static final ManagedValue<Outcome> ACTIVITIES = ManagedValue.openSet(SdkValue.Id.ACTIVITIES)
-     *         .ofEnums(Outcome.class, BotConstants::outcome)  // enums nested in the holder: enum Collect { NEXT }
-     *         .groupedAs(Activity.class, BotConstants::activity)
-     *         .in("Activities")
-     *         .because("Activities are managed in 🔀 Activity Flow.");
-     *
-     * public static final ManagedValue<Screen> SCREEN_MAP = ManagedValue.openSet(SdkValue.Id.SCREEN_MAP)
-     *         .ofClasses(Screen.class)                      // classes nested in the holder: class Market extends Screen
-     *         .fields(Input.class, BotConstants::input)     // their fields: Screens.MARKET.beerBuy
-     *         .setup(Screen::setup)                         // the method each overrides with one return
-     *         .referredToAs(BotConstants::screen)
-     *         .in("Screens")
-     *         .because("The screen map is managed in 🗺 Screens.");
-     * }</pre>
-     *
-     * @throws IllegalArgumentException when the enum is not nested in a {@link ManagedMarker} annotation
-     */
-    public static SetSteps openSet(Enum<?> id) {
-        return new SetSteps(Key.of(id, ElementType.TYPE));
-    }
-
-    /** After {@link #method}: where the value lives. */
-    public static final class MethodSteps {
-
-        private final Key key;
-
-        private MethodSteps(Key key) {
-            this.key = key;
-        }
-
-        /** In the class {@code holder} — {@code "Sdk"} — which the host writes when a project has none. */
-        public TypeStep in(String holder) {
-            return new TypeStep(key, requireText(holder, "holder"));
-        }
-
-        /** Somewhere the host may open and never create: {@code .openedOnly().holds(T.class)}. */
-        public OpenedStep openedOnly() {
-            return new OpenedStep(key);
-        }
-    }
-
-    /** After {@link MethodSteps#openedOnly}: what the method returns. */
-    public static final class OpenedStep {
-
-        private final Key key;
-
-        private OpenedStep(Key key) {
-            this.key = key;
-        }
-
-        /** A method returning a {@code type}, which the host opens and never writes. */
-        public <T> Reason<T> holds(Class<T> type) {
-            if (type == null) throw new IllegalArgumentException(key.id() + ": no type given");
-            return new Reason<>(key, null, Shape.METHOD, type, null, null, null, null);
-        }
-    }
-
-    /** After {@link MethodSteps#in}: what the method returns. */
-    public static final class TypeStep {
-
-        private final Key key;
-        private final String holder;
-
-        private TypeStep(Key key, String holder) {
-            this.key = key;
-            this.holder = holder;
-        }
-
-        /**
-         * A method returning a {@code type}, first returning {@code initial} when the host creates it — or,
-         * with {@code null}, the type's own fresh value.
-         */
-        public <T> Reason<T> holds(Class<T> type, T initial) {
-            if (type == null) throw new IllegalArgumentException(key.id() + ": no type given");
-            return new Reason<>(key, holder, Shape.METHOD, type, initial, null, null, null);
-        }
-    }
-
-    /** After {@link #param}: the class the field is in. */
-    public static final class ParamSteps {
-
-        private final Key key;
-
-        private ParamSteps(Key key) {
-            this.key = key;
-        }
-
-        /** In the class {@code holder} — {@code "Sdk"} — which the host writes the field into, or creates. */
-        public ParamTypeStep in(String holder) {
-            return new ParamTypeStep(key, requireText(holder, "holder"));
-        }
-    }
-
-    /** After {@link ParamSteps#in}: the field's type and first value. */
-    public static final class ParamTypeStep {
-
-        private final Key key;
-        private final String holder;
-
-        private ParamTypeStep(Key key, String holder) {
-            this.key = key;
-            this.holder = holder;
-        }
-
-        /**
-         * A field of the type {@code initial}'s method returns — generic arguments included, which a class
-         * literal cannot say — first set to what it returns. The method is called once, here.
-         *
-         * @param initial a method reference to a {@code static} method of no argument —
-         *                {@code SdkParams::skip}, returning {@code Set<Class<? extends Outcome>>}
-         * @throws IllegalArgumentException when {@code initial} is no method reference, or it returns nothing
-         */
-        public <T> ParamShownStep<T> startsAs(Ref.Of0<T> initial) {
-            if (!(Ref.resolve(initial) instanceof Method method) || method.getReturnType() == void.class) {
-                throw new IllegalArgumentException(key.id() + ": startsAs names a method returning the value");
-            }
-            @SuppressWarnings("unchecked")
-            Class<T> type = (Class<T>) boxed(method.getReturnType());
-            return new ParamShownStep<>(key, holder, type, method.getGenericReturnType(), initial.call());
-        }
-
-        private static Class<?> boxed(Class<?> type) {
-            if (!type.isPrimitive()) return type;
-            return java.lang.invoke.MethodType.methodType(type).wrap().returnType();
-        }
-    }
-
-    /** After {@link ParamTypeStep#startsAs}: what the field's {@code @Param} says. */
-    public static final class ParamShownStep<T> {
-
-        private final Key key;
-        private final String holder;
-        private final Class<T> type;
-        private final Type form;
-        private final T initial;
-
-        private ParamShownStep(Key key, String holder, Class<T> type, Type form, T initial) {
-            this.key = key;
-            this.holder = holder;
-            this.type = type;
-            this.form = form;
-            this.initial = initial;
-        }
-
-        /**
-         * The heading it is listed under, the line beside it, and who sees it — {@link Param.Visibility#PUBLIC} for
-         * the Runner too, {@link Param.Visibility#EDITOR} for the Parameters window only; {@code null} reads as the
-         * latter.
-         */
-        public Reason<T> shown(String category, String description, Param.Visibility visibility) {
-            Field field = new Field(form, category == null ? "" : category, description == null ? "" : description,
-                    (visibility == null ? Param.Visibility.EDITOR : visibility).id(), null);
-            return new Reason<>(key, holder, Shape.PARAM, type, initial, null, null, field);
-        }
-    }
-
-    /** After {@link #openSet}: what each constant is. */
-    public static final class SetSteps {
-
-        private final Key key;
-
-        private SetSteps(Key key) {
-            this.key = key;
-        }
-
-        /**
-         * Constants of the class {@code element} — what {@link PluginValues#add} accepts for this set, and what
-         * a constant's initialiser reads as.
-         */
-        public <E> SetHolderStep<E> of(Class<E> element) {
-            if (element == null) throw new IllegalArgumentException(key.id() + ": no element type given");
-            if (element.isPrimitive()) {
-                throw new IllegalArgumentException(key.id() + ": a constant is an object; use the boxed class of "
-                        + element.getName());
-            }
-            return new SetHolderStep<>(key, element, null, null);
-        }
-
-        /**
-         * Constants of an enum of the bot's own implementing the interface {@code element}, each a bare name —
-         * {@code public enum Outcomes implements Outcome { WON, LOST }} — which the host creates, adds to,
-         * renames in and removes from as it does a class's fields, and creates as an empty enum implementing
-         * {@code element}.
-         *
-         * <p>A host cannot load the bot's enum, so it reads {@code Outcomes.WON} as what {@code byName} makes of
-         * {@code "WON"}: a value of the plugin's own that equals itself by name, which the type's declaration
-         * writes back and the host spells as that constant. The name is the whole member; nothing else about it
-         * is written, so a plugin derives anything it shows (a label) from the name.
-         *
-         * @param byName a method reference from a constant's name to the value it stands for —
-         *               {@code BotConstants::outcome}
-         * @throws IllegalArgumentException when {@code element} is no interface, or {@code byName} is no method
-         *                                  reference
-         */
-        public <E> SetHolderStep<E> ofEnum(Class<E> element, Ref.Of1<String, ? extends E> byName) {
-            if (element == null) throw new IllegalArgumentException(key.id() + ": no element type given");
-            if (!element.isInterface()) {
-                throw new IllegalArgumentException(key.id() + ": a bot's enum implements its element type, so "
-                        + element.getName() + " must be an interface");
-            }
-            Ref.resolve(byName);
-            return new SetHolderStep<>(key, element, byName, null);
-        }
-
-        /**
-         * Enums of the bot's own <b>nested in the holder class</b>, each implementing the interface
-         * {@code element} and each a set of bare names — one enum per group:
-         *
-         * <pre>{@code
-         * @SdkValue(SdkValue.Id.ACTIVITIES)
-         * public final class Activities {
-         *     public enum Collect implements Outcome { NEXT, NOTHING_LEFT }
-         *     public enum Battle implements Outcome { NEXT, WON, LOST }
-         * }
-         * }</pre>
-         *
-         * <p>For a set whose members belong to something: here each enum is one activity, and its constants are
-         * what that activity can report, so a method returning {@code Activities.Collect} cannot return
-         * {@code Battle}'s. The host adds, renames and removes whole enums ({@link PluginValues#addGroup}) as well
-         * as the constants in one, and reads {@code Activities.Collect.WON} as what {@code byName} makes of
-         * {@code ("Collect", "WON")}. The holder is created as an empty {@code public final class}.
-         *
-         * @param byName a method reference from an enum's simple name and a constant's name to the value the
-         *               constant stands for — {@code BotConstants::outcome}
-         * @throws IllegalArgumentException when {@code element} is no interface, or {@code byName} is no method
-         *                                  reference
-         */
-        public <E> GroupStep<E> ofEnums(Class<E> element, Ref.Of2<String, String, ? extends E> byName) {
-            if (element == null) throw new IllegalArgumentException(key.id() + ": no element type given");
-            if (!element.isInterface()) {
-                throw new IllegalArgumentException(key.id() + ": a bot's enum implements its element type, so "
-                        + element.getName() + " must be an interface");
-            }
-            Ref.resolve(byName);
-            return new GroupStep<>(key, element, byName);
-        }
-
-        /**
-         * Classes of the bot's own <b>nested in the holder class</b>, each a {@code public static final} subclass of
-         * {@code element} with one constant holding its one instance — its members are instance fields, and one
-         * method it overrides says the rest of it:
-         *
-         * <pre>{@code
-         * @SdkValue(SdkValue.Id.SCREEN_MAP)
-         * public final class Screens {
-         *     public static final class Market extends Screen {
-         *         public final Button beerBuy = Button.of(Pictures.BEER_BUY);
-         *         public final Button close = Button.of(Pictures.CLOSE);
-         *         @Override public Setup setup() {
-         *             return Setup.named("Market").from(Screens.HOME.market).back(Screens.MARKET.close);
-         *         }
-         *     }
-         *     public static final Market MARKET = new Market();
-         * }
-         * }</pre>
-         *
-         * <p>For a set whose members have parts other values point at one by one: a method can take
-         * {@code Screens.MARKET.beerBuy}, and javac refuses a field the class has not got. The constant
-         * ({@code MARKET}) is the member; the host adds, renames and removes a whole class with its constant
-         * ({@link PluginValues#addClass}, {@link PluginValues#renameGroup}, {@link PluginValues#removeGroup}), and a
-         * field with the operations on one constant, as {@code Member.of("MARKET", "beerBuy")}. Each field's
-         * initialiser and the setup's {@code return} are values the grammar reads and writes, as any constant's
-         * initialiser is. The holder is created as an empty {@code public final class}.
-         *
-         * @param element the class every nested one extends — {@code Screen}; a class, neither final nor an
-         *                interface, so a bot's class can extend it
-         * @throws IllegalArgumentException when {@code element} is missing, an interface, final, primitive or an
-         *                                  array
-         */
-        public <E> ClassesStep<E> ofClasses(Class<E> element) {
-            if (element == null) throw new IllegalArgumentException(key.id() + ": no element type given");
-            if (element.isInterface() || element.isPrimitive() || element.isArray()
-                    || Modifier.isFinal(element.getModifiers())) {
-                throw new IllegalArgumentException(key.id() + ": a bot's class extends its element type, so "
-                        + element.getName() + " must be a class that is not final");
-            }
-            return new ClassesStep<>(key, element);
-        }
-    }
-
-    /** After {@link SetSteps#ofClasses}: what a nested class's fields are. */
-    public static final class ClassesStep<E> {
-
-        private final Key key;
-        private final Class<E> element;
-
-        private ClassesStep(Key key, Class<E> element) {
-            this.key = key;
-            this.element = element;
-        }
-
-        /**
-         * The class's managed fields: its {@code public final} instance fields of {@code field} or a subtype, in the
-         * order they are written. A reference to one — {@code Screens.MARKET.beerBuy}, or {@code MARKET.close} inside
-         * the holder — reads as what {@code byReference} makes of the constant's and the field's names, wherever it
-         * is read, and a value equal to that is written back as the reference. Its initialiser is read only when the
-         * field itself is opened ({@link PluginValues#open(ManagedValue, PluginValues.Member)}).
-         *
-         * @param field       the plugin's class for one field — {@code Input}
-         * @param byReference a method reference from a constant's name and a field's name to the value standing for
-         *                    that field — {@code BotConstants::input}; it must equal itself by those names alone
-         * @throws IllegalArgumentException when {@code field} is missing or {@code byReference} is no method reference
-         */
-        public <F> FieldsStep<E> fields(Class<F> field, Ref.Of2<String, String, ? extends F> byReference) {
-            if (field == null) throw new IllegalArgumentException(key.id() + ": no field type given");
-            Ref.resolve(byReference);
-            return new FieldsStep<>(key, element, field, byReference);
-        }
-    }
-
-    /** After {@link ClassesStep#fields}: the method each nested class overrides. */
-    public static final class FieldsStep<E> {
-
-        private final Key key;
-        private final Class<E> element;
-        private final Class<?> field;
-        private final Ref.Of2<String, String, ?> byField;
-
-        private FieldsStep(Key key, Class<E> element, Class<?> field, Ref.Of2<String, String, ?> byField) {
-            this.key = key;
-            this.element = element;
-            this.field = field;
-            this.byField = byField;
-        }
-
-        /**
-         * The method of the element type each nested class overrides with one {@code return <expression>;} — the
-         * rest of the class, say its name and how it is reached — which the host reads and writes as a value of the
-         * method's return type ({@link PluginValues#open(ManagedValue, PluginValues.Member)} on
-         * {@code Member.of("MARKET")}). A method rather than a constructor argument: the expression may name the
-         * class's own fields, which a {@code super(…)} call cannot, so the plugin's runtime calls it once the
-         * instance is built.
-         *
-         * @param method a method reference to a public, non-static, non-final method of the element type that
-         *               takes nothing and returns the value — {@code Screen::setup}
-         * @throws IllegalArgumentException when {@code method} is no such reference
-         */
-        public SetHolderStep<E> setup(Ref.Of1<? super E, ?> method) {
-            if (!(Ref.resolve(method) instanceof Method setup) || setup.getParameterCount() != 0
-                    || setup.getReturnType() == void.class
-                    || Modifier.isStatic(setup.getModifiers())
-                    || Modifier.isFinal(setup.getModifiers())
-                    || !Modifier.isPublic(setup.getModifiers())
-                    || !setup.getDeclaringClass().isAssignableFrom(element)) {
-                throw new IllegalArgumentException(key.id() + ": setup names a public method of "
-                        + element.getName() + " taking nothing, returning a value, that a subclass can override");
-            }
-            return new SetHolderStep<>(key, element, null, null, null, new Classes(field, byField, setup));
-        }
-    }
-
-    /** After {@link SetSteps#ofEnums}: what a whole nested enum reads as. */
-    public static final class GroupStep<E> {
-
-        private final Key key;
-        private final Class<E> element;
-        private final Ref.Of2<String, String, ? extends E> byName;
-
-        private GroupStep(Key key, Class<E> element, Ref.Of2<String, String, ? extends E> byName) {
-            this.key = key;
-            this.element = element;
-            this.byName = byName;
-        }
-
-        /**
-         * A class literal of one nested enum — {@code Activities.Collect.class} — reads as what {@code byGroup}
-         * makes of its simple name, a {@code group}: how a plugin's value names a whole enum, as the SDK's flow
-         * names an activity, without the host loading the bot's class. The host writes such a value back as
-         * the class literal it was read from.
-         *
-         * @param group   the plugin's class for one enum — {@code Activity}
-         * @param byGroup a method reference from an enum's simple name to that value — {@code BotConstants::activity}
-         * @throws IllegalArgumentException when {@code group} is missing or {@code byGroup} is no method reference
-         */
-        public <G> SetHolderStep<E> groupedAs(Class<G> group, Ref.Of1<String, ? extends G> byGroup) {
-            if (group == null) throw new IllegalArgumentException(key.id() + ": no group type given");
-            Ref.resolve(byGroup);
-            return new SetHolderStep<>(key, element, null, new Grouped(byName, group, byGroup));
-        }
-    }
-
-    /**
-     * After {@link SetSteps#of}, {@link SetSteps#ofEnum}, {@link GroupStep#groupedAs} or {@link FieldsStep#setup}:
-     * the class that is the set.
-     */
-    public static final class SetHolderStep<E> {
-
-        private final Key key;
-        private final Class<E> element;
-        private final Ref.Of1<String, ? extends E> byName;
-        private final Grouped grouped;
-
-        private final Ref.Of1<String, ? extends E> referred;
-        private final Classes classes;
-
-        private SetHolderStep(Key key, Class<E> element, Ref.Of1<String, ? extends E> byName, Grouped grouped) {
-            this(key, element, byName, grouped, null, null);
-        }
-
-        private SetHolderStep(Key key, Class<E> element, Ref.Of1<String, ? extends E> byName, Grouped grouped,
-                              Ref.Of1<String, ? extends E> referred, Classes classes) {
-            this.key = key;
-            this.element = element;
-            this.byName = byName;
-            this.grouped = grouped;
-            this.referred = referred;
-            this.classes = classes;
-        }
-
-        /**
-         * A reference to one of the set's constants — {@code Flows.DAILY} in {@code Flow.subflow(Flows.DAILY)}, or a
-         * parameter {@code = Flows.DAILY} — reads as what {@code byReference} makes of the constant's name, wherever
-         * it is read, not as what its initialiser holds; the host writes a value equal to that back as the
-         * reference. A constant's own initialiser is still read as its value ({@link PluginValues#open(String,
-         * String)}). For a set
-         * whose constants are told apart by name, not by value: two flows that both start empty, or one just
-         * duplicated from another, are still two flows, and a value that names one must keep naming it. The
-         * initialiser is not read either, so one constant naming another never reads the other's.
-         *
-         * <p>The plugin's value must be of the element type and equal itself by name alone. Only for a set
-         * declared {@link SetSteps#of} or {@link SetSteps#ofClasses} — where {@code Screens.MARKET} names the class
-         * whose one instance it holds: an enum's constants are read by name already.
-         *
-         * @param byReference a method reference from a constant's name to the value that stands for it —
-         *                    {@code BotConstants::flow}
-         * @throws IllegalArgumentException when this set is an enum set, or {@code byReference} is no method
-         *                                  reference
-         */
-        public SetHolderStep<E> referredToAs(Ref.Of1<String, ? extends E> byReference) {
-            if (byName != null || grouped != null) {
-                throw new IllegalArgumentException(key.id() + ": an enum's constants are read by name already");
-            }
-            Ref.resolve(byReference);
-            return new SetHolderStep<>(key, element, null, null, byReference, classes);
-        }
-
-        /** The class {@code holder} — {@code "Pictures"} — created empty when a project has none. */
-        public Reason<E> in(String holder) {
-            return new Reason<>(key, requireText(holder, "holder"), Shape.OPEN_SET, element, null, byName, grouped,
-                    null, referred, classes);
-        }
-    }
-
-    /** The last step: the sentence shown when the canvas refuses an edit. */
-    public static final class Reason<T> {
-
-        private final Key key;
-        private final String holder;
-        private final Shape shape;
-        private final Class<T> type;
-        private final T initial;
-        private final Ref.Of1<String, ? extends T> byName;
-        private final Grouped grouped;
-        private final Field field;
-        private final Ref.Of1<String, ? extends T> referred;
-        private final Classes classes;
-
-        private Reason(Key key, String holder, Shape shape, Class<T> type, T initial,
-                       Ref.Of1<String, ? extends T> byName, Grouped grouped, Field field) {
-            this(key, holder, shape, type, initial, byName, grouped, field, null, null);
-        }
-
-        private Reason(Key key, String holder, Shape shape, Class<T> type, T initial,
-                       Ref.Of1<String, ? extends T> byName, Grouped grouped, Field field,
-                       Ref.Of1<String, ? extends T> referred, Classes classes) {
-            this.classes = classes;
-            this.key = key;
-            this.holder = holder;
-            this.shape = shape;
-            this.type = type;
-            this.initial = initial;
-            this.byName = byName;
-            this.grouped = grouped;
-            this.field = field;
-            this.referred = referred;
-        }
-
-        /**
-         * This parameter, declared only while {@code applies} holds: {@code .when(scope -> scope.value(SETTINGS)
-         * .map(s -> s.runIn() == Where.VM).orElse(false))}. The condition reads the bot's other values of this plugin
-         * through the {@link ParamScope}, and anything about the computer — its system, what is installed — from the
-         * plugin's own code. While it does not hold, the host neither writes the field into a bot that lacks it nor
-         * lists it in the Parameters window or the Runner; a field already written stays, as the bot's Java.
-         *
-         * <p>So <b>the bot's own code must not read a conditional parameter by name</b>: on a bot whose condition
-         * never held, the field is not there. The plugin's runtime reads it by its mark, and a missing one is its
-         * initial value.
-         *
-         * <p>A condition that throws counts as holding: a parameter shown that need not be costs less than one hidden
-         * that should not be.
-         *
-         * @throws IllegalArgumentException for a value that is not a parameter, or no condition
-         */
-        public Reason<T> when(Predicate<? super ParamScope> applies) {
-            if (field == null) throw new IllegalArgumentException("Only a parameter has a condition");
-            if (applies == null) throw new IllegalArgumentException("when needs a condition");
-            return new Reason<>(key, holder, shape, type, initial, byName, grouped, field.when(applies), referred,
-                    classes);
-        }
-
-        /** What owns this value and where to change it instead. */
-        public ManagedValue<T> because(String reason) {
-            return new ManagedValue<>(key, requireText(reason, "reason"), holder, shape, type, initial, byName,
-                    grouped, field, referred, classes);
-        }
-    }
-
-    private static String requireText(String text, String what) {
-        if (text == null || text.isBlank()) throw new IllegalArgumentException("A managed value needs a " + what);
-        return text;
-    }
-
-    /** Whether this is an open set — the marker on a type — rather than one method's value. */
-    public boolean isOpenSet() {
-        return shape == Shape.OPEN_SET;
-    }
-
-    /**
-     * {@code value} as this value's type — for an open set, one constant's — or null when it is not one: how a
+     * {@code value} as this value's type — for an open set, one member's — or null when it is not one: how a
      * sink or a window reads what the host or the bot handed over without writing a cast of its own.
      */
     public T cast(Object value) {
@@ -1004,5 +276,162 @@ public final class ManagedValue<T> {
     @Override
     public String toString() {
         return "ManagedValue[" + key.id() + (holder == null ? "" : " in " + holder) + "]";
+    }
+
+    /**
+     * The last step of a method value or an open set: the sentence shown when the canvas refuses an edit.
+     *
+     * @param <V> the value it ends in
+     */
+    public static final class Reason<V> {
+
+        private final Function<String, V> build;
+
+        Reason(Function<String, V> build) {
+            this.build = build;
+        }
+
+        /** What owns this value and where to change it instead. */
+        public V because(String reason) {
+            return build.apply(requireText(reason, "reason"));
+        }
+    }
+
+    static String requireText(String text, String what) {
+        if (text == null || text.isBlank()) throw new IllegalArgumentException("A managed value needs a " + what);
+        return text;
+    }
+
+    /** Calls a plugin's function, a refusal or an answer that is no {@code T} reading as null. */
+    T made(Function<String, ?> function, String name) {
+        if (function == null || name == null) return null;
+        try {
+            return cast(function.apply(name));
+        } catch (RuntimeException refused) {
+            return null;
+        }
+    }
+
+    // The accessors below read one shape's parts on any value and answer nothing for the other shapes; the
+    // subtype that has the part overrides its accessor. They stay until every host switches on the subtype.
+
+    /** Whether the annotation goes on a method, a field or the holder; switch on the subtype instead. */
+    public Shape shape() {
+        return switch (this) {
+            case ManagedMethod<T> _ -> Shape.METHOD;
+            case ManagedParam<T> _ -> Shape.PARAM;
+            case ManagedOpenSet<T> _ -> Shape.OPEN_SET;
+        };
+    }
+
+    /** Whether this is a {@link ManagedParam}. */
+    public boolean isParam() {
+        return this instanceof ManagedParam;
+    }
+
+    /** Whether this is a {@link ManagedOpenSet}. */
+    public boolean isOpenSet() {
+        return this instanceof ManagedOpenSet;
+    }
+
+    /** Whether this is a {@link ManagedOpenSet.OneEnum}. */
+    public boolean isEnum() {
+        return this instanceof ManagedOpenSet.OneEnum;
+    }
+
+    /** Whether this is a {@link ManagedOpenSet.EnumGroups}. */
+    public boolean isGrouped() {
+        return this instanceof ManagedOpenSet.EnumGroups;
+    }
+
+    /** Whether this is a {@link ManagedClasses}. */
+    public boolean isClasses() {
+        return this instanceof ManagedClasses;
+    }
+
+    /** {@link ManagedParam#form()}; {@link #type()} for any other shape. */
+    public Type form() {
+        return type;
+    }
+
+    /** {@link ManagedMethod#initial()} or {@link ManagedParam#initial()}; null for an open set. */
+    public T initial() {
+        return null;
+    }
+
+    /** {@link ManagedParam#category()}; {@code ""} for any other shape. */
+    public String category() {
+        return "";
+    }
+
+    /** {@link ManagedParam#description()}; {@code ""} for any other shape. */
+    public String description() {
+        return "";
+    }
+
+    /** {@link ManagedParam#visibility()}; {@code ""} for any other shape. */
+    public String visibility() {
+        return "";
+    }
+
+    /** {@link ManagedParam#conditional()}; false for any other shape. */
+    public boolean conditional() {
+        return false;
+    }
+
+    /** {@link ManagedParam#appliesIn}; true for any other shape. */
+    public boolean appliesIn(ParamScope scope) {
+        return true;
+    }
+
+    /** {@link ManagedOpenSet.OneEnum#byName}; null for any other shape. */
+    public T byName(String name) {
+        return null;
+    }
+
+    /** {@link ManagedOpenSet.EnumGroups#byName}; null for any other shape. */
+    public T byName(String group, String name) {
+        return null;
+    }
+
+    /** {@link ManagedOpenSet.EnumGroups#groupType()}; null for any other shape. */
+    public Class<?> groupType() {
+        return null;
+    }
+
+    /** {@link ManagedOpenSet.EnumGroups#byGroup}; empty for any other shape. */
+    public <G> Optional<G> byGroup(Class<G> as, String group) {
+        return Optional.empty();
+    }
+
+    /** {@link ManagedClasses#fieldType()}; null for any other shape. */
+    public Class<?> fieldType() {
+        return null;
+    }
+
+    /** {@link ManagedClasses#byField}; null for any other shape. */
+    public Object byField(String member, String field) {
+        return null;
+    }
+
+    /** {@link ManagedClasses#setup()}; null for any other shape. */
+    public Method setup() {
+        return null;
+    }
+
+    /**
+     * {@link ManagedOpenSet.OfConstants#isReferredByName()} or {@link ManagedClasses#isReferredByName()}; false
+     * for any other shape.
+     */
+    public boolean isReferredByName() {
+        return false;
+    }
+
+    /**
+     * {@link ManagedOpenSet.OfConstants#byReference} or {@link ManagedClasses#byReference}; null for any other
+     * shape.
+     */
+    public T byReference(String name) {
+        return null;
     }
 }

@@ -1,6 +1,10 @@
 package com.botmaker.plugin.api.managed;
 
 import com.botmaker.plugin.api.params.Param;
+import com.botmaker.plugin.api.source.ManagedClasses;
+import com.botmaker.plugin.api.source.ManagedMethod;
+import com.botmaker.plugin.api.source.ManagedOpenSet;
+import com.botmaker.plugin.api.source.ManagedParam;
 import com.botmaker.plugin.api.source.ManagedValue;
 import com.botmaker.plugin.api.source.ParamScope;
 import org.junit.jupiter.api.Test;
@@ -42,7 +46,7 @@ class ManagedValuesTest {
         }
     }
 
-    private static ManagedValue<String> text(TestValue.Id id) {
+    private static ManagedMethod<String> text(TestValue.Id id) {
         return ManagedValue.method(id).in("Values").holds(String.class, "").because("Mine.");
     }
 
@@ -237,9 +241,48 @@ class ManagedValuesTest {
         assertNull(set.byReference(" "), "a name the plugin refuses reads as nothing");
         assertFalse(ManagedValue.openSet(TestValue.Id.SET).of(String.class).in("Set").because("Mine.")
                 .isReferredByName());
-        assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.ENUM_SET)
-                .ofEnum(Label.class, ManagedValuesTest::named).referredToAs(name -> null),
-                "an enum's constants are read by name already");
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.SET).of(String.class)
+                .referredToAs(name -> "→" + name), "a lambda is refused");
+    }
+
+    /** Each entry point ends in its own shape's type, and a host tells them apart by type alone. */
+    @Test
+    void eachShapeIsItsOwnType() {
+        ManagedMethod<String> method = text(TestValue.Id.GREETING);
+        ManagedParam<Boolean> param = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
+                .startsAs(ManagedValuesTest::doSetup).shown("", "", Param.Visibility.EDITOR).because("Mine.");
+        ManagedOpenSet.OfConstants<String> constants = ManagedValue.openSet(TestValue.Id.SET).of(String.class)
+                .in("Set").because("Mine.");
+        ManagedOpenSet.OneEnum<Label> anEnum = ManagedValue.openSet(TestValue.Id.ENUM_SET)
+                .ofEnum(Label.class, ManagedValuesTest::named).in("Labels").because("Mine.");
+        ManagedOpenSet.EnumGroups<Label> enums = ManagedValue.openSet(TestValue.Id.ENUM_SET)
+                .ofEnumGroups(Label.class, ManagedValuesTest::inGroup).groupedAs(Group.class, ManagedValuesTest::group)
+                .in("Activities").because("Mine.");
+        ManagedClasses<Sheet> classes = ManagedValue.openSet(TestValue.Id.ENUM_SET).ofClasses(Sheet.class)
+                .fields(Cell.class, ManagedValuesTest::cell).setup(Sheet::setup).in("Sheets").because("Mine.");
+
+        assertEquals(List.of("method", "param", "constants", "enum", "enums", "classes"),
+                java.util.stream.Stream.of(method, param, constants, anEnum, enums, classes)
+                        .map(ManagedValuesTest::shapeOf).toList());
+        assertEquals(List.of(ManagedValue.Shape.METHOD, ManagedValue.Shape.PARAM, ManagedValue.Shape.OPEN_SET,
+                        ManagedValue.Shape.OPEN_SET),
+                List.of(method.shape(), param.shape(), constants.shape(), classes.shape()),
+                "the shape a host reads before it switches on the type");
+        assertEquals("", method.initial());
+        assertEquals(boolean.class, param.form());
+        assertFalse(classes.isReferredByName());
+        assertEquals(Cell.class, classes.fieldType());
+    }
+
+    private static String shapeOf(ManagedValue<?> value) {
+        return switch (value) {
+            case ManagedMethod<?> _ -> "method";
+            case ManagedParam<?> _ -> "param";
+            case ManagedOpenSet.OfConstants<?> _ -> "constants";
+            case ManagedOpenSet.OneEnum<?> _ -> "enum";
+            case ManagedOpenSet.EnumGroups<?> _ -> "enums";
+            case ManagedClasses<?> _ -> "classes";
+        };
     }
 
     @Test
@@ -265,7 +308,7 @@ class ManagedValuesTest {
     @Test
     void aGroupedSetReadsAConstantByItsEnumAndNameAndAnEnumByItsName() {
         ManagedValue<Label> set = ManagedValue.openSet(TestValue.Id.ENUM_SET)
-                .ofEnums(Label.class, ManagedValuesTest::inGroup)
+                .ofEnumGroups(Label.class, ManagedValuesTest::inGroup)
                 .groupedAs(Group.class, ManagedValuesTest::group)
                 .in("Activities").because("Mine.");
 
@@ -541,8 +584,7 @@ class ManagedValuesTest {
                 .startsAs(ManagedValuesTest::doSetup).shown("", "", Param.Visibility.EDITOR)
                 .when(scope -> { throw new IllegalStateException("broken"); }).because("Mine.");
         assertTrue(throwing.appliesIn(ParamScope.NONE), "a condition that throws holds");
-        assertThrows(IllegalArgumentException.class, () -> ManagedValue.method(TestValue.Id.FLOW).in("Values")
-                .holds(String.class, "x").when(scope -> true), "only a parameter has a condition");
+        // Only a parameter has a condition: a method value's steps offer no when.
     }
 
     @Test
