@@ -61,7 +61,6 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
          * Whether a reference to one of the constants reads as the constant's name
          * ({@link ReferableStep#referredToAs}) rather than as what its initialiser holds.
          */
-        @Override
         public boolean isReferredByName() {
             return referred != null;
         }
@@ -71,7 +70,6 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
          * value reads as — made by the plugin from the name alone. Null when the set is not referred to by name, the
          * plugin refused, or it answered something other than {@link #type()}.
          */
-        @Override
         public T byReference(String name) {
             return referred == null ? null : made(referred::call, name);
         }
@@ -97,7 +95,6 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
          * cannot load the bot's enum reads {@code Outcomes.WON} as. Null when the plugin's function refused the
          * name, or it answered something other than {@link #type()}.
          */
-        @Override
         public T byName(String name) {
             return made(byName::call, name);
         }
@@ -130,7 +127,6 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
          * {@code ("Collect", "WON")}. Null when the plugin refused, or it answered something other than
          * {@link #type()}.
          */
-        @Override
         public T byName(String group, String name) {
             if (group == null) return null;
             return made(constant -> byName.call(group, constant), name);
@@ -140,7 +136,6 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
          * The plugin's class for a whole nested enum — what a class literal of one, {@code Activities.Collect.class},
          * reads as wherever a value is read.
          */
-        @Override
         public Class<?> groupType() {
             return groupType;
         }
@@ -150,7 +145,6 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
          * by the plugin from the enum's simple name, as {@code as}: {@link #groupType()} or a supertype of it. Empty
          * when the plugin refused, or the value is not an {@code as}.
          */
-        @Override
         public <G> Optional<G> byGroup(Class<G> as, String group) {
             if (group == null || as == null) return Optional.empty();
             try {
@@ -235,11 +229,6 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
             requireInterface(element);
             Ref.resolve(byName);
             return new GroupStep<>(key, element, byName);
-        }
-
-        /** {@link #ofEnumGroups}, under the name it had first; kept until every plugin here calls that. */
-        public <E> GroupStep<E> ofEnums(Class<E> element, Ref.Of2<String, String, ? extends E> byName) {
-            return ofEnumGroups(element, byName);
         }
 
         /**

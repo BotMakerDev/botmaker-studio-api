@@ -106,9 +106,9 @@ public interface PluginValues {
     // spelling. Each is total and refuses with the sentence to show.
 
     /**
-     * One constant of an open set: its name, and for a set of nested enums ({@link ManagedValue#isGrouped}) the
+     * One constant of an open set: its name, and for a set of nested enums ({@link ManagedOpenSet.EnumGroups}) the
      * simple name of the enum it is in — {@code Collect.WON} is {@code Member.of("Collect", "WON")}. In a set of
-     * nested classes ({@link ManagedValue#isClasses}) a field is named by the constant holding its class's
+     * nested classes ({@link ManagedClasses}) a field is named by the constant holding its class's
      * instance — {@code Screens.MARKET.beerBuy} is {@code Member.of("MARKET", "beerBuy")} — and
      * {@code Member.of("MARKET")} is the class itself.
      *
@@ -216,7 +216,7 @@ public interface PluginValues {
      * One constant's initialiser as a value — {@code new ImageTemplate("…/ore.png")} for {@code Pictures.ORE}
      * — read and written through the same context a slot is. Empty when there is no such constant, or its
      * initialiser is not one the grammar reads, and always for an enum set's constant
-     * ({@link ManagedValue#isEnum}), whose name is all it has.
+     * ({@link ManagedOpenSet.OneEnum}), whose name is all it has.
      */
     default Optional<ValueContext> open(ManagedValue<?> set, Member member) {
         return Optional.empty();
@@ -225,9 +225,9 @@ public interface PluginValues {
     /**
      * Declares {@code public static final <T> member = <value>;} in the open set's class, {@code T} being the
      * value's class and the initialiser written by the grammar. Refused when the name is not a Java name, is
-     * already taken, or the value is one no loaded plugin declares. In an enum set ({@link ManagedValue#isEnum})
-     * it is the bare constant {@code member}, and {@code value} — what {@link ManagedValue#byName} makes of it — is
-     * only checked.
+     * already taken, or the value is one no loaded plugin declares. In an enum set ({@link ManagedOpenSet.OneEnum})
+     * it is the bare constant {@code member}, and {@code value} — what {@link ManagedOpenSet.OneEnum#byName} makes
+     * of it — is only checked.
      */
     default <E> Optional<String> add(ManagedValue<E> set, Member member, E value) {
         return Optional.of(NO_SOURCE_TREE);
@@ -271,8 +271,8 @@ public interface PluginValues {
      * <p>The declaration moves whole, its javadoc and annotations with it; nothing that uses it changes. Refused
      * when either constant is missing, they are one constant, {@code member} shares its declaration with another
      * field, or the bot would not compile after the move — {@code member}'s own initialiser reads a constant
-     * declared between the two. Always refused in an enum set ({@link ManagedValue#isEnum}, a set of nested
-     * enums): an enum constant reads no other, and moving one changes its {@code ordinal()} and
+     * declared between the two. Always refused in an enum set ({@link ManagedOpenSet.OneEnum}, a set of
+     * nested enums): an enum constant reads no other, and moving one changes its {@code ordinal()} and
      * {@code values()}.
      */
     default Optional<String> moveBefore(ManagedValue<?> set, Member member, Member before) {

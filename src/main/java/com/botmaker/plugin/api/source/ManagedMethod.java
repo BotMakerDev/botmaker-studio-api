@@ -25,7 +25,6 @@ public final class ManagedMethod<T> extends ManagedValue<T> {
      * What a created method first returns, or null for the type's own fresh value — which a type declared only by
      * its parts ({@code ComponentType}) has not got. A method with no {@link #holder()} is never created.
      */
-    @Override
     public T initial() {
         return initial;
     }

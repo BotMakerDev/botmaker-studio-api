@@ -35,7 +35,6 @@ public final class ManagedClasses<T> extends ManagedOpenSet<T> {
      * The class of a nested class's managed fields ({@link FieldsStep#fields}): each instance field whose declared
      * type is it or a subtype.
      */
-    @Override
     public Class<?> fieldType() {
         return fieldType;
     }
@@ -46,7 +45,6 @@ public final class ManagedClasses<T> extends ManagedOpenSet<T> {
      * {@code ("MARKET", "beerBuy")}. Null when the plugin refused, or it answered something other than
      * {@link #fieldType()}.
      */
-    @Override
     public Object byField(String member, String field) {
         if (member == null || field == null) return null;
         try {
@@ -61,7 +59,6 @@ public final class ManagedClasses<T> extends ManagedOpenSet<T> {
      * The method of {@link #type()} each nested class overrides, whose one {@code return} is the rest of the class
      * ({@link SetupStep#setup}): what the host reads, writes, and declares in a class it adds.
      */
-    @Override
     public Method setup() {
         return setup;
     }
@@ -70,7 +67,6 @@ public final class ManagedClasses<T> extends ManagedOpenSet<T> {
      * Whether a reference to a member's constant reads as its name ({@link ReferableStep#referredToAs}) rather than
      * as what its initialiser holds.
      */
-    @Override
     public boolean isReferredByName() {
         return referred != null;
     }
@@ -80,7 +76,6 @@ public final class ManagedClasses<T> extends ManagedOpenSet<T> {
      * the name alone. Null when the set is not referred to by name, the plugin refused, or it answered something
      * other than {@link #type()}.
      */
-    @Override
     public T byReference(String name) {
         return referred == null ? null : made(referred::call, name);
     }

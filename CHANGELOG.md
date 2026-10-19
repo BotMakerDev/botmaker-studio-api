@@ -42,11 +42,15 @@ is allowed to make. Additions arrive as `default` methods.
   permitting `ManagedParam`, `ManagedMethod` and `ManagedOpenSet`; an open set is one of `ManagedOpenSet.OfConstants`,
   `OneEnum`, `EnumGroups` or `ManagedClasses`. Each carries only its own parts. The entry points are the same
   (`ManagedValue.param/method/openSet`) and end in the subtype, so a field may be typed `ManagedParam<Greeting>`;
-  `ManagedValue<Greeting>` still compiles. `openSet(…).ofEnumGroups(…)` names what `ofEnums(…)` did. Each shape's
-  steps moved into its own class (`ManagedParam.Steps` …), so a source naming a step class (`ManagedValue.Reason
-  .when`, `SetHolderStep`) breaks; a declaration written as one chain does not. A method value has no `when` and
-  an enum set no `referredToAs`, refused by the compiler now rather than at load. The old accessors
-  (`shape()`, `isParam()`, `byName(…)` …) stay on `ManagedValue` until the hosts switch on the subtype.
+  `ManagedValue<Greeting>` still compiles. `openSet(…).ofEnumGroups(…)` names what `ofEnums(…)` did, and
+  `ofEnums` is gone. Each shape's steps moved into its own class (`ManagedParam.Steps` …), so a source naming a
+  step class (`ManagedValue.Reason.when`, `SetHolderStep`) breaks; a declaration written as one chain does not. A
+  method value has no `when` and an enum set no `referredToAs`, refused by the compiler now rather than at load.
+  `ManagedValue` keeps only what every shape has (`id`, `marker`, `holder`, `type`, `reason`, `cast`):
+  `ManagedValue.Shape`, `shape()`, `isParam()`, `isOpenSet()`, `isEnum()`, `isGrouped()`, `isClasses()` and each
+  shape's own accessors (`initial()`, `form()`, `byName(…)`, `setup()` …) are gone. Switch on the subtype, or type
+  the field by it. `ManagedValues.claim` takes a `ManagedMethod`, so claiming an open set or a parameter no
+  longer compiles.
 - **A method reference compiled by ECJ is named as such.** ECJ (Eclipse, VS Code's Java) compiles a serializable
   `Owner::method` into a lambda; the refusal now says so and to build with javac.
 

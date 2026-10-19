@@ -148,11 +148,10 @@ class ManagedValuesTest {
         public static final String COLLECT = "collect.png";
     }
 
+    /** An open set cannot be claimed at all: {@code claim} takes a method value only. */
     @Test
-    void aMarkedTypeInstallsNothingAndAnOpenSetCannotBeClaimed() {
+    void aMarkedTypeInstallsNothing() {
         List<Object> taken = new ArrayList<>();
-        ManagedValues.claim(ManagedValue.openSet(TestValue.Id.PICTURES).of(String.class).in("Pictures")
-                .because("Mine."), taken::add);
         ManagedValues.claim(text(TestValue.Id.PICTURES), taken::add);
 
         ManagedValues.install(Pictures.class);
@@ -171,14 +170,14 @@ class ManagedValuesTest {
     /** A value the host may only open is still a method's value: it was taken for an open set until 2026-10-05. */
     @Test
     void aValueTheHostNeverCreatesIsStillClaimed() {
-        ManagedValue<String> opened = ManagedValue.method(TestValue.Id.OPENED).openedOnly().holds(String.class)
+        ManagedMethod<String> opened = ManagedValue.method(TestValue.Id.OPENED).openedOnly().holds(String.class)
                 .because("Mine.");
         List<String> taken = new ArrayList<>();
         ManagedValues.claim(opened, taken::add);
 
         ManagedValues.install(Opened.class);
 
-        assertEquals(ManagedValue.Shape.METHOD, opened.shape());
+        assertNull(opened.holder());
         assertEquals(List.of("opened, never created"), taken);
     }
 
@@ -189,12 +188,10 @@ class ManagedValuesTest {
 
     @Test
     void anOpenSetKnowsWhatEachConstantIs() {
-        ManagedValue<String> set = ManagedValue.openSet(TestValue.Id.SET).of(String.class).in("Set")
+        ManagedOpenSet.OfConstants<String> set = ManagedValue.openSet(TestValue.Id.SET).of(String.class).in("Set")
                 .because("Mine.");
 
-        assertTrue(set.isOpenSet());
-        assertFalse(set.isEnum());
-        assertNull(set.byName("X"));
+        assertFalse(set.isReferredByName());
         assertEquals(String.class, set.type());
         assertEquals("x", set.cast("x"));
         assertNull(set.cast(3));
@@ -214,11 +211,9 @@ class ManagedValuesTest {
 
     @Test
     void anEnumSetReadsEachConstantByItsName() {
-        ManagedValue<Label> set = ManagedValue.openSet(TestValue.Id.ENUM_SET)
+        ManagedOpenSet.OneEnum<Label> set = ManagedValue.openSet(TestValue.Id.ENUM_SET)
                 .ofEnum(Label.class, ManagedValuesTest::named).in("Labels").because("Mine.");
 
-        assertTrue(set.isOpenSet());
-        assertTrue(set.isEnum());
         assertEquals(new Named("WON"), set.byName("WON"));
         assertNull(set.byName(" "), "a name the plugin refuses reads as nothing");
         assertNull(set.byName(null));
@@ -232,11 +227,10 @@ class ManagedValuesTest {
 
     @Test
     void aSetReferredToByNameReadsAReferenceAsTheName() {
-        ManagedValue<String> set = ManagedValue.openSet(TestValue.Id.SET).of(String.class)
+        ManagedOpenSet.OfConstants<String> set = ManagedValue.openSet(TestValue.Id.SET).of(String.class)
                 .referredToAs(ManagedValuesTest::referenced).in("Set").because("Mine.");
 
         assertTrue(set.isReferredByName());
-        assertFalse(set.isEnum(), "its constants are still fields with initialisers");
         assertEquals("→DAILY", set.byReference("DAILY"));
         assertNull(set.byReference(" "), "a name the plugin refuses reads as nothing");
         assertFalse(ManagedValue.openSet(TestValue.Id.SET).of(String.class).in("Set").because("Mine.")
@@ -264,10 +258,6 @@ class ManagedValuesTest {
         assertEquals(List.of("method", "param", "constants", "enum", "enums", "classes"),
                 java.util.stream.Stream.of(method, param, constants, anEnum, enums, classes)
                         .map(ManagedValuesTest::shapeOf).toList());
-        assertEquals(List.of(ManagedValue.Shape.METHOD, ManagedValue.Shape.PARAM, ManagedValue.Shape.OPEN_SET,
-                        ManagedValue.Shape.OPEN_SET),
-                List.of(method.shape(), param.shape(), constants.shape(), classes.shape()),
-                "the shape a host reads before it switches on the type");
         assertEquals("", method.initial());
         assertEquals(boolean.class, param.form());
         assertFalse(classes.isReferredByName());
@@ -307,16 +297,14 @@ class ManagedValuesTest {
 
     @Test
     void aGroupedSetReadsAConstantByItsEnumAndNameAndAnEnumByItsName() {
-        ManagedValue<Label> set = ManagedValue.openSet(TestValue.Id.ENUM_SET)
+        ManagedOpenSet.EnumGroups<Label> set = ManagedValue.openSet(TestValue.Id.ENUM_SET)
                 .ofEnumGroups(Label.class, ManagedValuesTest::inGroup)
                 .groupedAs(Group.class, ManagedValuesTest::group)
                 .in("Activities").because("Mine.");
 
-        assertTrue(set.isGrouped());
-        assertFalse(set.isEnum(), "a grouped set is no single enum");
         assertEquals(new Named("Collect.WON"), set.byName("Collect", "WON"));
         assertNull(set.byName("Collect", " "), "a name the plugin refuses reads as nothing");
-        assertNull(set.byName("WON"), "a grouped constant has no single-name reading");
+        assertNull(set.byName(null, "WON"), "a constant outside any group reads as nothing");
         assertEquals(Group.class, set.groupType());
         assertEquals(new Group("Collect"), set.byGroup(Group.class, "Collect").orElseThrow());
         assertEquals(new Group("Collect"), set.byGroup(Object.class, "Collect").orElseThrow(), "a supertype reads");
@@ -327,9 +315,9 @@ class ManagedValuesTest {
     @Test
     void aGroupedSetNeedsAnInterfaceAndMethodReferences() {
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.ENUM_SET)
-                .ofEnums(Named.class, (g, n) -> new Named(n)));
+                .ofEnumGroups(Named.class, (g, n) -> new Named(n)));
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.ENUM_SET)
-                .ofEnums(Label.class, ManagedValuesTest::inGroup).groupedAs(Group.class, name -> new Group(name)));
+                .ofEnumGroups(Label.class, ManagedValuesTest::inGroup).groupedAs(Group.class, name -> new Group(name)));
     }
 
     /** The element of a set of classes: what a bot's nested class extends. */
@@ -369,17 +357,13 @@ class ManagedValuesTest {
 
     @Test
     void aSetOfClassesReadsAFieldByItsConstantAndNameAndNamesItsSetup() throws Exception {
-        ManagedValue<Sheet> set = ManagedValue.openSet(TestValue.Id.ENUM_SET)
+        ManagedClasses<Sheet> set = ManagedValue.openSet(TestValue.Id.ENUM_SET)
                 .ofClasses(Sheet.class)
                 .fields(Cell.class, ManagedValuesTest::cell)
                 .setup(Sheet::setup)
                 .referredToAs(ManagedValuesTest::sheet)
                 .in("Sheets").because("Mine.");
 
-        assertTrue(set.isClasses());
-        assertTrue(set.isOpenSet());
-        assertFalse(set.isGrouped(), "a set of classes is no set of enums");
-        assertFalse(set.isEnum());
         assertEquals(Cell.class, set.fieldType());
         assertEquals(new Cell("MARKET", "beerBuy"), set.byField("MARKET", "beerBuy"));
         assertNull(set.byField("MARKET", " "), "a name the plugin refuses reads as nothing");
@@ -400,8 +384,6 @@ class ManagedValuesTest {
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.ENUM_SET)
                 .ofClasses(Sheet.class).fields(Cell.class, ManagedValuesTest::cell).setup(Sheet::helper),
                 "a final method cannot be overridden");
-        assertTrue(ManagedValue.openSet(TestValue.Id.ENUM_SET).of(Named.class).in("Names").because("Mine.")
-                .setup() == null, "a set of one class has no setup");
     }
 
     static final class OneThrows {
@@ -535,11 +517,9 @@ class ManagedValuesTest {
 
     @Test
     void aParameterIsTypedByItsMethodAndStartsAsWhatItReturns() {
-        ManagedValue<java.util.Set<Class<? extends Number>>> skip = ManagedValue.param(Fields.Id.SKIP).in("Sdk")
+        ManagedParam<java.util.Set<Class<? extends Number>>> skip = ManagedValue.param(Fields.Id.SKIP).in("Sdk")
                 .startsAs(ManagedValuesTest::skip).shown("Run", "What to skip", (Param.Visibility) null)
                 .because("Mine.");
-        assertTrue(skip.isParam());
-        assertEquals(ManagedValue.Shape.PARAM, skip.shape());
         assertEquals(java.util.Set.class, skip.type());
         assertEquals("java.util.Set<java.lang.Class<? extends java.lang.Number>>", skip.form().getTypeName());
         assertEquals(java.util.Set.of(Integer.class), skip.initial());
@@ -547,7 +527,7 @@ class ManagedValuesTest {
         assertEquals("What to skip", skip.description());
         assertEquals(com.botmaker.plugin.api.params.Param.EDITOR, skip.visibility());
 
-        ManagedValue<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
+        ManagedParam<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
                 .startsAs(ManagedValuesTest::doSetup).shown(null, null, Param.Visibility.PUBLIC)
                 .because("Mine.");
         assertEquals(Boolean.class, doSetup.type());
@@ -559,9 +539,9 @@ class ManagedValuesTest {
     /** A parameter declared only while the bot's other value says so, read through the host's scope. */
     @Test
     void aConditionalParameterAppliesOnlyWhileItsConditionHolds() {
-        ManagedValue<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
+        ManagedParam<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
                 .startsAs(ManagedValuesTest::doSetup).shown("", "", Param.Visibility.EDITOR).because("Mine.");
-        ManagedValue<java.util.Set<Class<? extends Number>>> skip = ManagedValue.param(Fields.Id.SKIP).in("Sdk")
+        ManagedParam<java.util.Set<Class<? extends Number>>> skip = ManagedValue.param(Fields.Id.SKIP).in("Sdk")
                 .startsAs(ManagedValuesTest::skip).shown("Run", "What to skip", Param.Visibility.EDITOR)
                 .when(scope -> scope.value(doSetup).orElse(false))
                 .because("Mine.");
@@ -580,7 +560,7 @@ class ManagedValuesTest {
         assertFalse(doSetup.conditional());
         assertTrue(doSetup.appliesIn(ParamScope.NONE), "an unconditional parameter always applies");
 
-        ManagedValue<Boolean> throwing = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
+        ManagedParam<Boolean> throwing = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
                 .startsAs(ManagedValuesTest::doSetup).shown("", "", Param.Visibility.EDITOR)
                 .when(scope -> { throw new IllegalStateException("broken"); }).because("Mine.");
         assertTrue(throwing.appliesIn(ParamScope.NONE), "a condition that throws holds");
@@ -596,18 +576,12 @@ class ManagedValuesTest {
         assertEquals(Param.Visibility.EDITOR, Param.Visibility.fromId(null));
     }
 
+    /** A parameter is never claimed either: the bot reads it as a field, and {@code claim} takes a method value. */
     @Test
-    void aParameterNeedsAMarkerFieldsMayCarryAndIsNeverClaimed() {
+    void aParameterNeedsAMarkerFieldsMayCarry() {
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(TestValue.Id.FLOW));
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(Fields.Id.SKIP).in("Sdk")
                 .startsAs(() -> java.util.Set.<Class<? extends Number>>of()));
-        ManagedValue<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
-                .startsAs(ManagedValuesTest::doSetup).shown("", "", Param.Visibility.EDITOR).because("Mine.");
-        List<Boolean> taken = new ArrayList<>();
-        ManagedValues.claim(doSetup, taken::add);
-        assertTrue(taken.isEmpty());
-        assertEquals(ManagedValue.Shape.METHOD, text(TestValue.Id.GREETING).shape());
-        assertEquals(String.class, text(TestValue.Id.GREETING).form());
     }
 
     @Test

@@ -6,10 +6,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -55,37 +52,6 @@ import java.util.function.Function;
  * @param <T> the value's class; for an open set, the class of each member
  */
 public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam, ManagedOpenSet {
-
-    /**
-     * Where the marker annotation goes. A host that has not moved to the subtypes reads it here; a new one switches
-     * on {@link ManagedMethod}, {@link ManagedParam} and {@link ManagedOpenSet} instead.
-     */
-    public enum Shape {
-        /** On a method: one value, the expression the method returns. */
-        METHOD("method", "a managed value"),
-        /** On a type: a class of constants the plugin adds to, renames in and removes from. */
-        OPEN_SET("open-set", "a managed set"),
-        /** On a field that is also a {@code @Param}: its declaration the plugin's, its value the runner's. */
-        PARAM("param", "a plugin's parameter");
-
-        private final String id;
-        private final String displayName;
-
-        Shape(String id, String displayName) {
-            this.id = id;
-            this.displayName = displayName;
-        }
-
-        /** The stable key: {@code "method"}, {@code "open-set"}, {@code "param"}. */
-        public String id() {
-            return id;
-        }
-
-        /** For a sentence: {@code "a managed set"}. */
-        public String displayName() {
-            return displayName;
-        }
-    }
 
     /** The id and the binary name of the plugin's marker annotation. */
     record Key(String id, String marker) {
@@ -310,128 +276,5 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
         } catch (RuntimeException refused) {
             return null;
         }
-    }
-
-    // The accessors below read one shape's parts on any value and answer nothing for the other shapes; the
-    // subtype that has the part overrides its accessor. They stay until every host switches on the subtype.
-
-    /** Whether the annotation goes on a method, a field or the holder; switch on the subtype instead. */
-    public Shape shape() {
-        return switch (this) {
-            case ManagedMethod<T> _ -> Shape.METHOD;
-            case ManagedParam<T> _ -> Shape.PARAM;
-            case ManagedOpenSet<T> _ -> Shape.OPEN_SET;
-        };
-    }
-
-    /** Whether this is a {@link ManagedParam}. */
-    public boolean isParam() {
-        return this instanceof ManagedParam;
-    }
-
-    /** Whether this is a {@link ManagedOpenSet}. */
-    public boolean isOpenSet() {
-        return this instanceof ManagedOpenSet;
-    }
-
-    /** Whether this is a {@link ManagedOpenSet.OneEnum}. */
-    public boolean isEnum() {
-        return this instanceof ManagedOpenSet.OneEnum;
-    }
-
-    /** Whether this is a {@link ManagedOpenSet.EnumGroups}. */
-    public boolean isGrouped() {
-        return this instanceof ManagedOpenSet.EnumGroups;
-    }
-
-    /** Whether this is a {@link ManagedClasses}. */
-    public boolean isClasses() {
-        return this instanceof ManagedClasses;
-    }
-
-    /** {@link ManagedParam#form()}; {@link #type()} for any other shape. */
-    public Type form() {
-        return type;
-    }
-
-    /** {@link ManagedMethod#initial()} or {@link ManagedParam#initial()}; null for an open set. */
-    public T initial() {
-        return null;
-    }
-
-    /** {@link ManagedParam#category()}; {@code ""} for any other shape. */
-    public String category() {
-        return "";
-    }
-
-    /** {@link ManagedParam#description()}; {@code ""} for any other shape. */
-    public String description() {
-        return "";
-    }
-
-    /** {@link ManagedParam#visibility()}; {@code ""} for any other shape. */
-    public String visibility() {
-        return "";
-    }
-
-    /** {@link ManagedParam#conditional()}; false for any other shape. */
-    public boolean conditional() {
-        return false;
-    }
-
-    /** {@link ManagedParam#appliesIn}; true for any other shape. */
-    public boolean appliesIn(ParamScope scope) {
-        return true;
-    }
-
-    /** {@link ManagedOpenSet.OneEnum#byName}; null for any other shape. */
-    public T byName(String name) {
-        return null;
-    }
-
-    /** {@link ManagedOpenSet.EnumGroups#byName}; null for any other shape. */
-    public T byName(String group, String name) {
-        return null;
-    }
-
-    /** {@link ManagedOpenSet.EnumGroups#groupType()}; null for any other shape. */
-    public Class<?> groupType() {
-        return null;
-    }
-
-    /** {@link ManagedOpenSet.EnumGroups#byGroup}; empty for any other shape. */
-    public <G> Optional<G> byGroup(Class<G> as, String group) {
-        return Optional.empty();
-    }
-
-    /** {@link ManagedClasses#fieldType()}; null for any other shape. */
-    public Class<?> fieldType() {
-        return null;
-    }
-
-    /** {@link ManagedClasses#byField}; null for any other shape. */
-    public Object byField(String member, String field) {
-        return null;
-    }
-
-    /** {@link ManagedClasses#setup()}; null for any other shape. */
-    public Method setup() {
-        return null;
-    }
-
-    /**
-     * {@link ManagedOpenSet.OfConstants#isReferredByName()} or {@link ManagedClasses#isReferredByName()}; false
-     * for any other shape.
-     */
-    public boolean isReferredByName() {
-        return false;
-    }
-
-    /**
-     * {@link ManagedOpenSet.OfConstants#byReference} or {@link ManagedClasses#byReference}; null for any other
-     * shape.
-     */
-    public T byReference(String name) {
-        return null;
     }
 }

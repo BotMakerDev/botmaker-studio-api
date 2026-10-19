@@ -42,37 +42,31 @@ public final class ManagedParam<T> extends ManagedValue<T> {
      * The field's whole type, which {@link #type()} cannot say: {@code Set<Class<? extends Outcome>>},
      * {@code boolean}.
      */
-    @Override
     public Type form() {
         return form;
     }
 
     /** What the field is first set to; null is written as {@code null}. */
-    @Override
     public T initial() {
         return initial;
     }
 
     /** Its {@code @Param(category)}: the heading the Parameters window lists it under. */
-    @Override
     public String category() {
         return category;
     }
 
     /** Its {@code @Param(description)}: the line beside it. */
-    @Override
     public String description() {
         return description;
     }
 
     /** Its {@code @Param(visibility)}: {@code Param.EDITOR} or {@code Param.PUBLIC}. */
-    @Override
     public String visibility() {
         return visibility;
     }
 
     /** Whether it was declared with a condition ({@link ConditionStep#when}). */
-    @Override
     public boolean conditional() {
         return applies != null;
     }
@@ -81,7 +75,6 @@ public final class ManagedParam<T> extends ManagedValue<T> {
      * Whether it applies to the bot {@code scope} reads: true without a condition, and for one whose condition
      * throws. What the host asks before writing the field or listing it.
      */
-    @Override
     public boolean appliesIn(ParamScope scope) {
         if (applies == null) return true;
         try {

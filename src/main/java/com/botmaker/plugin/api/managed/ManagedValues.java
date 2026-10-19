@@ -1,5 +1,6 @@
 package com.botmaker.plugin.api.managed;
 
+import com.botmaker.plugin.api.source.ManagedMethod;
 import com.botmaker.plugin.api.source.ManagedValue;
 
 import java.lang.annotation.Annotation;
@@ -52,11 +53,11 @@ public final class ManagedValues {
      * {@code @SdkValue(SdkValue.Id.FLOW)}.
      *
      * <p>Typed by the declaration: a value that is not a {@code T} never reaches the sink and is reported by
-     * {@link #install} instead. An open set ({@link ManagedValue#isOpenSet()}) has no value and is ignored, and
-     * so is a parameter ({@link ManagedValue#isParam()}), which the bot reads as a field.
+     * {@link #install} instead. Only a method value has one: an open set is a class of the bot's, and a parameter
+     * the bot reads as a field.
      */
-    public static <T> void claim(ManagedValue<T> value, Consumer<? super T> sink) {
-        if (value == null || value.shape() != ManagedValue.Shape.METHOD || sink == null) {
+    public static <T> void claim(ManagedMethod<T> value, Consumer<? super T> sink) {
+        if (value == null || sink == null) {
             return;
         }
         SINKS.put(value.id(), held -> {
