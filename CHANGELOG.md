@@ -24,6 +24,17 @@ is allowed to make. Additions arrive as `default` methods.
   `ManagedValue` field there, and each element of a list field, in field order, once each. A new type is declared
   by writing its field; the hand-kept `ALL` list, which failed silently when one was left out, is no longer needed.
   `types(…)` gives the parts too, so `.parts(…)` is rarely wanted. The supplier forms stay. Additive.
+- **`@Fills(label = …)`**, on a public static no-argument method a bot compiles against: the host declares the
+  method's return type as a value the bot fills in, starting as a call to the method and drawn as a pill saying
+  the label. Nothing about the type is declared in the plugin, and the plugin draws nothing.
+- **`ValueContext.declared(Class)`**: the call declaration the host writes a class with, for an editor that takes
+  a value apart by its parts. The declaration's editor is then a plain method reference
+  (`.editor(() -> GeometryEditors::point)`) rather than a lambda naming the field it initialises. Additive.
+
+### Removed
+
+- **`TypeSteps.Fresh.filledBy` and `TypeSteps.Filled`** (breaking; japicmp pinned ahead to `v0.11.0`). Mark the
+  method `@Fills` instead of declaring `PluginType.value(X.class).filledBy(Owner::m).shownAs(…)`.
 
 ### Changed
 

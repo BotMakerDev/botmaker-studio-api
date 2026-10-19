@@ -37,7 +37,7 @@ import java.util.function.Supplier;
  *                 .editors(() -> SdkEditors.ALL)
  *                 .toolbar(() -> SdkToolbarItems.ALL)
  *                 .recorded(() -> SdkRecorded.ALL)
- *                 .runOverlay(() -> SdkRunOverlay.ALL)
+ *                 .runOverlay(() -> List.of(SdkRunOverlay.PART))
  *                 .overlay(() -> SdkOverlay.PART)
  *                 .assistant(() -> SdkAssist.ALL)
  *                 .assistantGuide(SdkAssist.GUIDE)

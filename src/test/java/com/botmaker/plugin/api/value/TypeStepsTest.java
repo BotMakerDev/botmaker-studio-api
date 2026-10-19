@@ -153,12 +153,4 @@ class TypeStepsTest {
         assertThrows(IllegalArgumentException.class,
                 () -> PluginType.value(Duration.class).fresh(() -> Duration.ZERO).editor(NONE).writtenAsLiteral());
     }
-
-    @Test
-    void aFilledTypeIsACallTheBotMakes() {
-        DeclaredType<LocalDate> today = PluginType.value(LocalDate.class).filledBy(LocalDate::now).shownAs(NONE);
-        assertNull(today.fresh());
-        assertEquals("now", today.freshCall().getName());
-        assertEquals(0, today.freshCall().getParameterCount());
-    }
 }

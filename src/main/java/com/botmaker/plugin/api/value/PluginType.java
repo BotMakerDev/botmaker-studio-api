@@ -84,7 +84,8 @@ public interface PluginType<T> {
      * shape.
      *
      * <p>Answering this is what makes a type <em>declarable</em> without making it editable: a fresh value
-     * that must be a call, which {@link #fresh()} cannot say.
+     * that must be a call, which {@link #fresh()} cannot say. A plugin does not answer it through the steps: it
+     * marks the method {@link Fills}, and the type the host declares for it answers this.
      */
     default java.lang.reflect.Method freshCall() {
         return null;

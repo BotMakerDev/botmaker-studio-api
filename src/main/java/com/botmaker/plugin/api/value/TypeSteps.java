@@ -1,7 +1,5 @@
 package com.botmaker.plugin.api.value;
 
-import java.lang.reflect.Executable;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.function.Supplier;
 
@@ -12,7 +10,7 @@ import java.util.function.Supplier;
  *
  * <pre>{@code
  * PluginType.value(Point.class)                  // what the type is
- *         .fresh(() -> new Point(0, 0))          // what a fresh one is   | .firstConstant() | .filledBy(Owner::m)
+ *         .fresh(() -> new Point(0, 0))          // what a fresh one is   | .firstConstant()
  *         .editor(() -> MyEditors::point)        // how a person edits it
  *         .preview(() -> MyEditors::pointChip)   // optional: how it is shown without being edited
  *         .writtenAsRecord();                    // how its Java is written | .writtenAs(…) | .writtenAsEach(…)
@@ -25,6 +23,9 @@ import java.util.function.Supplier;
  * <p>Every check a step can make it makes where the declaration is built — an enum's first constant on a
  * class that is no enum, a literal of a class the host has no literal for, a lambda where a method reference
  * belongs — so a mistake fails the plugin's own class initialisation, never a bot's file.
+ *
+ * <p>A value the bot fills in and nobody edits — the last match — is not declared here: its method carries
+ * {@link Fills}, and the host declares the type.
  */
 public final class TypeSteps {
 
@@ -53,37 +54,6 @@ public final class TypeSteps {
                 throw new IllegalArgumentException(type.getName() + " is not an enum with a constant");
             }
             return new Drawing<>(type, () -> constants[0]);
-        }
-
-        /**
-         * A type the bot fills in rather than a person: a fresh value is a call to {@code method}, which the
-         * host writes as {@code Owner.method()} — {@code Vision::lastMatch}. See {@link PluginType#freshCall()}.
-         */
-        public <R extends T> Filled<T> filledBy(Ref.Of0<R> method) {
-            Executable found = Ref.resolve(method);
-            if (!(found instanceof Method m) || !Modifier.isStatic(m.getModifiers())
-                    || !Modifier.isPublic(m.getModifiers())) {
-                throw new IllegalArgumentException(found + " is not a public static method");
-            }
-            return new Filled<>(type, m);
-        }
-    }
-
-    /** After {@link Fresh#filledBy}: how a value the bot fills in is shown, as both its editor and preview. */
-    public static final class Filled<T> {
-
-        private final Class<T> type;
-        private final Method freshCall;
-
-        Filled(Class<T> type, Method freshCall) {
-            this.type = type;
-            this.freshCall = freshCall;
-        }
-
-        /** Drawn as {@code shown} wherever it appears; nothing about it is edited. */
-        public DeclaredType<T> shownAs(Drawn shown) {
-            if (shown == null) throw new IllegalArgumentException(type.getName() + ": nothing to show it with");
-            return new DeclaredType<>(type, null, freshCall, shown, shown);
         }
     }
 
@@ -156,7 +126,7 @@ public final class TypeSteps {
         }
 
         private DeclaredType<T> declared() {
-            return new DeclaredType<>(type, fresh, null, editor, preview);
+            return new DeclaredType<>(type, fresh, editor, preview);
         }
     }
 

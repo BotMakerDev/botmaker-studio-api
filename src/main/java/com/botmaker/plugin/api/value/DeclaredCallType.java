@@ -5,7 +5,6 @@ import javafx.scene.Node;
 
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -69,11 +68,6 @@ public final class DeclaredCallType<T> implements EditableType<T>, ComponentType
     @Override
     public T fresh() {
         return declared.fresh();
-    }
-
-    @Override
-    public Method freshCall() {
-        return declared.freshCall();
     }
 
     @Override

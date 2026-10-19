@@ -12,7 +12,7 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   `parts(Supplier)` and `values(Supplier)` stay for a list computed at run time. Each is read when the host
   asks and cached nowhere: a list built in the constructor would load its classes — JavaFX among them — on a
   headless host.
-- **A type**: `PluginType.value(X.class)` → `fresh(…)` | `firstConstant()` | `filledBy(Owner::method)` →
+- **A type**: `PluginType.value(X.class)` → `fresh(…)` | `firstConstant()` →
   `editor(() -> E::draw)` → optional `preview(…)` → `writtenAs(Owner::factory, X::part, …)` |
   `writtenAsEach(…)` | `writtenAsRecord()` | `writtenAsConstant()` | `writtenAsLiteral()` | `writtenAsParts()`
   (`TypeSteps`, `CallSteps`, results `DeclaredType`/`DeclaredCallType`). **A part**: `ComponentType.part(X.class)

@@ -3,6 +3,7 @@ package com.botmaker.plugin.api.slot;
 import com.botmaker.plugin.api.StudioServices;
 import com.botmaker.plugin.api.source.ManagedValue;
 import com.botmaker.plugin.api.source.PluginValues;
+import com.botmaker.plugin.api.value.ComponentType;
 
 import java.util.Optional;
 
@@ -155,5 +156,22 @@ public interface ValueContext {
      */
     default Bounds bounds() {
         return Bounds.NONE;
+    }
+
+    /**
+     * The call declaration the host writes a {@code type} with, or empty when {@code type} is written some other
+     * way or nothing declares it.
+     *
+     * <p>For an editor that takes a value apart by its parts — a row of numbers for a {@code Point} — and so needs
+     * the declaration it edits. Asking here, rather than being handed it, keeps the declaration a plain method
+     * reference ({@code .editor(() -> GeometryEditors::point)}) instead of a lambda naming the field it is the
+     * initialiser of. A class written by several factories answers its first. Compared by class identity, so a
+     * plugin asking for its own class gets its own declaration.
+     *
+     * <p>{@code default} for a host older than this method, which answers empty; an editor then shows the value
+     * read-only.
+     */
+    default <T> Optional<ComponentType<T>> declared(Class<T> type) {
+        return Optional.empty();
     }
 }
