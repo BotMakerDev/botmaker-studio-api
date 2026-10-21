@@ -1,5 +1,6 @@
 package com.botmaker.plugin.api.value;
 
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
@@ -83,8 +84,14 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
         }
     }
 
-    CallShape<T> withBuild(Function<List<Object>, T> build) {
+    /** This shape with the four parts a declaration's steps change; the factory and how it comes apart stay. */
+    private CallShape<T> copy(Function<List<Object>, T> build, List<Field> constants, List<Wither<T>> withers,
+                              Predicate<? super T> writes) {
         return new CallShape<>(type, factory, parts, components, build, constants, withers, writes, held);
+    }
+
+    CallShape<T> withBuild(Function<List<Object>, T> build) {
+        return copy(build, constants, withers, writes);
     }
 
     /**
@@ -143,12 +150,12 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
     CallShape<T> withConstants(Object... values) {
         List<Field> found = new ArrayList<>(values.length);
         for (Object value : values) found.add(constant(value));
-        return new CallShape<>(type, factory, parts, components, build, List.copyOf(found), withers, writes, held);
+        return copy(build, List.copyOf(found), withers, writes);
     }
 
     /** This shape writing only the values {@code writes} accepts; see {@link DeclaredCall#when}. */
     CallShape<T> withWrites(Predicate<? super T> writes) {
-        return new CallShape<>(type, factory, parts, components, build, constants, withers, writes, held);
+        return copy(build, constants, withers, writes);
     }
 
     /**
@@ -167,7 +174,7 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
         }
         List<Wither<T>> more = new ArrayList<>(withers);
         more.add(wither);
-        return new CallShape<>(type, factory, parts, components, build, constants, List.copyOf(more), writes, held);
+        return copy(build, constants, List.copyOf(more), writes);
     }
 
     /** Every part: the factory's, then one per wither. */
@@ -337,7 +344,7 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
     }
 
     private static Class<?> box(Class<?> type) {
-        return type.isPrimitive() ? java.lang.invoke.MethodType.methodType(type).wrap().returnType() : type;
+        return type.isPrimitive() ? MethodType.methodType(type).wrap().returnType() : type;
     }
 
     private static String name(Executable factory) {

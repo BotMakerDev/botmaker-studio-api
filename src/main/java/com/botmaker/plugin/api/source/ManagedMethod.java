@@ -69,7 +69,7 @@ public final class ManagedMethod<T> extends ManagedValue<T> {
          * with {@code null}, the type's own fresh value.
          */
         public <T> Reason<ManagedMethod<T>> holds(Class<T> type, T initial) {
-            if (type == null) throw new IllegalArgumentException(key.id() + ": no type given");
+            requireType(key, type, "type");
             return new Reason<>(reason -> new ManagedMethod<>(key, holder, type, initial, reason));
         }
     }
@@ -85,7 +85,7 @@ public final class ManagedMethod<T> extends ManagedValue<T> {
 
         /** A method returning a {@code type}, which the host opens and never writes. */
         public <T> Reason<ManagedMethod<T>> holds(Class<T> type) {
-            if (type == null) throw new IllegalArgumentException(key.id() + ": no type given");
+            requireType(key, type, "type");
             return new Reason<>(reason -> new ManagedMethod<>(key, null, type, null, reason));
         }
     }

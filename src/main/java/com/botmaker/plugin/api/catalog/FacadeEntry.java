@@ -62,7 +62,7 @@ public record FacadeEntry(Class<?> type, Category category, boolean offered, Str
      * declared twice.
      */
     public Optional<MemberEntry> member(String name) {
-        return members.stream().filter(m -> m.id().name().equals(name)).findFirst();
+        return overloads(name).stream().findFirst();
     }
 
     /**
@@ -74,7 +74,7 @@ public record FacadeEntry(Class<?> type, Category category, boolean offered, Str
     }
 
     public boolean offers(String memberName) {
-        return members.stream().anyMatch(m -> m.id().name().equals(memberName));
+        return !overloads(memberName).isEmpty();
     }
 
     /**

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -82,57 +83,52 @@ public final class PluginDeclaration {
         /** The name shown in Manage Plugins and wherever a contribution is attributed. */
         public PluginDeclaration named(String displayName) {
             String shown = displayName == null || displayName.isBlank() ? id : displayName;
-            return new PluginDeclaration(id, shown, null, List.of(), null, null, null, List.of(), null, null, null,
-                    null, null, null, "", null);
+            return new PluginDeclaration(id, shown);
         }
     }
 
+    // Set only on a fresh copy, inside with(…), before any step hands it out.
     private final String id;
     private final String displayName;
-    private final Supplier<PaletteCatalog> catalog;
-    private final List<Class<?>> typeHolders;
-    private final Supplier<? extends List<? extends PluginType<?>>> types;
-    private final Supplier<? extends List<? extends ComponentType<?>>> parts;
-    private final Supplier<? extends List<? extends SlotEditor>> editors;
-    private final List<Class<?>> valueHolders;
-    private final Supplier<? extends List<? extends ManagedValue<?>>> values;
-    private final Supplier<? extends List<? extends ToolbarItem>> toolbar;
-    private final Supplier<? extends List<? extends RecordedValue<?>>> recorded;
-    private final Supplier<? extends List<? extends RunOverlayPart>> runOverlay;
-    private final Supplier<OverlayPart> overlay;
-    private final Supplier<? extends List<? extends AssistantTool<?>>> assistant;
-    private final String guide;
-    private final Method trial;
+    private Supplier<PaletteCatalog> catalog;
+    private List<Class<?>> typeHolders = List.of();
+    private Supplier<? extends List<? extends PluginType<?>>> types;
+    private Supplier<? extends List<? extends ComponentType<?>>> parts;
+    private Supplier<? extends List<? extends SlotEditor>> editors;
+    private List<Class<?>> valueHolders = List.of();
+    private Supplier<? extends List<? extends ManagedValue<?>>> values;
+    private Supplier<? extends List<? extends ToolbarItem>> toolbar;
+    private Supplier<? extends List<? extends RecordedValue<?>>> recorded;
+    private Supplier<? extends List<? extends RunOverlayPart>> runOverlay;
+    private Supplier<OverlayPart> overlay;
+    private Supplier<? extends List<? extends AssistantTool<?>>> assistant;
+    private String guide = "";
+    private Method trial;
 
-    private PluginDeclaration(String id, String displayName, Supplier<PaletteCatalog> catalog,
-                              List<Class<?>> typeHolders,
-                              Supplier<? extends List<? extends PluginType<?>>> types,
-                              Supplier<? extends List<? extends ComponentType<?>>> parts,
-                              Supplier<? extends List<? extends SlotEditor>> editors,
-                              List<Class<?>> valueHolders,
-                              Supplier<? extends List<? extends ManagedValue<?>>> values,
-                              Supplier<? extends List<? extends ToolbarItem>> toolbar,
-                              Supplier<? extends List<? extends RecordedValue<?>>> recorded,
-                              Supplier<? extends List<? extends RunOverlayPart>> runOverlay,
-                              Supplier<OverlayPart> overlay,
-                              Supplier<? extends List<? extends AssistantTool<?>>> assistant,
-                              String guide, Method trial) {
+    private PluginDeclaration(String id, String displayName) {
         this.id = id;
         this.displayName = displayName;
-        this.catalog = catalog;
-        this.typeHolders = typeHolders;
-        this.types = types;
-        this.parts = parts;
-        this.editors = editors;
-        this.valueHolders = valueHolders;
-        this.values = values;
-        this.toolbar = toolbar;
-        this.recorded = recorded;
-        this.runOverlay = runOverlay;
-        this.overlay = overlay;
-        this.assistant = assistant;
-        this.guide = guide;
-        this.trial = trial;
+    }
+
+    /** A copy of this declaration with {@code set} applied to it: every step's one way to answer a copy. */
+    private PluginDeclaration with(Consumer<PluginDeclaration> set) {
+        PluginDeclaration copy = new PluginDeclaration(id, displayName);
+        copy.catalog = catalog;
+        copy.typeHolders = typeHolders;
+        copy.types = types;
+        copy.parts = parts;
+        copy.editors = editors;
+        copy.valueHolders = valueHolders;
+        copy.values = values;
+        copy.toolbar = toolbar;
+        copy.recorded = recorded;
+        copy.runOverlay = runOverlay;
+        copy.overlay = overlay;
+        copy.assistant = assistant;
+        copy.guide = guide;
+        copy.trial = trial;
+        set.accept(copy);
+        return copy;
     }
 
     /**
@@ -145,8 +141,8 @@ public final class PluginDeclaration {
      * @throws IllegalArgumentException when no holder is given, or one is {@code null}
      */
     public PluginDeclaration types(Class<?>... holders) {
-        return new PluginDeclaration(id, displayName, catalog, holders("types", holders), types, parts, editors,
-                valueHolders, values, toolbar, recorded, runOverlay, overlay, assistant, guide, trial);
+        List<Class<?>> named = holders("types", holders);
+        return with(copy -> copy.typeHolders = named);
     }
 
     /**
@@ -154,8 +150,7 @@ public final class PluginDeclaration {
      * the usual way; this one is for a list computed at run time. Both may be given: the host gets the two.
      */
     public PluginDeclaration types(Supplier<? extends List<? extends PluginType<?>>> types) {
-        return new PluginDeclaration(id, displayName, catalog, typeHolders, types, parts, editors, valueHolders,
-                values, toolbar, recorded, runOverlay, overlay, assistant, guide, trial);
+        return with(copy -> copy.types = types);
     }
 
     /**
@@ -163,14 +158,12 @@ public final class PluginDeclaration {
      * {@link StudioPlugin#componentTypes()}. A holder named by {@link #types(Class[])} already gives its parts.
      */
     public PluginDeclaration parts(Supplier<? extends List<? extends ComponentType<?>>> parts) {
-        return new PluginDeclaration(id, displayName, catalog, typeHolders, types, parts, editors, valueHolders,
-                values, toolbar, recorded, runOverlay, overlay, assistant, guide, trial);
+        return with(copy -> copy.parts = parts);
     }
 
     /** The editors a type cannot choose for itself, narrowest first — {@link StudioPlugin#slotEditors()}. */
     public PluginDeclaration editors(Supplier<? extends List<? extends SlotEditor>> editors) {
-        return new PluginDeclaration(id, displayName, catalog, typeHolders, types, parts, editors, valueHolders,
-                values, toolbar, recorded, runOverlay, overlay, assistant, guide, trial);
+        return with(copy -> copy.editors = editors);
     }
 
     /**
@@ -181,8 +174,8 @@ public final class PluginDeclaration {
      * @throws IllegalArgumentException when no holder is given, or one is {@code null}
      */
     public PluginDeclaration values(Class<?>... holders) {
-        return new PluginDeclaration(id, displayName, catalog, typeHolders, types, parts, editors,
-                holders("values", holders), values, toolbar, recorded, runOverlay, overlay, assistant, guide, trial);
+        List<Class<?>> named = holders("values", holders);
+        return with(copy -> copy.valueHolders = named);
     }
 
     /**
@@ -190,38 +183,32 @@ public final class PluginDeclaration {
      * {@link #values(Class[])} is the usual way; both may be given.
      */
     public PluginDeclaration values(Supplier<? extends List<? extends ManagedValue<?>>> values) {
-        return new PluginDeclaration(id, displayName, catalog, typeHolders, types, parts, editors, valueHolders,
-                values, toolbar, recorded, runOverlay, overlay, assistant, guide, trial);
+        return with(copy -> copy.values = values);
     }
 
     /** Its toolbar buttons — {@link StudioPlugin#toolbarItems()}. */
     public PluginDeclaration toolbar(Supplier<? extends List<? extends ToolbarItem>> toolbar) {
-        return new PluginDeclaration(id, displayName, catalog, typeHolders, types, parts, editors, valueHolders,
-                values, toolbar, recorded, runOverlay, overlay, assistant, guide, trial);
+        return with(copy -> copy.toolbar = toolbar);
     }
 
     /** What only it can read off the screen for a recording — {@link StudioPlugin#recordedValues()}. */
     public PluginDeclaration recorded(Supplier<? extends List<? extends RecordedValue<?>>> recorded) {
-        return new PluginDeclaration(id, displayName, catalog, typeHolders, types, parts, editors, valueHolders,
-                values, toolbar, recorded, runOverlay, overlay, assistant, guide, trial);
+        return with(copy -> copy.recorded = recorded);
     }
 
     /** What it shows in the host's run overlay while the bot runs — {@link StudioPlugin#runOverlayParts()}. */
     public PluginDeclaration runOverlay(Supplier<? extends List<? extends RunOverlayPart>> runOverlay) {
-        return new PluginDeclaration(id, displayName, catalog, typeHolders, types, parts, editors, valueHolders,
-                values, toolbar, recorded, runOverlay, overlay, assistant, guide, trial);
+        return with(copy -> copy.runOverlay = runOverlay);
     }
 
     /** Its part of the overlay editor: targets, watched screen, tools, probes — {@link StudioPlugin#overlayPart()}. */
     public PluginDeclaration overlay(Supplier<OverlayPart> overlay) {
-        return new PluginDeclaration(id, displayName, catalog, typeHolders, types, parts, editors, valueHolders,
-                values, toolbar, recorded, runOverlay, overlay, assistant, guide, trial);
+        return with(copy -> copy.overlay = overlay);
     }
 
     /** The tools it offers the AI assistant — {@link StudioPlugin#assistantTools()}. */
     public PluginDeclaration assistant(Supplier<? extends List<? extends AssistantTool<?>>> assistant) {
-        return new PluginDeclaration(id, displayName, catalog, typeHolders, types, parts, editors, valueHolders,
-                values, toolbar, recorded, runOverlay, overlay, assistant, guide, trial);
+        return with(copy -> copy.assistant = assistant);
     }
 
     /**
@@ -230,8 +217,8 @@ public final class PluginDeclaration {
      * how, what to read before an image. Point it at a {@code static final String}.
      */
     public PluginDeclaration assistantGuide(String guide) {
-        return new PluginDeclaration(id, displayName, catalog, typeHolders, types, parts, editors, valueHolders,
-                values, toolbar, recorded, runOverlay, overlay, assistant, guide == null ? "" : guide.strip(), trial);
+        String said = guide == null ? "" : guide.strip();
+        return with(copy -> copy.guide = said);
     }
 
     /**
@@ -244,15 +231,13 @@ public final class PluginDeclaration {
      *                                  {@code (Runnable, Class<?>...)}
      */
     public PluginDeclaration trial(TrialEntry trial) {
-        return new PluginDeclaration(id, displayName, catalog, typeHolders, types, parts, editors, valueHolders,
-                values, toolbar, recorded, runOverlay, overlay, assistant, guide,
-                TrialEntry.resolve(Objects.requireNonNull(trial, "trial")));
+        Method resolved = TrialEntry.resolve(Objects.requireNonNull(trial, "trial"));
+        return with(copy -> copy.trial = resolved);
     }
 
     /** A palette built by hand, overriding the one the host discovers — rarely wanted; see {@link StudioPlugin#catalog()}. */
     public PluginDeclaration catalog(Supplier<PaletteCatalog> catalog) {
-        return new PluginDeclaration(id, displayName, catalog, typeHolders, types, parts, editors, valueHolders,
-                values, toolbar, recorded, runOverlay, overlay, assistant, guide, trial);
+        return with(copy -> copy.catalog = catalog);
     }
 
     String id() {

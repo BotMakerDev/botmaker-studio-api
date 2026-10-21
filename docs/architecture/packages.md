@@ -10,7 +10,8 @@
   `ToolbarGroup`, `EnabledWhen`, `ActionContext`), `…api.overlay` (`OverlayPart`, `OverlayTool`,
   `OverlayContext`, `FrameContext`, `OverlayToolContext`, `OverlayFrame`, `Probe`, `ProbeContext`, `ProbeResult`,
   `Marks`, `Pixel`, `Area`, `Watched`), `…api.run` (`RunOverlayPart`, `RunOverlayContext`, `RunProperty`), `…api.assist`
-  (`AssistantTool`, `ToolSchema`, `@Describe`, `@Key`, `AgentContext`, `AgentReply`, `TrialEntry`) and
+  (`AssistantTool`, `ToolSchema`, `@Describe`, `@Key`, `AgentContext`, `AgentReply`, `TrialEntry`, and the
+  package-private `ToolSchemas` and `ToolArguments` behind it) and
   `…api.record` (`@Records`, `Gesture`, `RecordedValue`).
 - `…api.source` — a plugin's values in the bot: `ManagedValue`, sealed by shape into `ManagedParam`,
   `ManagedMethod` and `ManagedOpenSet` (its kinds `OfConstants`, `OneEnum`, `EnumGroups`, and
@@ -21,9 +22,9 @@
   (adds `editor(ValueContext)`, never `null` — a type its owner draws), `ComponentType<T>` (`componentTypes`,
   `components`, `build`, `factory`, an `Executable`), `Held`, `Wither`, and the steps that declare
   them (`TypeSteps`, `CallSteps`, the package-private `CallShape`, `DeclaredType`, `DeclaredCall`,
-  `DeclaredCallType`, `Ref`, `Drawn`).
+  `DeclaredCallType` and their package-private base `CallDeclaration`, `Ref`, `Drawn`).
 - `…api.catalog` — `PaletteCatalog`, `Category`, `FacadeEntry`, `MemberEntry`, `MemberId`, and the
-  package-private `SourceOrder`. `PaletteCatalog.of(Class<?>...)` builds it by reflection.
+  package-private `CatalogReader` and `SourceOrder`. `PaletteCatalog.of(Class<?>...)` builds it by reflection.
 - `…api.palette` — **`@Palette`**, **`@Hidden`**, `@PaletteLabel`, `@PaletteDefault`, `@EntryPoint`,
   `@Untraced`, and `@Fills` on a method: the marks a plugin puts on its own classes, `RUNTIME` because the
   catalog and the host reflect on them.

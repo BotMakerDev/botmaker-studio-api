@@ -3,61 +3,26 @@ package com.botmaker.plugin.api.value;
 import com.botmaker.plugin.api.slot.ValueContext;
 import javafx.scene.Node;
 
-import java.lang.reflect.Executable;
-import java.lang.reflect.Field;
-import java.util.List;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-
 /**
  * A type declared through {@link PluginType#value} whose Java is a call: one object that is both the
  * {@link EditableType} and the {@link ComponentType}, which is how the host tells that the type it lists is
- * also the call it reads. Immutable; each {@code with…} answers a copy.
+ * also the call it reads. It takes the steps a {@link DeclaredCall} takes, {@code when} included. Immutable; each
+ * step answers a copy.
  *
  * @param <T> the declared class
  */
-public final class DeclaredCallType<T> implements EditableType<T>, ComponentType<T> {
+public final class DeclaredCallType<T> extends CallDeclaration<T, DeclaredCallType<T>> implements EditableType<T> {
 
     private final DeclaredType<T> declared;
-    private final DeclaredCall<T> call;
 
-    DeclaredCallType(DeclaredType<T> declared, DeclaredCall<T> call) {
+    DeclaredCallType(DeclaredType<T> declared, CallShape<T> shape) {
+        super(shape);
         this.declared = declared;
-        this.call = call;
     }
 
-    /** This type, plus the constants a value equal to one is written as. See {@link DeclaredCall#constants}. */
-    @SafeVarargs
-    public final DeclaredCallType<T> constants(T... values) {
-        return new DeclaredCallType<>(declared, call.constants(values));
-    }
-
-    /** This type, then a wither setting one part. See {@link DeclaredCall#with}. */
-    public <A> DeclaredCallType<T> with(Ref.Of2<T, A, T> wither, Function<? super T, ? extends A> part) {
-        return new DeclaredCallType<>(declared, call.with(wither, part));
-    }
-
-    /** This type, then a wither setting one held part. See {@link DeclaredCall#with(Ref.Of2, Held, BiFunction)}. */
-    public <A, H> DeclaredCallType<T> with(Ref.Of2<T, A, T> wither, Held<? super T, H> part,
-                                           BiFunction<? super T, ? super H, ? extends T> apply) {
-        return new DeclaredCallType<>(declared, call.with(wither, part, apply));
-    }
-
-    /** This type, then a flag turning one part on. See {@link DeclaredCall#flag}. */
-    public DeclaredCallType<T> flag(Ref.Of1<T, T> wither, Predicate<? super T> on) {
-        return new DeclaredCallType<>(declared, call.flag(wither, on));
-    }
-
-    /** This type, built from its held parts. See {@link DeclaredCall#builtFrom}. */
-    public DeclaredCallType<T> builtFrom(Function<Held.Parts, ? extends T> build) {
-        return new DeclaredCallType<>(declared, call.builtFrom(build));
-    }
-
-    /** This type, a call with no parts, built as {@code made}. See {@link DeclaredCall#builtAs}. */
-    public DeclaredCallType<T> builtAs(Supplier<? extends T> made) {
-        return new DeclaredCallType<>(declared, call.builtAs(made));
+    @Override
+    DeclaredCallType<T> next(CallShape<T> shape) {
+        return new DeclaredCallType<>(declared, shape);
     }
 
     @Override
@@ -81,37 +46,7 @@ public final class DeclaredCallType<T> implements EditableType<T>, ComponentType
     }
 
     @Override
-    public Executable factory() {
-        return call.factory();
-    }
-
-    @Override
-    public List<Class<?>> componentTypes() {
-        return call.componentTypes();
-    }
-
-    @Override
-    public List<Object> components(T value) {
-        return call.components(value);
-    }
-
-    @Override
-    public T build(List<Object> parts) {
-        return call.build(parts);
-    }
-
-    @Override
-    public List<Field> constants() {
-        return call.constants();
-    }
-
-    @Override
-    public List<Wither<T>> withers() {
-        return call.withers();
-    }
-
-    @Override
     public String toString() {
-        return "PluginType[" + type().getName() + " = " + call.factory() + "]";
+        return "PluginType[" + type().getName() + " = " + shape.factory() + "]";
     }
 }

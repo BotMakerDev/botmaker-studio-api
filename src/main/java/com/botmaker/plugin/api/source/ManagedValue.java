@@ -283,6 +283,11 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
         return holder;
     }
 
+    /** Refuses a missing {@code type}; {@code what} names it: {@code "element type"}. */
+    static void requireType(Key key, Class<?> type, String what) {
+        if (type == null) throw new IllegalArgumentException(key.id() + ": no " + what + " given");
+    }
+
     /** Calls a plugin's function, a refusal or an answer that is no {@code T} reading as null. */
     T made(Function<String, ?> function, String name) {
         if (function == null || name == null) return null;

@@ -69,6 +69,12 @@ is allowed to make. Additions arrive as `default` methods.
 - **Two types moved package** (breaking, rides `v0.11.0`; change the import): `toolbar.ActionContext.Area` is
   the top-level `overlay.Area`, beside `Pixel`, since the overlay is what passes one; `value.Fills` is
   `palette.Fills`, beside the other marks the host reads off a plugin's own classes.
+- **`DeclaredCallType` takes `when(…)`**, as `DeclaredCall` does: both take their steps from one shared,
+  package-private base, so a type whose Java is a call can be one of several declarations of its class. Source
+  stays as it was; a compiled plugin rebuilds (binary break, rides `v0.11.0`), since each step's erased return
+  type is now that base. Internal splits with no change a plugin sees: `AssistantTool`'s reflection is
+  `ToolSchemas` (a record read into its schema) and `ToolArguments` (what was sent built back into one),
+  `PaletteCatalog.of` is `CatalogReader`, and `PluginDeclaration`'s steps share one copy.
 - **A method reference compiled by ECJ is named as such.** ECJ (Eclipse, VS Code's Java) compiles a serializable
   `Owner::method` into a lambda; the refusal now says so and to build with javac.
 

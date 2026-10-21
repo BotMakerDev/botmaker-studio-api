@@ -173,7 +173,7 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
          * a constant's initialiser reads as.
          */
         public <E> ReferableStep<E, OfConstants<E>> of(Class<E> element) {
-            if (element == null) throw new IllegalArgumentException(key.id() + ": no element type given");
+            requireType(key, element, "element type");
             if (element.isPrimitive()) {
                 throw new IllegalArgumentException(key.id() + ": a constant is an object; use the boxed class of "
                         + element.getName());
@@ -266,7 +266,7 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
          *                                  array
          */
         public <E> ManagedClasses.FieldsStep<E> ofClasses(Class<E> element) {
-            if (element == null) throw new IllegalArgumentException(key.id() + ": no element type given");
+            requireType(key, element, "element type");
             if (element.isInterface() || element.isPrimitive() || element.isArray()
                     || Modifier.isFinal(element.getModifiers())) {
                 throw new IllegalArgumentException(key.id() + ": a bot's class extends its element type, so "
@@ -276,7 +276,7 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
         }
 
         private void requireInterface(Class<?> element) {
-            if (element == null) throw new IllegalArgumentException(key.id() + ": no element type given");
+            requireType(key, element, "element type");
             if (!element.isInterface()) {
                 throw new IllegalArgumentException(key.id() + ": a bot's enum implements its element type, so "
                         + element.getName() + " must be an interface");

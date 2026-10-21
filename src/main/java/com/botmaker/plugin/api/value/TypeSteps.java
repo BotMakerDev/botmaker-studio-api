@@ -124,7 +124,7 @@ public final class TypeSteps {
 
         @Override
         DeclaredCallType<T> finish(CallShape<T> shape) {
-            return new DeclaredCallType<>(declared(), new DeclaredCall<>(shape));
+            return new DeclaredCallType<>(declared(), shape);
         }
 
         private DeclaredType<T> declared() {
