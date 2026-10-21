@@ -524,15 +524,25 @@ class ManagedValuesTest {
         assertEquals(java.util.Set.of(Integer.class), skip.initial());
         assertEquals("Run", skip.category());
         assertEquals("What to skip", skip.description());
-        assertEquals(com.botmaker.plugin.api.params.Param.EDITOR, skip.visibility());
+        assertEquals(Param.Visibility.EDITOR, skip.visibility());
 
         ManagedParam<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
                 .startsAs(ManagedValuesTest::doSetup).shown(null, null, Param.Visibility.PUBLIC)
                 .because("Mine.");
         assertEquals(Boolean.class, doSetup.type());
         assertEquals(boolean.class, doSetup.form());
-        assertEquals(com.botmaker.plugin.api.params.Param.PUBLIC, doSetup.visibility());
+        assertEquals(Param.Visibility.PUBLIC, doSetup.visibility());
         assertEquals("", doSetup.category());
+    }
+
+    /** The host places the holder and writes its name, so a qualified or unwritable one is refused at once. */
+    @Test
+    void aHolderIsASimpleClassName() {
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(Fields.Id.DO_SETUP).in("com.bot.Sdk"));
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(Fields.Id.DO_SETUP).in("My Sdk"));
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(Fields.Id.DO_SETUP).in("1Sdk"));
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(Fields.Id.DO_SETUP).in(" "));
+        ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk_2");
     }
 
     /** A parameter declared only while the bot's other value says so, read through the host's scope. */

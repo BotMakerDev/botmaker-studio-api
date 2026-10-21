@@ -19,16 +19,14 @@ public final class ManagedClasses<T> extends ManagedOpenSet<T> {
     private final Class<?> fieldType;
     private final Ref.Of2<String, String, ?> byField;
     private final Method setup;
-    private final Ref.Of1<String, ? extends T> referred;
 
     private ManagedClasses(Key key, String holder, Class<T> type, Class<?> fieldType,
                            Ref.Of2<String, String, ?> byField, Method setup, Ref.Of1<String, ? extends T> referred,
                            String reason) {
-        super(key, holder, type, reason);
+        super(key, holder, type, referred, reason);
         this.fieldType = fieldType;
         this.byField = byField;
         this.setup = setup;
-        this.referred = referred;
     }
 
     /**
@@ -61,23 +59,6 @@ public final class ManagedClasses<T> extends ManagedOpenSet<T> {
      */
     public Method setup() {
         return setup;
-    }
-
-    /**
-     * Whether a reference to a member's constant reads as its name ({@link ReferableStep#referredToAs}) rather than
-     * as what its initialiser holds.
-     */
-    public boolean isReferredByName() {
-        return referred != null;
-    }
-
-    /**
-     * The value a reference to the constant {@code name} stands for — {@code Screens.MARKET} — made by the plugin from
-     * the name alone. Null when the set is not referred to by name, the plugin refused, or it answered something
-     * other than {@link #type()}.
-     */
-    public T byReference(String name) {
-        return referred == null ? null : made(referred::call, name);
     }
 
     /** After {@link ManagedOpenSet.Steps#ofClasses}: what a nested class's fields are. */

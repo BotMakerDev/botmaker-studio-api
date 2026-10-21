@@ -57,6 +57,15 @@ is allowed to make. Additions arrive as `default` methods.
   shape's own accessors (`initial()`, `form()`, `byName(…)`, `setup()` …) are gone. Switch on the subtype, or type
   the field by it. `ManagedValues.claim` takes a `ManagedMethod`, so claiming an open set or a parameter no
   longer compiles.
+- **Closed sets typed, one frame context** (breaking, rides `v0.11.0`): `ManagedParam.visibility()` returns
+  `Param.Visibility`, not its id. `PluginValues.methods(MethodShape)` and `createMethod(MethodShape, className,
+  method)` replace `voidMethods()`, `booleanMethods()`, `createVoidMethod` and `createBooleanMethod`.
+  `isReferredByName()` and `byReference(…)` are on `ManagedOpenSet` (false and null for an enum set), not on
+  `OfConstants` and `ManagedClasses` apiece. `frame()` and `watchedArea()` are declared once, on the new
+  `overlay.FrameContext`, which `OverlayToolContext`, `ProbeContext` and `AgentContext` extend; a part's
+  `watched(OverlayContext)` is still asked before any frame exists. A managed value's `in(holder)` refuses what
+  is not a class's simple name (`com.bot.Sdk`, `My Sdk`) when the plugin loads, rather than the host writing a
+  class javac refuses.
 - **A method reference compiled by ECJ is named as such.** ECJ (Eclipse, VS Code's Java) compiles a serializable
   `Owner::method` into a lambda; the refusal now says so and to build with javac.
 

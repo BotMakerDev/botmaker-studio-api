@@ -351,20 +351,22 @@ public interface PluginValues {
     }
 
     /**
-     * Every {@code public static void} method with no parameter in the bot's own sources, as
-     * {@link #methods(ManagedValue, String)} lists them: what can be a flow's way home or its setup.
+     * Every {@code public static} method with no parameter of the shape {@code shape} in the bot's own sources, as
+     * {@link #methods(ManagedValue, String)} lists them.
      */
-    default List<String> voidMethods() {
+    default List<String> methods(MethodShape shape) {
         return List.of();
     }
 
-    /**
-     * Every {@code public static boolean} method with no parameter in the bot's own sources, as
-     * {@link #methods(ManagedValue, String)} lists them: what can say when something holds — a way into a screen
-     * open only while an event runs.
-     */
-    default List<String> booleanMethods() {
-        return List.of();
+    /** What a method of the bot's that a plugin's value names returns, besides a nested enum of a grouped set. */
+    enum MethodShape {
+        /** {@code public static void method() {}}: what can be a flow's way home or its setup. */
+        VOID,
+        /**
+         * {@code public static boolean method() { return false; }}, the author writing when it holds: what can say
+         * when something holds — a way into a screen open only while an event runs.
+         */
+        BOOLEAN
     }
 
     /**
@@ -390,16 +392,8 @@ public interface PluginValues {
         return new MethodWrite(null, NO_SOURCE_TREE);
     }
 
-    /** {@link #createMethod(ManagedValue, String, String, String)} for {@code public static void method() {}}. */
-    default MethodWrite createVoidMethod(String className, String method) {
-        return new MethodWrite(null, NO_SOURCE_TREE);
-    }
-
-    /**
-     * {@link #createMethod(ManagedValue, String, String, String)} for
-     * {@code public static boolean method() { return false; }}: the author writes when it holds.
-     */
-    default MethodWrite createBooleanMethod(String className, String method) {
+    /** {@link #createMethod(ManagedValue, String, String, String)} for a method of the shape {@code shape}. */
+    default MethodWrite createMethod(MethodShape shape, String className, String method) {
         return new MethodWrite(null, NO_SOURCE_TREE);
     }
 

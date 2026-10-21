@@ -37,8 +37,30 @@ import java.util.function.Function;
 public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
         permits ManagedOpenSet.OfConstants, ManagedOpenSet.OneEnum, ManagedOpenSet.EnumGroups, ManagedClasses {
 
-    ManagedOpenSet(Key key, String holder, Class<T> type, String reason) {
+    private final Ref.Of1<String, ? extends T> referred;
+
+    ManagedOpenSet(Key key, String holder, Class<T> type, Ref.Of1<String, ? extends T> referred, String reason) {
         super(key, holder, type, reason);
+        this.referred = referred;
+    }
+
+    /**
+     * Whether a reference to one of the set's constants reads as the constant's name
+     * ({@link ReferableStep#referredToAs}) rather than as what its initialiser holds — a set of constants or of
+     * classes that said so. Never for a set of enums, whose constants hold nothing but their name and read through
+     * {@code byName}.
+     */
+    public boolean isReferredByName() {
+        return referred != null;
+    }
+
+    /**
+     * The value a reference to the constant {@code name} stands for — what {@code Flows.DAILY} inside another value,
+     * or {@code Screens.MARKET}, reads as — made by the plugin from the name alone. Null when the set is not referred
+     * to by name, the plugin refused, or it answered something other than {@link #type()}.
+     */
+    public T byReference(String name) {
+        return referred == null ? null : made(referred::call, name);
     }
 
     /**
@@ -49,29 +71,9 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
      */
     public static final class OfConstants<T> extends ManagedOpenSet<T> {
 
-        private final Ref.Of1<String, ? extends T> referred;
-
         private OfConstants(Key key, String holder, Class<T> type, Ref.Of1<String, ? extends T> referred,
                             String reason) {
-            super(key, holder, type, reason);
-            this.referred = referred;
-        }
-
-        /**
-         * Whether a reference to one of the constants reads as the constant's name
-         * ({@link ReferableStep#referredToAs}) rather than as what its initialiser holds.
-         */
-        public boolean isReferredByName() {
-            return referred != null;
-        }
-
-        /**
-         * The value a reference to the constant {@code name} stands for — what {@code Flows.DAILY} inside another
-         * value reads as — made by the plugin from the name alone. Null when the set is not referred to by name, the
-         * plugin refused, or it answered something other than {@link #type()}.
-         */
-        public T byReference(String name) {
-            return referred == null ? null : made(referred::call, name);
+            super(key, holder, type, referred, reason);
         }
     }
 
@@ -86,7 +88,7 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
         private final Ref.Of1<String, ? extends T> byName;
 
         private OneEnum(Key key, String holder, Class<T> type, Ref.Of1<String, ? extends T> byName, String reason) {
-            super(key, holder, type, reason);
+            super(key, holder, type, null, reason);
             this.byName = byName;
         }
 
@@ -115,7 +117,7 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
 
         private EnumGroups(Key key, String holder, Class<T> type, Ref.Of2<String, String, ? extends T> byName,
                            Class<?> groupType, Ref.Of1<String, ?> byGroup, String reason) {
-            super(key, holder, type, reason);
+            super(key, holder, type, null, reason);
             this.byName = byName;
             this.groupType = groupType;
             this.byGroup = byGroup;
@@ -199,7 +201,7 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
         public <E> HolderStep<OneEnum<E>> ofEnum(Class<E> element, Ref.Of1<String, ? extends E> byName) {
             requireInterface(element);
             Ref.resolve(byName);
-            return new HolderStep<>(holder -> reason -> new OneEnum<>(key, holder, element, byName, reason));
+            return new HolderStep<>(key, holder -> reason -> new OneEnum<>(key, holder, element, byName, reason));
         }
 
         /**
@@ -308,7 +310,7 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
         public <G> HolderStep<EnumGroups<E>> groupedAs(Class<G> group, Ref.Of1<String, ? extends G> byGroup) {
             if (group == null) throw new IllegalArgumentException(key.id() + ": no group type given");
             Ref.resolve(byGroup);
-            return new HolderStep<>(holder -> reason ->
+            return new HolderStep<>(key, holder -> reason ->
                     new EnumGroups<>(key, holder, element, byName, group, byGroup, reason));
         }
     }
@@ -354,12 +356,16 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
         public HolderStep<V> referredToAs(Ref.Of1<String, ? extends E> byReference) {
             if (byReference == null) throw new IllegalArgumentException(key.id() + ": no reference given");
             Ref.resolve(byReference);
-            return new HolderStep<>(holder -> build.with(holder, byReference));
+            return new HolderStep<>(key, holder -> build.with(holder, byReference));
         }
 
-        /** The class {@code holder} — {@code "Pictures"} — created empty when a project has none. */
+        /**
+         * The class {@code holder} — {@code "Pictures"} — created empty when a project has none.
+         *
+         * @throws IllegalArgumentException when {@code holder} is not a class's simple name
+         */
         public Reason<V> in(String holder) {
-            return new Reason<>(build.with(requireText(holder, "holder"), null));
+            return new Reason<>(build.with(requireHolder(key, holder), null));
         }
     }
 
@@ -370,15 +376,21 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
      */
     public static final class HolderStep<V> {
 
+        private final Key key;
         private final Function<String, Function<String, V>> build;
 
-        private HolderStep(Function<String, Function<String, V>> build) {
+        private HolderStep(Key key, Function<String, Function<String, V>> build) {
+            this.key = key;
             this.build = build;
         }
 
-        /** The class {@code holder} — {@code "Pictures"} — created empty when a project has none. */
+        /**
+         * The class {@code holder} — {@code "Pictures"} — created empty when a project has none.
+         *
+         * @throws IllegalArgumentException when {@code holder} is not a class's simple name
+         */
         public Reason<V> in(String holder) {
-            return new Reason<>(build.apply(requireText(holder, "holder")));
+            return new Reason<>(build.apply(requireHolder(key, holder)));
         }
     }
 }

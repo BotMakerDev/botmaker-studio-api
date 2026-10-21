@@ -3,7 +3,6 @@ package com.botmaker.plugin.api.overlay;
 import com.botmaker.plugin.api.toolbar.ActionContext.Area;
 import com.botmaker.plugin.api.value.Ref;
 
-import java.awt.image.BufferedImage;
 import java.lang.reflect.Executable;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -15,13 +14,7 @@ import java.util.concurrent.CompletionStage;
  * the user's caret. The insert names the call by method reference and hands the arguments as values; the host
  * spells them, so the tool writes no Java, and the edit is one undo step through the same gate as the user's.
  */
-public interface OverlayToolContext extends OverlayContext {
-
-    /** The watched screen now, empty when it cannot be captured. Any thread. */
-    Optional<BufferedImage> frame();
-
-    /** Where {@link #frame()} sits, in the bot's pixels (see the package comment). */
-    Optional<Area> watchedArea();
+public interface OverlayToolContext extends FrameContext {
 
     /** Lets the user drag a box over the watched screen; empty when cancelled. Completes on the FX thread. */
     CompletionStage<Optional<Area>> pickRegion(String prompt);

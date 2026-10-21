@@ -64,9 +64,9 @@ class PluginValuesTest {
         assertEquals(Optional.of(PluginValues.NO_SOURCE_TREE), PluginValues.NONE.create(NAMES));
         assertEquals(Optional.of(PluginValues.NO_SOURCE_TREE), PluginValues.NONE.add(NAMES, Member.of("ORE"), "o"));
         assertEquals(Optional.of(PluginValues.NO_SOURCE_TREE), PluginValues.NONE.remove(NAMES, Member.of("ORE")));
-        assertFalse(PluginValues.NONE.createVoidMethod("Bot", "goHome").written());
+        assertFalse(PluginValues.NONE.createMethod(PluginValues.MethodShape.VOID, "Bot", "goHome").written());
         assertTrue(PluginValues.NONE.members(NAMES).isEmpty());
-        assertTrue(PluginValues.NONE.voidMethods().isEmpty());
+        assertTrue(PluginValues.NONE.methods(PluginValues.MethodShape.VOID).isEmpty());
         assertTrue(PluginValues.NONE.open(NAMES).isEmpty());
     }
 

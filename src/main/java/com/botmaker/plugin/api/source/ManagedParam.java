@@ -23,11 +23,11 @@ public final class ManagedParam<T> extends ManagedValue<T> {
     private final T initial;
     private final String category;
     private final String description;
-    private final String visibility;
+    private final Param.Visibility visibility;
     private final Predicate<? super ParamScope> applies;
 
     private ManagedParam(Key key, String holder, Class<T> type, Type form, T initial, String category,
-                         String description, String visibility, Predicate<? super ParamScope> applies,
+                         String description, Param.Visibility visibility, Predicate<? super ParamScope> applies,
                          String reason) {
         super(key, holder, type, reason);
         this.form = form;
@@ -61,8 +61,8 @@ public final class ManagedParam<T> extends ManagedValue<T> {
         return description;
     }
 
-    /** Its {@code @Param(visibility)}: {@code Param.EDITOR} or {@code Param.PUBLIC}. */
-    public String visibility() {
+    /** Who sees it, its {@code @Param(visibility)}: {@link Param.Visibility#EDITOR} unless the plugin said otherwise. */
+    public Param.Visibility visibility() {
         return visibility;
     }
 
@@ -88,9 +88,13 @@ public final class ManagedParam<T> extends ManagedValue<T> {
             this.key = key;
         }
 
-        /** In the class {@code holder} — {@code "Sdk"} — which the host writes the field into, or creates. */
+        /**
+         * In the class {@code holder} — {@code "Sdk"} — which the host writes the field into, or creates.
+         *
+         * @throws IllegalArgumentException when {@code holder} is not a class's simple name
+         */
         public TypeStep in(String holder) {
-            return new TypeStep(key, requireText(holder, "holder"));
+            return new TypeStep(key, requireHolder(key, holder));
         }
     }
 
@@ -148,7 +152,7 @@ public final class ManagedParam<T> extends ManagedValue<T> {
         public ConditionStep<T> shown(String category, String description, Param.Visibility visibility) {
             return new ConditionStep<>(new ManagedParam<>(key, holder, type, form, initial,
                     category == null ? "" : category, description == null ? "" : description,
-                    (visibility == null ? Param.Visibility.EDITOR : visibility).id(), null, null));
+                    visibility == null ? Param.Visibility.EDITOR : visibility, null, null));
         }
     }
 

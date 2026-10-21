@@ -8,8 +8,8 @@
 - **One package per contribution surface**: `…api.slot` (`SlotEditor`, `EditorSteps`, `SlotContext`,
   `SlotRun`, `ValueContext`, `TypeRef`, `Bounds`), `…api.toolbar` (`ToolbarItem`, `ToolbarSteps`, `Pressed`,
   `ToolbarGroup`, `EnabledWhen`, `ActionContext`), `…api.overlay` (`OverlayPart`, `OverlayTool`,
-  `OverlayContext`, `OverlayToolContext`, `OverlayFrame`, `Probe`, `ProbeContext`, `ProbeResult`, `Marks`,
-  `Pixel`, `Watched`), `…api.run` (`RunOverlayPart`, `RunOverlayContext`, `RunProperty`), `…api.assist`
+  `OverlayContext`, `FrameContext`, `OverlayToolContext`, `OverlayFrame`, `Probe`, `ProbeContext`, `ProbeResult`,
+  `Marks`, `Pixel`, `Watched`), `…api.run` (`RunOverlayPart`, `RunOverlayContext`, `RunProperty`), `…api.assist`
   (`AssistantTool`, `ToolSchema`, `@Describe`, `@Key`, `AgentContext`, `AgentReply`, `TrialEntry`) and
   `…api.record` (`@Records`, `Gesture`, `RecordedValue`).
 - `…api.source` — a plugin's values in the bot: `ManagedValue`, sealed by shape into `ManagedParam`,

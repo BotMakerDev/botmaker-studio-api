@@ -38,9 +38,13 @@ public final class ManagedMethod<T> extends ManagedValue<T> {
             this.key = key;
         }
 
-        /** In the class {@code holder} — {@code "Sdk"} — which the host writes when a project has none. */
+        /**
+         * In the class {@code holder} — {@code "Sdk"} — which the host writes when a project has none.
+         *
+         * @throws IllegalArgumentException when {@code holder} is not a class's simple name
+         */
         public TypeStep in(String holder) {
-            return new TypeStep(key, requireText(holder, "holder"));
+            return new TypeStep(key, requireHolder(key, holder));
         }
 
         /** Somewhere the host may open and never create: {@code .openedOnly().holds(T.class)}. */

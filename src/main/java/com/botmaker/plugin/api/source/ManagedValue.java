@@ -268,6 +268,21 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
         return text;
     }
 
+    /**
+     * {@code holder} when it is a class's simple name, {@code Sdk}: never qualified, because the host places the
+     * class itself, and never a name javac would refuse, because the host writes it.
+     */
+    static String requireHolder(Key key, String holder) {
+        requireText(holder, "holder");
+        boolean simple = Character.isJavaIdentifierStart(holder.charAt(0))
+                && holder.chars().skip(1).allMatch(Character::isJavaIdentifierPart);
+        if (!simple) {
+            throw new IllegalArgumentException(key.id() + ": the holder is a class's simple name, not \"" + holder
+                    + "\"");
+        }
+        return holder;
+    }
+
     /** Calls a plugin's function, a refusal or an answer that is no {@code T} reading as null. */
     T made(Function<String, ?> function, String name) {
         if (function == null || name == null) return null;
