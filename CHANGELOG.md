@@ -66,6 +66,9 @@ is allowed to make. Additions arrive as `default` methods.
   `watched(OverlayContext)` is still asked before any frame exists. A managed value's `in(holder)` refuses what
   is not a class's simple name (`com.bot.Sdk`, `My Sdk`) when the plugin loads, rather than the host writing a
   class javac refuses.
+- **Two types moved package** (breaking, rides `v0.11.0`; change the import): `toolbar.ActionContext.Area` is
+  the top-level `overlay.Area`, beside `Pixel`, since the overlay is what passes one; `value.Fills` is
+  `palette.Fills`, beside the other marks the host reads off a plugin's own classes.
 - **A method reference compiled by ECJ is named as such.** ECJ (Eclipse, VS Code's Java) compiles a serializable
   `Owner::method` into a lambda; the refusal now says so and to build with javac.
 

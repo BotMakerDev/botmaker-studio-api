@@ -1,4 +1,6 @@
-package com.botmaker.plugin.api.value;
+package com.botmaker.plugin.api.palette;
+
+import com.botmaker.plugin.api.value.PluginType;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

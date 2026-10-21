@@ -1,6 +1,7 @@
 package com.botmaker.plugin.api.toolbar;
 
 import com.botmaker.plugin.api.StudioServices;
+import com.botmaker.plugin.api.overlay.Area;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator.ReplaceUnderscores;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ class OverlayContextDefaultsTest {
 
     @Test
     void an_area_is_four_ints_and_nothing_else() {
-        ActionContext.Area area = new ActionContext.Area(10, 20, 640, 480);
+        Area area = new Area(10, 20, 640, 480);
 
         assertEquals(10, area.x());
         assertEquals(20, area.y());

@@ -9,7 +9,7 @@
   `SlotRun`, `ValueContext`, `TypeRef`, `Bounds`), `…api.toolbar` (`ToolbarItem`, `ToolbarSteps`, `Pressed`,
   `ToolbarGroup`, `EnabledWhen`, `ActionContext`), `…api.overlay` (`OverlayPart`, `OverlayTool`,
   `OverlayContext`, `FrameContext`, `OverlayToolContext`, `OverlayFrame`, `Probe`, `ProbeContext`, `ProbeResult`,
-  `Marks`, `Pixel`, `Watched`), `…api.run` (`RunOverlayPart`, `RunOverlayContext`, `RunProperty`), `…api.assist`
+  `Marks`, `Pixel`, `Area`, `Watched`), `…api.run` (`RunOverlayPart`, `RunOverlayContext`, `RunProperty`), `…api.assist`
   (`AssistantTool`, `ToolSchema`, `@Describe`, `@Key`, `AgentContext`, `AgentReply`, `TrialEntry`) and
   `…api.record` (`@Records`, `Gesture`, `RecordedValue`).
 - `…api.source` — a plugin's values in the bot: `ManagedValue`, sealed by shape into `ManagedParam`,
@@ -19,13 +19,14 @@
   own `@ManagedMarker` annotation are the two that sit on a **bot's** own declarations.
 - `…api.value` — `PluginType<T>` (the class, `fresh()`, optional `freshCall`/`preview`), `EditableType<T>`
   (adds `editor(ValueContext)`, never `null` — a type its owner draws), `ComponentType<T>` (`componentTypes`,
-  `components`, `build`, `factory`, an `Executable`), `Held`, `Wither`, `@Fills`, and the steps that declare
+  `components`, `build`, `factory`, an `Executable`), `Held`, `Wither`, and the steps that declare
   them (`TypeSteps`, `CallSteps`, the package-private `CallShape`, `DeclaredType`, `DeclaredCall`,
   `DeclaredCallType`, `Ref`, `Drawn`).
 - `…api.catalog` — `PaletteCatalog`, `Category`, `FacadeEntry`, `MemberEntry`, `MemberId`, and the
   package-private `SourceOrder`. `PaletteCatalog.of(Class<?>...)` builds it by reflection.
 - `…api.palette` — **`@Palette`**, **`@Hidden`**, `@PaletteLabel`, `@PaletteDefault`, `@EntryPoint`,
-  `@Untraced`: the marks a plugin puts on its own classes, `RUNTIME` because the catalog reflects on them.
+  `@Untraced`, and `@Fills` on a method: the marks a plugin puts on its own classes, `RUNTIME` because the
+  catalog and the host reflect on them.
   Their elements are plain `String`s on purpose — an annotation element's type must be visible from the module
   *declaring* the annotation, so a contract annotation can never take a plugin-defined enum constant.
   `@Palette` = **offered** (its own menu entry); the **catalogue** (the recognition set: imports, "does `Point`

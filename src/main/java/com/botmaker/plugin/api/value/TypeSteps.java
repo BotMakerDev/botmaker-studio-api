@@ -1,5 +1,7 @@
 package com.botmaker.plugin.api.value;
 
+import com.botmaker.plugin.api.palette.Fills;
+
 import java.lang.reflect.Modifier;
 import java.util.function.Supplier;
 

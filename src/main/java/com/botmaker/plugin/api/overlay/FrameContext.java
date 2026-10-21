@@ -1,7 +1,5 @@
 package com.botmaker.plugin.api.overlay;
 
-import com.botmaker.plugin.api.toolbar.ActionContext.Area;
-
 import java.awt.image.BufferedImage;
 import java.util.Optional;
 

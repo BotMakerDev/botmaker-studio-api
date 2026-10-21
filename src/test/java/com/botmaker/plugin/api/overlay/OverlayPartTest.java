@@ -1,7 +1,6 @@
 package com.botmaker.plugin.api.overlay;
 
 import com.botmaker.plugin.api.run.RunOverlayContext;
-import com.botmaker.plugin.api.toolbar.ActionContext.Area;
 import com.botmaker.plugin.api.value.Ref;
 import org.junit.jupiter.api.Test;
 

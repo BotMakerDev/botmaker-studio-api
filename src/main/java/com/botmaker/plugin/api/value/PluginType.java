@@ -1,5 +1,6 @@
 package com.botmaker.plugin.api.value;
 
+import com.botmaker.plugin.api.palette.Fills;
 import com.botmaker.plugin.api.slot.ValueContext;
 import javafx.scene.Node;
 

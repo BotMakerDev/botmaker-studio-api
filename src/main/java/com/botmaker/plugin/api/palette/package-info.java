@@ -31,9 +31,12 @@
  * <b>catalogued</b> with it — recognised as this plugin's, its members listed on a variable of it — with no
  * annotation at all.
  *
- * <h2>Runtime retention, and why all four are alike now</h2>
+ * <p>{@link com.botmaker.plugin.api.palette.Fills} is the one mark on a method rather than a class: it says the
+ * method's return type is a value the bot fills in, and the host declares that type itself.
  *
- * <p>All four annotations here are {@code RUNTIME}-retained, because the plugin reflects its own classes to
+ * <h2>Runtime retention, and why they are all alike now</h2>
+ *
+ * <p>Every annotation here is {@code RUNTIME}-retained, because the plugin reflects its own classes to
  * build the catalog, rather than an annotation processor generating it at compile time.
  *
  * <p>A processor's one defended property does not need defending. A generated catalog <em>names</em>

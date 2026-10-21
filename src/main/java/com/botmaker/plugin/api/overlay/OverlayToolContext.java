@@ -1,6 +1,5 @@
 package com.botmaker.plugin.api.overlay;
 
-import com.botmaker.plugin.api.toolbar.ActionContext.Area;
 import com.botmaker.plugin.api.value.Ref;
 
 import java.lang.reflect.Executable;

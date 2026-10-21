@@ -1,6 +1,7 @@
 package com.botmaker.plugin.api.toolbar;
 
 import com.botmaker.plugin.api.StudioServices;
+import com.botmaker.plugin.api.overlay.Area;
 
 import java.util.Optional;
 
@@ -20,9 +21,6 @@ public interface ActionContext {
 
     /** The host capabilities — the open project, dialogs, theme. The same object a slot editor is given. */
     StudioServices services();
-
-    /** Where something sits on screen, in screen pixels. */
-    record Area(int x, int y, int width, int height) {}
 
     /**
      * The window title the host's overlay editor is currently drawn over, or empty when no overlay is open.
