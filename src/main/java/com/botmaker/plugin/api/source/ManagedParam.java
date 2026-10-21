@@ -66,11 +66,6 @@ public final class ManagedParam<T> extends ManagedValue<T> {
         return visibility;
     }
 
-    /** Whether it was declared with a condition ({@link ConditionStep#when}). */
-    public boolean conditional() {
-        return applies != null;
-    }
-
     /**
      * Whether it applies to the bot {@code scope} reads: true without a condition, and for one whose condition
      * throws. What the host asks before writing the field or listing it.

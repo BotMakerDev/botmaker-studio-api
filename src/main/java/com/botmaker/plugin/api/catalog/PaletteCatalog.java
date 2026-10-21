@@ -58,9 +58,8 @@ import java.util.Set;
  * <h2>A malformed catalog degrades; it never throws</h2>
  *
  * <p>{@link #of(Class[])} collects what it cannot make sense of into {@link #problems()} and builds
- * everything else. That is the same rule {@code ValueCatalog.merge} follows and for the same reason: this
- * runs while a project is opening, and a menu missing an entry is recoverable where a project that will not
- * open is not. A host should log {@code problems()} once; a test should assert it is empty.
+ * everything else, because this runs while a project is opening, and a menu missing an entry is recoverable
+ * where a project that will not open is not. A host should log {@code problems()} once; a test should assert it is empty.
  */
 public record PaletteCatalog(List<FacadeEntry> facades, List<String> problems) {
 
@@ -69,10 +68,6 @@ public record PaletteCatalog(List<FacadeEntry> facades, List<String> problems) {
     public PaletteCatalog {
         facades = List.copyOf(facades);
         problems = List.copyOf(problems);
-    }
-
-    public PaletteCatalog(List<FacadeEntry> facades) {
-        this(facades, List.of());
     }
 
     /**
@@ -283,9 +278,8 @@ public record PaletteCatalog(List<FacadeEntry> facades, List<String> problems) {
             // A member's signature names a class the plugin's classloader cannot see — an optional
             // dependency the host did not resolve, most often. getDeclaredMethods() is all-or-nothing, so
             // there is no partial answer to salvage: report the facade and offer it with no members rather
-            // than taking the whole catalog down with it. Degradation, never a throw: the precedent is
-            // ValueCatalog.merge, and the rule behind it is that no malformed catalog may be the reason a
-            // project will not open.
+            // than taking the whole catalog down with it. Degradation, never a throw: no malformed catalog may
+            // be the reason a project will not open.
             problems.add(type.getName() + ": cannot read its members (" + e + ")");
             return List.of();
         }
@@ -385,24 +379,9 @@ public record PaletteCatalog(List<FacadeEntry> facades, List<String> problems) {
         return facades.stream().filter(f -> f.type().equals(type)).findFirst();
     }
 
-    /** Every catalogued facade in this category, in menu order. */
-    public List<FacadeEntry> facadesIn(Category category) {
-        return facades.stream().filter(f -> f.category().equals(category)).toList();
-    }
-
     /** The facades the insert menus list, alphabetically — the {@link Palette} classes, not what they reach. */
     public List<FacadeEntry> offeredFacades() {
         return facades.stream().filter(FacadeEntry::offered).toList();
-    }
-
-    /** The categories that have at least one facade, alphabetically by label. */
-    public List<Category> categories() {
-        Set<Category> seen = new LinkedHashSet<>();
-        facades.forEach(f -> seen.add(f.category()));
-        return seen.stream()
-                .sorted(Comparator.comparing(Category::label, String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(Category::id))
-                .toList();
     }
 
     public boolean offers(Class<?> type) {

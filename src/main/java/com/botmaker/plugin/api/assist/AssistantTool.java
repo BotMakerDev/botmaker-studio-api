@@ -87,7 +87,6 @@ public final class AssistantTool<P extends Record> {
     private final String description;
     private final Class<P> type;
     private final ToolSchema schema;
-    private final List<ToolParam> params;
     private final Function<Map<String, ?>, P> builder;
     private final Handler<P> handler;
 
@@ -97,8 +96,6 @@ public final class AssistantTool<P extends Record> {
         this.description = description;
         this.type = type;
         this.schema = schema;
-        this.params = schema.fields().stream().map(f -> new ToolParam(f.name(), f.kind(), f.description(),
-                f.optional(), f.choices())).toList();
         this.builder = builder;
         this.handler = handler;
     }
@@ -221,11 +218,6 @@ public final class AssistantTool<P extends Record> {
         return type;
     }
 
-    /** The top level of the input schema, one entry per record component (or per field on the wire), in order. */
-    public List<ToolParam> params() {
-        return params;
-    }
-
     /** The whole input schema: nested records' fields, and an action tool's actions. */
     public ToolSchema schema() {
         return schema;
@@ -319,7 +311,7 @@ public final class AssistantTool<P extends Record> {
             if (byId.isEmpty()) throw new IllegalArgumentException(tool + ": an action tool needs an action");
 
             List<ToolSchema.Field> wire = new ArrayList<>();
-            wire.add(new ToolSchema.Field(ACTION, ToolParam.Kind.CHOICE, "", false, List.copyOf(byId.keySet()),
+            wire.add(new ToolSchema.Field(ACTION, ToolSchema.Field.Kind.CHOICE, "", false, List.copyOf(byId.keySet()),
                     List.of(), List.of(), List.of()));
             for (ToolSchema.Field field : union.values()) {
                 List<String> by = takers.get(field.name());
@@ -409,7 +401,7 @@ public final class AssistantTool<P extends Record> {
             unknown.remove(field.name());
             Object value = sent.get(field.name());
             // An optional choice sent empty is one left out: "" was how an assistant said "the default".
-            if (field.optional() && field.kind() == ToolParam.Kind.CHOICE && value instanceof CharSequence text
+            if (field.optional() && field.kind() == ToolSchema.Field.Kind.CHOICE && value instanceof CharSequence text
                     && text.toString().isBlank()) {
                 value = null;
             }
@@ -594,7 +586,7 @@ public final class AssistantTool<P extends Record> {
             if (optional && raw.isPrimitive()) {
                 throw new IllegalArgumentException(where + " is optional, so it must be a box, not " + raw);
             }
-            ToolParam.Kind kind = kind(raw, generic, where);
+            ToolSchema.Field.Kind kind = kind(raw, generic, where);
             List<String> choices = switch (kind) {
                 case CHOICE -> names(raw);
                 case CHOICE_LIST -> names(element(generic, 0));
@@ -602,11 +594,11 @@ public final class AssistantTool<P extends Record> {
             };
             List<ToolSchema.Field> nested = List.of();
             List<ToolSchema.Action> oneOf = List.of();
-            if (kind == ToolParam.Kind.RECORD) {
+            if (kind == ToolSchema.Field.Kind.RECORD) {
                 nested = fieldsOf(raw.asSubclass(Record.class), inside);
-            } else if (kind == ToolParam.Kind.RECORD_LIST && element(generic, 0).isRecord()) {
+            } else if (kind == ToolSchema.Field.Kind.RECORD_LIST && element(generic, 0).isRecord()) {
                 nested = fieldsOf(element(generic, 0).asSubclass(Record.class), inside);
-            } else if (kind == ToolParam.Kind.RECORD_LIST) {
+            } else if (kind == ToolSchema.Field.Kind.RECORD_LIST) {
                 ToolSchema each = Actions.of(where, element(generic, 0), inside).schema();
                 nested = each.fields();
                 oneOf = each.actions();
@@ -631,25 +623,25 @@ public final class AssistantTool<P extends Record> {
                 .toList();
     }
 
-    private static ToolParam.Kind kind(Class<?> raw, Type generic, String where) {
-        if (raw == String.class) return ToolParam.Kind.TEXT;
-        if (raw == boolean.class || raw == Boolean.class) return ToolParam.Kind.YES_NO;
+    private static ToolSchema.Field.Kind kind(Class<?> raw, Type generic, String where) {
+        if (raw == String.class) return ToolSchema.Field.Kind.TEXT;
+        if (raw == boolean.class || raw == Boolean.class) return ToolSchema.Field.Kind.YES_NO;
         if (raw == int.class || raw == Integer.class || raw == long.class || raw == Long.class) {
-            return ToolParam.Kind.WHOLE_NUMBER;
+            return ToolSchema.Field.Kind.WHOLE_NUMBER;
         }
-        if (raw == double.class || raw == Double.class) return ToolParam.Kind.NUMBER;
-        if (raw.isEnum()) return ToolParam.Kind.CHOICE;
-        if (raw.isRecord()) return ToolParam.Kind.RECORD;
+        if (raw == double.class || raw == Double.class) return ToolSchema.Field.Kind.NUMBER;
+        if (raw.isEnum()) return ToolSchema.Field.Kind.CHOICE;
+        if (raw.isRecord()) return ToolSchema.Field.Kind.RECORD;
         if (raw == List.class) {
             Class<?> element = element(generic, 0);
-            if (element == String.class) return ToolParam.Kind.TEXT_LIST;
-            if (element != null && element.isEnum()) return ToolParam.Kind.CHOICE_LIST;
+            if (element == String.class) return ToolSchema.Field.Kind.TEXT_LIST;
+            if (element != null && element.isEnum()) return ToolSchema.Field.Kind.CHOICE_LIST;
             if (element != null && (element.isRecord() || element.isInterface() && element.isSealed())) {
-                return ToolParam.Kind.RECORD_LIST;
+                return ToolSchema.Field.Kind.RECORD_LIST;
             }
         }
         if (raw == Map.class && element(generic, 0) == String.class && element(generic, 1) == String.class) {
-            return ToolParam.Kind.TEXT_MAP;
+            return ToolSchema.Field.Kind.TEXT_MAP;
         }
         throw new IllegalArgumentException(where + " is a " + generic.getTypeName() + "; a tool parameter is"
                 + " String, boolean, int, long, double, an enum, a record, a List of String, of an enum, of a"

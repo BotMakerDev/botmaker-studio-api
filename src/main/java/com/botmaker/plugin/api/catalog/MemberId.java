@@ -83,11 +83,6 @@ public record MemberId(Class<?> declaringClass, String name, String descriptor) 
         return CONSTRUCTOR.equals(name);
     }
 
-    /** The fully-qualified name of the class declaring the member. */
-    public String declaringClassName() {
-        return declaringClass.getName();
-    }
-
     /**
      * The declared parameter types, as source-style names ({@code com.botmaker.sdk.api.geometry.Point},
      * {@code int}, {@code java.lang.String[]}), in declaration order.

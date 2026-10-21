@@ -178,12 +178,6 @@ class PaletteCatalogTest {
         assertFalse(catalog.offers(String.class));
     }
 
-    @Test
-    void categoriesAreAlphabetical() {
-        assertEquals(List.of("Alpha", "Demo"), PaletteCatalog.of(Widget.class, Early.class).categories().stream()
-                .map(Category::label).toList());
-    }
-
     /**
      * The claim {@link SourceOrder} exists for. Alphabetically this would be
      * {@code apply, click, findAny, zoom}.
@@ -251,7 +245,7 @@ class PaletteCatalogTest {
     void mergingNeverUnoffersAClass() {
         PaletteCatalog offered = PaletteCatalog.of(Pointer.class);
         PaletteCatalog reachedOnly = new PaletteCatalog(List.of(new FacadeEntry(Pointer.class,
-                Category.of("other"), false, null, null, List.of())));
+                Category.of("other"), false, null, null, List.of())), List.of());
         FacadeEntry pointer = offered.mergedWith(reachedOnly).facade(Pointer.class).orElseThrow();
         assertTrue(pointer.offered());
         assertEquals("demo", pointer.category().id());

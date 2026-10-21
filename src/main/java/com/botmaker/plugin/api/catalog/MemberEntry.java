@@ -18,10 +18,6 @@ public record MemberEntry(MemberId id, String label) {
         Objects.requireNonNull(id, "id");
     }
 
-    public MemberEntry(MemberId id) {
-        this(id, null);
-    }
-
     /** The label if one was given, the member's own name otherwise. Never {@code null}. */
     public String displayLabel() {
         return label != null && !label.isBlank() ? label : id.name();

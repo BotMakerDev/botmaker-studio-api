@@ -141,7 +141,7 @@ public interface PluginValues {
          * The member {@code spelled} names, {@code "Collect.WON"} or {@code "ORE"} — the spelling a host reads off
          * the source. Throws for {@code null}, blank, or more than one dot.
          */
-        public static Member parse(String spelled) {
+        static Member parse(String spelled) {
             if (spelled == null) throw new IllegalArgumentException("no member spelled");
             int dot = spelled.indexOf('.');
             if (dot < 0) return of(spelled);
@@ -149,7 +149,10 @@ public interface PluginValues {
             return of(spelled.substring(0, dot), spelled.substring(dot + 1));
         }
 
-        /** {@link #parse}, total: empty for a spelling that names no member. */
+        /**
+         * The member {@code spelled} names, {@code "Collect.WON"} or {@code "ORE"} — the spelling a host reads off
+         * the source. Empty for {@code null}, blank, or more than one dot.
+         */
         public static Optional<Member> read(String spelled) {
             try {
                 return Optional.of(parse(spelled));

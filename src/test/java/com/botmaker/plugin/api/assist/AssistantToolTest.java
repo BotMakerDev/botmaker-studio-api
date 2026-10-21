@@ -2,6 +2,8 @@ package com.botmaker.plugin.api.assist;
 
 import com.botmaker.plugin.api.DeclaredPlugin;
 import com.botmaker.plugin.api.StudioPlugin;
+import com.botmaker.plugin.api.assist.ToolSchema.Field;
+import com.botmaker.plugin.api.assist.ToolSchema.Field.Kind;
 import org.junit.jupiter.api.Test;
 
 import java.awt.image.BufferedImage;
@@ -50,18 +52,18 @@ class AssistantToolTest {
     @Test
     void theRecordIsTheSchema() {
         assertEquals("crop_picture", CROP.name());
-        List<ToolParam> params = CROP.params();
+        List<Field> params = CROP.schema().fields();
         assertEquals(List.of("name", "x", "y", "scale", "keep", "shape", "tags", "count"),
-                params.stream().map(ToolParam::name).toList());
-        assertEquals(List.of(ToolParam.Kind.TEXT, ToolParam.Kind.WHOLE_NUMBER, ToolParam.Kind.WHOLE_NUMBER,
-                        ToolParam.Kind.NUMBER, ToolParam.Kind.YES_NO, ToolParam.Kind.CHOICE, ToolParam.Kind.TEXT_LIST,
-                        ToolParam.Kind.WHOLE_NUMBER),
-                params.stream().map(ToolParam::kind).toList());
+                params.stream().map(Field::name).toList());
+        assertEquals(List.of(Kind.TEXT, Kind.WHOLE_NUMBER, Kind.WHOLE_NUMBER,
+                        Kind.NUMBER, Kind.YES_NO, Kind.CHOICE, Kind.TEXT_LIST,
+                        Kind.WHOLE_NUMBER),
+                params.stream().map(Field::kind).toList());
         assertEquals("the picture's name", params.getFirst().description());
         assertEquals(List.of("box", "circle"), params.get(5).choices());
         assertTrue(params.get(7).optional());
         assertFalse(params.get(0).optional());
-        assertEquals("array", ToolParam.Kind.TEXT_LIST.jsonType());
+        assertEquals("array", Kind.TEXT_LIST.jsonType());
     }
 
     @Test
@@ -94,7 +96,7 @@ class AssistantToolTest {
     void aHandlerThatThrowsIsARefusal() {
         AssistantTool<AssistantTool.None> tool = AssistantTool.named("screenshot").describedAs("Looks")
                 .takesNothing().handledBy(AssistantToolTest::nothing);
-        assertTrue(tool.params().isEmpty());
+        assertTrue(tool.schema().fields().isEmpty());
         AgentReply reply = tool.invoke(null, null);
         assertTrue(reply.isRefused());
         assertTrue(reply.parts().getFirst().text().contains("no screen"));
@@ -181,15 +183,13 @@ class AssistantToolTest {
     void nestedRecordsListsAndMapsAreTheSchemaToo() {
         ToolSchema schema = CROPS.schema();
         assertTrue(schema.actions().isEmpty());
-        assertEquals(List.of(ToolParam.Kind.RECORD, ToolParam.Kind.RECORD_LIST, ToolParam.Kind.CHOICE_LIST,
-                ToolParam.Kind.TEXT_MAP), schema.fields().stream().map(ToolSchema.Field::kind).toList());
+        assertEquals(List.of(Kind.RECORD, Kind.RECORD_LIST, Kind.CHOICE_LIST,
+                Kind.TEXT_MAP), schema.fields().stream().map(ToolSchema.Field::kind).toList());
         ToolSchema.Field boxes = schema.fields().get(1);
         assertEquals(List.of("name", "x", "w"), boxes.fields().stream().map(ToolSchema.Field::name).toList());
         assertEquals("its name", boxes.fields().getFirst().description());
         assertTrue(boxes.fields().get(2).optional());
         assertEquals(List.of("box", "circle"), schema.fields().get(2).choices());
-        assertEquals(List.of(ToolParam.Kind.RECORD, ToolParam.Kind.RECORD_LIST, ToolParam.Kind.CHOICE_LIST,
-                ToolParam.Kind.TEXT_MAP), CROPS.params().stream().map(ToolParam::kind).toList());
 
         Map<String, Object> sent = Map.of("first", Map.of("name", "a", "x", 1),
                 "boxes", List.of(Map.of("name", "b", "x", 2, "w", 3)), "shapes", List.of("Box", "circle"),
@@ -242,7 +242,7 @@ class AssistantToolTest {
         assertEquals(List.of("action", "screen", "to", "force"),
                 schema.fields().stream().map(ToolSchema.Field::name).toList());
         ToolSchema.Field action = schema.fields().getFirst();
-        assertEquals(ToolParam.Kind.CHOICE, action.kind());
+        assertEquals(Kind.CHOICE, action.kind());
         assertFalse(action.optional());
         assertEquals(List.of("rename", "delete", "set_start"), action.choices());
         assertTrue(schema.fields().stream().skip(1).allMatch(ToolSchema.Field::optional));
@@ -299,7 +299,7 @@ class AssistantToolTest {
     @Test
     void aListOfActionsIsFlatElementByElement() {
         ToolSchema.Field edits = STEPS.schema().fields().get(1);
-        assertEquals(ToolParam.Kind.RECORD_LIST, edits.kind());
+        assertEquals(Kind.RECORD_LIST, edits.kind());
         assertEquals(List.of("action", "bodyId", "index", "blockId"),
                 edits.fields().stream().map(ToolSchema.Field::name).toList());
         assertEquals(List.of("insert", "delete"), edits.oneOf().stream().map(ToolSchema.Action::id).toList());

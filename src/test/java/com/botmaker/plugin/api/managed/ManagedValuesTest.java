@@ -305,7 +305,6 @@ class ManagedValuesTest {
         assertEquals(new Named("Collect.WON"), set.byName("Collect", "WON"));
         assertNull(set.byName("Collect", " "), "a name the plugin refuses reads as nothing");
         assertNull(set.byName(null, "WON"), "a constant outside any group reads as nothing");
-        assertEquals(Group.class, set.groupType());
         assertEquals(new Group("Collect"), set.byGroup(Group.class, "Collect").orElseThrow());
         assertEquals(new Group("Collect"), set.byGroup(Object.class, "Collect").orElseThrow(), "a supertype reads");
         assertTrue(set.byGroup(String.class, "Collect").isEmpty(), "another type reads as nothing");
@@ -553,11 +552,9 @@ class ManagedValuesTest {
             }
         };
 
-        assertTrue(skip.conditional());
         assertTrue(skip.appliesIn(settingUp));
         assertFalse(skip.appliesIn(ParamScope.NONE), "the other value says nothing");
         assertFalse(skip.appliesIn(null), "no scope reads as an empty one");
-        assertFalse(doSetup.conditional());
         assertTrue(doSetup.appliesIn(ParamScope.NONE), "an unconditional parameter always applies");
 
         ManagedParam<Boolean> throwing = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")

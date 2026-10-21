@@ -136,13 +136,13 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
          * The plugin's class for a whole nested enum — what a class literal of one, {@code Activities.Collect.class},
          * reads as wherever a value is read.
          */
-        public Class<?> groupType() {
+        Class<?> groupType() {
             return groupType;
         }
 
         /**
          * The value the nested enum {@code group} stands for — what {@code Activities.Collect.class} reads as — made
-         * by the plugin from the enum's simple name, as {@code as}: {@link #groupType()} or a supertype of it. Empty
+         * by the plugin from the enum's simple name, as {@code as}: the plugin's class for a nested enum, or a supertype of it. Empty
          * when the plugin refused, or the value is not an {@code as}.
          */
         public <G> Optional<G> byGroup(Class<G> as, String group) {

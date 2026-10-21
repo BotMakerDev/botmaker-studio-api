@@ -174,10 +174,10 @@ class OverlayPartTest {
 
         assertEquals(Optional.empty(), context.insert(Finder::click, 7));
         assertEquals(Optional.empty(), context.insert(Finder::find, "ore", 3));
-        assertEquals(Optional.empty(), context.insertVoid(Finder::press, "a", 2));
+        assertEquals(Optional.empty(), context.insertVoid(Finder::press, "a"));
         assertEquals(List.of(Finder.class.getMethod("click", Integer.class), 7,
                 Finder.class.getMethod("find", String.class, Integer.class), "ore", 3,
-                Finder.class.getMethod("press", String.class, Integer.class), "a", 2), inserted);
+                Finder.class.getMethod("press", String.class), "a"), inserted);
         assertSame(Marks.NONE, context.marks());
     }
 

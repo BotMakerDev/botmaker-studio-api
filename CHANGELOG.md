@@ -35,6 +35,12 @@ is allowed to make. Additions arrive as `default` methods.
 
 - **`TypeSteps.Fresh.filledBy` and `TypeSteps.Filled`** (breaking; japicmp pinned ahead to `v0.11.0`). Mark the
   method `@Fills` instead of declaring `PluginType.value(X.class).filledBy(Owner::m).shownAs(…)`.
+- **Members nothing used** (breaking, rides `v0.11.0`): `ToolParam` and `AssistantTool.params()` (read
+  `schema().fields()`; the kinds are `ToolSchema.Field.Kind`), the one-argument `PaletteCatalog` constructor,
+  `PaletteCatalog.facadesIn` and `categories()`, `MemberId.declaringClassName()`, the one-argument `MemberEntry`
+  constructor, `ManagedParam.conditional()`, `Ref.Void0` and the `OverlayToolContext.insertVoid` overloads but the
+  one-argument one (a `void` call of more arguments goes through `insertMember`). `EnumGroups.groupType()` and
+  `PluginValues.Member.parse` are package-private; `Member.read` is the public reader.
 
 ### Changed
 

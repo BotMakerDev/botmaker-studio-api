@@ -7,9 +7,7 @@ import java.util.List;
  * A type the host has to take apart and put back together, because the Java that writes one is a call.
  *
  * <p>{@code new Point(10, 20)}, {@code java.time.Duration.ofMillis(3000L)}, {@code Flow.of(…)}: the host
- * writes the call and reads it back, and this says what goes inside the brackets. It is
- * {@code ValueContainer} renamed and merged with the half of {@code ValueCodec} that was not about stored
- * text — the same design, with the wire encoding removed.
+ * writes the call and reads it back, and this says what goes inside the brackets.
  *
  * <h2>Nothing here is a string function</h2>
  *
@@ -18,14 +16,11 @@ import java.util.List;
  * once for every plugin as {@code Owner.factory(p₁, …, pₙ)} — or {@code new Owner(p₁, …, pₙ)} — and read
  * back off the parsed expression.
  *
- * <p>That is deliberate and it is the second attempt. The first gave a container {@code write(List<String>)}
- * and {@code read(String)}, which put a wire encoding back across the contract. Source text is the host's
- * <em>output</em>; it is not how values travel.
+ * <p>Source text is the host's <em>output</em>; it is not how values travel.
  *
  * <h2>Both halves are abstract, and that is the point</h2>
  *
- * <p>{@code ValueCodec}'s reader was a {@code default} answering empty, and eight of the seventeen
- * registered types never overrode it: the half nobody is forced to write is the half that rots. Here
+ * <p>A half with a {@code default} answer is the half nobody writes, and the half that rots. Here
  * {@code build(components(v))} equals {@code v} is a law the compiler helps keep, and
  * {@code botmaker plugin validate} checks it against {@link PluginType#fresh()}.
  *

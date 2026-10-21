@@ -43,8 +43,11 @@ no back door. If the SDK needs something this module does not expose, the contra
 
 ## Rules
 
-- **Every method but `StudioPlugin.id()` is `default`, and stays that way**; a member an already-built plugin
-  cannot survive is a Studio major (`easy-to-break.md`).
+- **An interface a plugin implements grows only by `default` members.** Its abstract ones are what every
+  plugin writes: `StudioPlugin.id()`, `PluginType`'s `type()`/`fresh()`, `EditableType.editor`,
+  `ComponentType`'s four, `SlotEditor`'s two, `Probe.probe`, `RecordedValue`'s two. An interface only the host
+  implements (`StudioServices`, `PluginValues`, the contexts) may add abstract ones. A member an already-built
+  plugin cannot survive is a Studio major (`easy-to-break.md`).
 - **Nothing from a plugin crosses as a `Class<?>` the host must load**; compare by binary name (`TypeRef`).
 - **No syntax tree and no Java text, in either direction**: an editor reads a value and writes one.
 - **A service goes on `StudioServices` only when the host is the sole possible source of it** — a

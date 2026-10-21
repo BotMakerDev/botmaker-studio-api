@@ -12,15 +12,5 @@
  * <p>{@link com.botmaker.plugin.api.meta.Refactor} is what a host writes on a bot's function when a refactor had
  * to guess there — a site no rule could rewrite, a rule only seeded, a signature change — so the user can find
  * and review it.
- *
- * <p>{@code @ReplacedBy}, the plugin's forward pointer to whatever took a retired element's place, went on
- * 2026-10-16: a pointer said <em>where</em> an element went but not how its arguments carry over
- * ({@code marker(x)} becoming {@code markers(List.of(x))}), it held its targets as text, and it made every
- * removal wait a version. {@code @Replaces}, its back edge, and {@code @Since} had gone before it.
- *
- * <p>{@link com.botmaker.plugin.api.palette.Hidden} used to live here too, as {@code @Internal}, on the
- * argument that declining to offer a member was one consequence of the larger claim <em>not versioned
- * surface</em>. It moved back to {@code palette} because the larger claim was never what any of its sixteen
- * uses meant, and because a package named {@code internal} says it better than an annotation can.
  */
 package com.botmaker.plugin.api.meta;

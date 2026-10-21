@@ -107,17 +107,11 @@ public interface Ref extends Serializable {
     }
 
     /**
-     * A method that returns nothing, with no argument — for a step that names a {@code void} call, which an
+     * A {@code void} method of one argument, or a receiver — for a step that names a {@code void} call, which an
      * {@code Of} cannot: {@code Mouse::click} is not an {@code Of1<Point, R>} for any {@code R}. A step taking
      * these has a name of its own rather than an {@code Of} overload, because javac cannot choose between the
      * two for an overloaded method.
      */
-    @FunctionalInterface
-    interface Void0 extends Ref {
-        void call();
-    }
-
-    /** A {@code void} method of one argument, or a receiver: {@code Mouse::click}. See {@link Void0}. */
     @FunctionalInterface
     interface Void1<A> extends Ref {
         void call(A a);
