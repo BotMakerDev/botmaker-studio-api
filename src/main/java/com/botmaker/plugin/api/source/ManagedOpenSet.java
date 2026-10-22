@@ -9,8 +9,9 @@ import java.util.function.Function;
 /**
  * A set the user grows through a window of your plugin, kept as a class of the bot's marked with the id —
  * {@code @SdkValue(SdkValue.Id.PICTURES) public final class Pictures { … }} — whose members the rest of the bot names
- * at its use sites. The whole class is your window's: the canvas may not add to it, rename in it or delete from it.
- * Declared with {@link ManagedValue#openSet}, whose next step picks what a member is:
+ * at its use sites. The whole class is your window's: the canvas may not add to it or delete from it. A rename of a
+ * member the author asks for is done as {@link PluginValues#rename}/{@link PluginValues#renameGroup} would do it
+ * (2026-10-22): by binding, a class of a set of classes with its constant. Declared with {@link ManagedValue#openSet}, whose next step picks what a member is:
  *
  * <table>
  *   <caption>The four kinds of open set</caption>

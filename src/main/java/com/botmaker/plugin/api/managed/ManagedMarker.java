@@ -81,7 +81,8 @@ import java.lang.annotation.Target;
  * <h2>On a type instead: an open set</h2>
  *
  * <p>The marker on a class says the plugin's window owns <em>every member of it</em>, so the code canvas may
- * not add to it, rename in it or delete from it. That is the shape for a set the user grows — one constant per
+ * not add to it or delete from it; a rename the author asks for is done by binding, as the host renames for the
+ * plugin (2026-10-22). That is the shape for a set the user grows — one constant per
  * captured picture — where a method is the shape for a fixed value the plugin shipped a declaration for. The
  * difference is whether the rest of the bot names the parts: {@code Pictures.COLLECT} is written at its use
  * sites, and a flow's activities are not.
