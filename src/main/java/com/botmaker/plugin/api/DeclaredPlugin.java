@@ -3,7 +3,6 @@ package com.botmaker.plugin.api;
 import com.botmaker.plugin.api.assist.AssistantTool;
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.overlay.OverlayPart;
-import com.botmaker.plugin.api.record.RecordedValue;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
@@ -84,11 +83,6 @@ public class DeclaredPlugin implements StudioPlugin {
     @Override
     public final List<ToolbarItem> toolbarItems() {
         return declaration.toolbar();
-    }
-
-    @Override
-    public final List<RecordedValue<?>> recordedValues() {
-        return declaration.recorded();
     }
 
     @Override

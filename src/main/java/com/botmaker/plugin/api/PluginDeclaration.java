@@ -4,7 +4,6 @@ import com.botmaker.plugin.api.assist.AssistantTool;
 import com.botmaker.plugin.api.assist.TrialEntry;
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.overlay.OverlayPart;
-import com.botmaker.plugin.api.record.RecordedValue;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
@@ -37,7 +36,6 @@ import java.util.function.Supplier;
  *                 .values(SdkValues.class)
  *                 .editors(() -> SdkEditors.ALL)
  *                 .toolbar(() -> SdkToolbarItems.ALL)
- *                 .recorded(() -> SdkRecorded.ALL)
  *                 .runOverlay(() -> List.of(SdkRunOverlay.PART))
  *                 .overlay(() -> SdkOverlay.PART)
  *                 .assistant(() -> SdkAssist.ALL)
@@ -98,7 +96,6 @@ public final class PluginDeclaration {
     private List<Class<?>> valueHolders = List.of();
     private Supplier<? extends List<? extends ManagedValue<?>>> values;
     private Supplier<? extends List<? extends ToolbarItem>> toolbar;
-    private Supplier<? extends List<? extends RecordedValue<?>>> recorded;
     private Supplier<? extends List<? extends RunOverlayPart>> runOverlay;
     private Supplier<OverlayPart> overlay;
     private Supplier<? extends List<? extends AssistantTool<?>>> assistant;
@@ -121,7 +118,6 @@ public final class PluginDeclaration {
         copy.valueHolders = valueHolders;
         copy.values = values;
         copy.toolbar = toolbar;
-        copy.recorded = recorded;
         copy.runOverlay = runOverlay;
         copy.overlay = overlay;
         copy.assistant = assistant;
@@ -189,11 +185,6 @@ public final class PluginDeclaration {
     /** Its toolbar buttons — {@link StudioPlugin#toolbarItems()}. */
     public PluginDeclaration toolbar(Supplier<? extends List<? extends ToolbarItem>> toolbar) {
         return with(copy -> copy.toolbar = toolbar);
-    }
-
-    /** What only it can read off the screen for a recording — {@link StudioPlugin#recordedValues()}. */
-    public PluginDeclaration recorded(Supplier<? extends List<? extends RecordedValue<?>>> recorded) {
-        return with(copy -> copy.recorded = recorded);
     }
 
     /** What it shows in the host's run overlay while the bot runs — {@link StudioPlugin#runOverlayParts()}. */
@@ -273,10 +264,6 @@ public final class PluginDeclaration {
 
     List<ToolbarItem> toolbar() {
         return list(toolbar);
-    }
-
-    List<RecordedValue<?>> recorded() {
-        return list(recorded);
     }
 
     List<RunOverlayPart> runOverlay() {

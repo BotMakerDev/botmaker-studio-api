@@ -11,8 +11,8 @@
   `OverlayContext`, `FrameContext`, `OverlayToolContext`, `OverlayFrame`, `Probe`, `ProbeContext`, `ProbeResult`,
   `Marks`, `Pixel`, `Area`, `Watched`), `…api.run` (`RunOverlayPart`, `RunOverlayContext`, `RunProperty`), `…api.assist`
   (`AssistantTool`, `ToolSchema`, `@Describe`, `@Key`, `AgentContext`, `AgentReply`, `TrialEntry`, and the
-  package-private `ToolSchemas` and `ToolArguments` behind it) and
-  `…api.record` (`@Records`, `Gesture`, `RecordedValue`).
+  package-private `ToolSchemas` and `ToolArguments` behind it). `…api.record` (`@Records`, `Gesture`,
+  `RecordedValue`) went on 2026-10-22 with the macro recorder it served.
 - `…api.source` — a plugin's values in the bot: `ManagedValue`, sealed by shape into `ManagedParam`,
   `ManagedMethod` and `ManagedOpenSet` (its kinds `OfConstants`, `OneEnum`, `EnumGroups`, and
   `ManagedClasses`), `ParamScope`, and `PluginValues`, the host's reads and writes of them.

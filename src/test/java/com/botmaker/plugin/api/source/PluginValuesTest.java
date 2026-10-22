@@ -5,6 +5,7 @@ import com.botmaker.plugin.api.managed.ManagedMarker;
 import com.botmaker.plugin.api.slot.TypeRef;
 import com.botmaker.plugin.api.slot.ValueContext;
 import com.botmaker.plugin.api.source.PluginValues.Member;
+import com.botmaker.plugin.api.value.Ref;
 import org.junit.jupiter.api.Test;
 
 import java.lang.annotation.ElementType;
@@ -68,6 +69,22 @@ class PluginValuesTest {
         assertTrue(PluginValues.NONE.members(NAMES).isEmpty());
         assertTrue(PluginValues.NONE.methods(PluginValues.MethodShape.VOID).isEmpty());
         assertTrue(PluginValues.NONE.open(NAMES).isEmpty());
+        Ref.Of1<String, Integer> parse = Integer::parseInt;
+        assertEquals(Optional.of(PluginValues.NO_SOURCE_TREE),
+                PluginValues.NONE.appendCall("Bot::body", parse, PluginValues.Argument.value("1")));
+    }
+
+    @Test
+    void anArgumentIsAValueOrAMemberOfASet() {
+        PluginValues.Argument written = PluginValues.Argument.value(3);
+        assertEquals(3, written.value());
+        assertEquals(null, written.member());
+        PluginValues.Argument named = PluginValues.Argument.member(NAMES, Member.of("ORE"));
+        assertEquals(Member.of("ORE"), named.member());
+        assertEquals(NAMES, named.set());
+        assertEquals(null, named.value());
+        assertThrows(NullPointerException.class, () -> PluginValues.Argument.value(null));
+        assertThrows(NullPointerException.class, () -> PluginValues.Argument.member(NAMES, null));
     }
 
     @Test

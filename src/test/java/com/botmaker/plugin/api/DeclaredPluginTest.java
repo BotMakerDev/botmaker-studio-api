@@ -52,7 +52,6 @@ class DeclaredPluginTest {
         assertTrue(plugin.componentTypes().isEmpty());
         assertTrue(plugin.slotEditors().isEmpty());
         assertTrue(plugin.toolbarItems().isEmpty());
-        assertTrue(plugin.recordedValues().isEmpty());
         assertTrue(plugin.runOverlayParts().isEmpty());
         assertTrue(plugin.catalog().isEmpty());
     }

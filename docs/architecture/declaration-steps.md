@@ -5,7 +5,7 @@ valid next, so the compiler walks an author through a declaration and an incompl
 maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare itself):
 
 - **The plugin**: `StudioPlugin.id(ID).named(NAME).types(MyTypes.class).editors(…).values(MyValues.class)
-  .toolbar(…).recorded(…)`, a `PluginDeclaration` handed to `DeclaredPlugin`'s constructor. Types (with their
+  .toolbar(…)`, a `PluginDeclaration` handed to `DeclaredPlugin`'s constructor. Types (with their
   parts) and managed values are named by their holder classes: the host takes each `public static final` field
   of the kind, or each element of a list field, in field order, once each (2026-10-19, so no hand-kept `ALL`
   list can miss one). The other surfaces are ordered lists behind a supplier; `types(Supplier)`,
@@ -33,8 +33,7 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   whose constants the host reads as `byName(name)`. `id` is a constant of the enum nested in the plugin's
   `@ManagedMarker` annotation (`SdkValue.Id.FLOW`). It
   is typed and declared once: a plugin keeps one constant per value and uses it in `managedValues()`, in
-  `ManagedValues.claim`, and through the toolkit's `ManagedHandle` or, for an open set, `ManagedSet`. **A recorded value**: `RecordedValue.of(T.class).at(Finder::find)`.
-- **A slot editor**: `SlotEditor.onParameter(Annotation.class)` | `forType(X.class)` | `when(predicate)` →
+  `ManagedValues.claim`, and through the toolkit's `ManagedHandle` or, for an open set, `ManagedSet`.- **A slot editor**: `SlotEditor.onParameter(Annotation.class)` | `forType(X.class)` | `when(predicate)` →
   `.draw(() -> E::draw[, () -> E::preview])` (`EditorSteps`). A value the type cannot tell apart is told apart
   by a `RUNTIME` annotation on the parameter it is passed to (`outcome(@OutcomeName String)`), matched by
   the annotation's binary name through `SlotContext.parameter()`; an editor reads its settings off it, or

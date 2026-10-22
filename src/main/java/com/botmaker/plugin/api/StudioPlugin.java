@@ -3,7 +3,6 @@ package com.botmaker.plugin.api;
 import com.botmaker.plugin.api.assist.AssistantTool;
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.overlay.OverlayPart;
-import com.botmaker.plugin.api.record.RecordedValue;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
@@ -170,15 +169,6 @@ public interface StudioPlugin {
      * and every value stays exactly as editable as it was.
      */
     default List<ManagedValue<?>> managedValues() {
-        return List.of();
-    }
-
-    /**
-     * The parameter types of this plugin's {@link com.botmaker.plugin.api.record.Records} methods that only it can
-     * fill from a recording — see {@link RecordedValue}. Read once per project bind. A plugin with none records
-     * with what the host fills alone.
-     */
-    default List<RecordedValue<?>> recordedValues() {
         return List.of();
     }
 

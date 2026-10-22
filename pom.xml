@@ -71,7 +71,10 @@
              v0.10.0 the same way on 2026-10-16: @ReplacedBy and PluginType/DeclaredType/DeclaredCallType
              .replacedBy went, and @Migrate became a rule for any element (Kind, Self, name).
              v0.11.0 the same way on 2026-10-19: TypeSteps.Fresh.filledBy and TypeSteps.Filled went; a value the
-             bot fills in is its method marked @Fills, which the host declares. -->
+             bot fills in is its method marked @Fills, which the host declares.
+             Still v0.11.0 on 2026-10-22: api.record (@Records, Gesture, RecordedValue), StudioPlugin
+             .recordedValues and PluginDeclaration.recorded went with the macro recorder; PluginValues.appendCall
+             was added. -->
         <botmaker.japicmp.baseline>v0.11.0</botmaker.japicmp.baseline>
         <botmaker.japicmp.skip>false</botmaker.japicmp.skip>
     </properties>

@@ -29,7 +29,6 @@ class StudioPluginDefaultsTest {
         assertEquals(List.of(), older.types());
         assertEquals(List.of(), older.componentTypes());
         assertEquals(List.of(), older.managedValues());
-        assertEquals(List.of(), older.recordedValues());
         assertEquals(List.of(), older.runOverlayParts());
         assertTrue(older.overlayPart().isEmpty());
         assertEquals(List.of(), older.assistantTools());

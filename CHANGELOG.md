@@ -19,6 +19,12 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`PluginValues.appendCall(method, call, arguments…)`** appends `Owner.call(…);` to a bot's method
+  (`Tavern::body`), before its closing `return`. The call is a typed method reference to a plugin's
+  `public static` method. Each `PluginValues.Argument` is a value the grammar writes (`Argument.value`), or a
+  constant or field of an open set named as itself (`Argument.member`). No Java text crosses, and the write is one
+  History step. It is what the SDK's screen map uses to record presses into an activity's body.
+
 - **Types and managed values are named by the class that holds them**: `.types(MyTypes.class)`,
   `.values(MyValues.class)`. The plugin contributes every `public static final` `PluginType`, `ComponentType` or
   `ManagedValue` field there, and each element of a list field, in field order, once each. A new type is declared
@@ -33,6 +39,10 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Removed
 
+- **The macro recorder's contract** (breaking, rides `v0.11.0`): the package `…api.record` (`@Records`,
+  `Gesture`, `RecordedValue`), `StudioPlugin.recordedValues()` and `PluginDeclaration.recorded(…)`. Studio's
+  ⏺ Record went from the overlay editor earlier, so nothing called them. A plugin records what the author did
+  through `PluginValues.appendCall`, as typed calls of its own.
 - **`TypeSteps.Fresh.filledBy` and `TypeSteps.Filled`** (breaking; japicmp pinned ahead to `v0.11.0`). Mark the
   method `@Fills` instead of declaring `PluginType.value(X.class).filledBy(Owner::m).shownAs(…)`.
 - **Members nothing used** (breaking, rides `v0.11.0`): `ToolParam` and `AssistantTool.params()` (read

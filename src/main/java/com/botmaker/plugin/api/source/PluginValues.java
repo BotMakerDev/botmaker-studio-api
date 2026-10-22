@@ -1,6 +1,7 @@
 package com.botmaker.plugin.api.source;
 
 import com.botmaker.plugin.api.slot.ValueContext;
+import com.botmaker.plugin.api.value.Ref;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -409,6 +410,77 @@ public interface PluginValues {
         /** Whether the method was written. */
         public boolean written() {
             return reference != null;
+        }
+    }
+
+    // ── a call written into the bot's method ────────────────────────────────────────────────────────────
+
+    /**
+     * Appends {@code Owner.call(arguments…);} to the bot's method {@code method} — {@code Tavern::body}, as
+     * {@link #methods(ManagedValue, String)} lists it — as its last statement, before a closing {@code return}.
+     *
+     * <p>What a plugin writes when its window records what the bot's author did: a press on the SDK's screen map
+     * becomes {@code Navigate.press(Screens.TAVERN.beerBuy);} in the activity's body. {@code call} is a
+     * {@code public static} method of a loaded plugin as a typed method reference
+     * ({@code Ref.Of1<Button, Pressed> PRESS = Navigate::press}); the host writes its class and imports it. Each
+     * argument fills the parameter in its place: {@link Argument#value} is written by the grammar as a value of
+     * that parameter's type, {@link Argument#member} as a reference to that constant or field of its open set. No
+     * Java text crosses. The write is one step of Project History, undone as one.
+     *
+     * <p>Refused, with the sentence to show, when the bot has no such method, {@code call} is no static method,
+     * the arguments are not one per parameter, an argument cannot be written as its parameter, or the bot would
+     * not compile.
+     *
+     * @return empty when written, else why nothing was
+     */
+    default Optional<String> appendCall(String method, Ref call, Argument... arguments) {
+        return Optional.of(NO_SOURCE_TREE);
+    }
+
+    /**
+     * One argument of a call {@link #appendCall} writes: a value the grammar writes, or a constant of a plugin's
+     * open set named as itself — {@code Screens.TAVERN.beerBuy} rather than whatever spells an equal value.
+     */
+    final class Argument {
+
+        private final Object value;
+        private final ManagedValue<?> set;
+        private final Member member;
+
+        private Argument(Object value, ManagedValue<?> set, Member member) {
+            this.value = value;
+            this.set = set;
+            this.member = member;
+        }
+
+        /** {@code value}, written as a value of the parameter's type. */
+        public static Argument value(Object value) {
+            return new Argument(Objects.requireNonNull(value, "value"), null, null);
+        }
+
+        /** A reference to {@code member} of the open set {@code set}, its import added. */
+        public static Argument member(ManagedValue<?> set, Member member) {
+            return new Argument(null, Objects.requireNonNull(set, "set"), Objects.requireNonNull(member, "member"));
+        }
+
+        /** The value to write, or null for a {@link #member member} argument. */
+        public Object value() {
+            return value;
+        }
+
+        /** The open set a {@link #member member} argument names, or null. */
+        public ManagedValue<?> set() {
+            return set;
+        }
+
+        /** The constant a {@link #member member} argument names, or null. */
+        public Member member() {
+            return member;
+        }
+
+        @Override
+        public String toString() {
+            return member != null ? member.toString() : String.valueOf(value);
         }
     }
 
