@@ -15,6 +15,81 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+No source changes since v0.11.0; re-released for updated upstream pins.
+
+### Added
+
+- **`PluginValues.appendCall(method, call, arguments…)`** appends `Owner.call(…);` to a bot's method
+  (`Tavern::body`), before its closing `return`. The call is a typed method reference to a plugin's
+  `public static` method. Each `PluginValues.Argument` is a value the grammar writes (`Argument.value`), or a
+  constant or field of an open set named as itself (`Argument.member`). No Java text crosses, and the write is one
+  History step. It is what the SDK's screen map uses to record presses into an activity's body.
+
+- **Types and managed values are named by the class that holds them**: `.types(MyTypes.class)`,
+  `.values(MyValues.class)`. The plugin contributes every `public static final` `PluginType`, `ComponentType` or
+  `ManagedValue` field there, and each element of a list field, in field order, once each. A new type is declared
+  by writing its field; the hand-kept `ALL` list, which failed silently when one was left out, is no longer needed.
+  `types(…)` gives the parts too, so `.parts(…)` is rarely wanted. The supplier forms stay. Additive.
+- **`@Fills(label = …)`**, on a public static no-argument method a bot compiles against: the host declares the
+  method's return type as a value the bot fills in, starting as a call to the method and drawn as a pill saying
+  the label. Nothing about the type is declared in the plugin, and the plugin draws nothing.
+- **`ValueContext.declared(Class)`**: the call declaration the host writes a class with, for an editor that takes
+  a value apart by its parts. The declaration's editor is then a plain method reference
+  (`.editor(() -> GeometryEditors::point)`) rather than a lambda naming the field it initialises. Additive.
+
+### Removed
+
+- **The macro recorder's contract** (breaking, rides `v0.11.0`): the package `…api.record` (`@Records`,
+  `Gesture`, `RecordedValue`), `StudioPlugin.recordedValues()` and `PluginDeclaration.recorded(…)`. Studio's
+  ⏺ Record went from the overlay editor earlier, so nothing called them. A plugin records what the author did
+  through `PluginValues.appendCall`, as typed calls of its own.
+- **`TypeSteps.Fresh.filledBy` and `TypeSteps.Filled`** (breaking; japicmp pinned ahead to `v0.11.0`). Mark the
+  method `@Fills` instead of declaring `PluginType.value(X.class).filledBy(Owner::m).shownAs(…)`.
+- **Members nothing used** (breaking, rides `v0.11.0`): `ToolParam` and `AssistantTool.params()` (read
+  `schema().fields()`; the kinds are `ToolSchema.Field.Kind`), the one-argument `PaletteCatalog` constructor,
+  `PaletteCatalog.facadesIn` and `categories()`, `MemberId.declaringClassName()`, the one-argument `MemberEntry`
+  constructor, `ManagedParam.conditional()`, `Ref.Void0` and the `OverlayToolContext.insertVoid` overloads but the
+  one-argument one (a `void` call of more arguments goes through `insertMember`). `EnumGroups.groupType()` and
+  `PluginValues.Member.parse` are package-private; `Member.read` is the public reader.
+
+### Changed
+
+- **`ManagedValue` is split by shape** (breaking, inside the `v0.11.0` already pinned ahead). It is a sealed class
+  permitting `ManagedParam`, `ManagedMethod` and `ManagedOpenSet`; an open set is one of `ManagedOpenSet.OfConstants`,
+  `OneEnum`, `EnumGroups` or `ManagedClasses`. Each carries only its own parts. The entry points are the same
+  (`ManagedValue.param/method/openSet`) and end in the subtype, so a field may be typed `ManagedParam<Greeting>`;
+  `ManagedValue<Greeting>` still compiles. `openSet(…).ofEnumGroups(…)` names what `ofEnums(…)` did, and
+  `ofEnums` is gone. Each shape's steps moved into its own class (`ManagedParam.Steps` …), so a source naming a
+  step class (`ManagedValue.Reason.when`, `SetHolderStep`) breaks; a declaration written as one chain does not. A
+  method value has no `when` and an enum set no `referredToAs`, refused by the compiler now rather than at load.
+  `ManagedValue` keeps only what every shape has (`id`, `marker`, `holder`, `type`, `reason`, `cast`):
+  `ManagedValue.Shape`, `shape()`, `isParam()`, `isOpenSet()`, `isEnum()`, `isGrouped()`, `isClasses()` and each
+  shape's own accessors (`initial()`, `form()`, `byName(…)`, `setup()` …) are gone. Switch on the subtype, or type
+  the field by it. `ManagedValues.claim` takes a `ManagedMethod`, so claiming an open set or a parameter no
+  longer compiles.
+- **Closed sets typed, one frame context** (breaking, rides `v0.11.0`): `ManagedParam.visibility()` returns
+  `Param.Visibility`, not its id. `PluginValues.methods(MethodShape)` and `createMethod(MethodShape, className,
+  method)` replace `voidMethods()`, `booleanMethods()`, `createVoidMethod` and `createBooleanMethod`.
+  `isReferredByName()` and `byReference(…)` are on `ManagedOpenSet` (false and null for an enum set), not on
+  `OfConstants` and `ManagedClasses` apiece. `frame()` and `watchedArea()` are declared once, on the new
+  `overlay.FrameContext`, which `OverlayToolContext`, `ProbeContext` and `AgentContext` extend; a part's
+  `watched(OverlayContext)` is still asked before any frame exists. A managed value's `in(holder)` refuses what
+  is not a class's simple name (`com.bot.Sdk`, `My Sdk`) when the plugin loads, rather than the host writing a
+  class javac refuses.
+- **Two types moved package** (breaking, rides `v0.11.0`; change the import): `toolbar.ActionContext.Area` is
+  the top-level `overlay.Area`, beside `Pixel`, since the overlay is what passes one; `value.Fills` is
+  `palette.Fills`, beside the other marks the host reads off a plugin's own classes.
+- **`DeclaredCallType` takes `when(…)`**, as `DeclaredCall` does: both take their steps from one shared,
+  package-private base, so a type whose Java is a call can be one of several declarations of its class. Source
+  stays as it was; a compiled plugin rebuilds (binary break, rides `v0.11.0`), since each step's erased return
+  type is now that base. Internal splits with no change a plugin sees: `AssistantTool`'s reflection is
+  `ToolSchemas` (a record read into its schema) and `ToolArguments` (what was sent built back into one),
+  `PaletteCatalog.of` is `CatalogReader`, and `PluginDeclaration`'s steps share one copy.
+- **A method reference compiled by ECJ is named as such.** ECJ (Eclipse, VS Code's Java) compiles a serializable
+  `Owner::method` into a lambda; the refusal now says so and to build with javac.
+
 ## [0.11.0] — 2026-10-23
 
 ### Added
