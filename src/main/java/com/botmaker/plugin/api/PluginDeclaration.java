@@ -4,6 +4,7 @@ import com.botmaker.plugin.api.assist.AssistantTool;
 import com.botmaker.plugin.api.assist.TrialEntry;
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.overlay.OverlayPart;
+import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
@@ -101,6 +102,7 @@ public final class PluginDeclaration {
     private Supplier<? extends List<? extends AssistantTool<?>>> assistant;
     private String guide = "";
     private Method trial;
+    private Readiness.Check readiness;
 
     private PluginDeclaration(String id, String displayName) {
         this.id = id;
@@ -123,6 +125,7 @@ public final class PluginDeclaration {
         copy.assistant = assistant;
         copy.guide = guide;
         copy.trial = trial;
+        copy.readiness = readiness;
         set.accept(copy);
         return copy;
     }
@@ -226,6 +229,15 @@ public final class PluginDeclaration {
         return with(copy -> copy.trial = resolved);
     }
 
+    /**
+     * Whether the open project's bot can start now, by method reference: {@code .readiness(MyReadiness::now)} —
+     * {@link StudioPlugin#readiness()}. The host calls it off the JavaFX thread while a run window is open.
+     */
+    public PluginDeclaration readiness(Readiness.Check readiness) {
+        Readiness.Check check = Objects.requireNonNull(readiness, "readiness");
+        return with(copy -> copy.readiness = check);
+    }
+
     /** A palette built by hand, overriding the one the host discovers — rarely wanted; see {@link StudioPlugin#catalog()}. */
     public PluginDeclaration catalog(Supplier<PaletteCatalog> catalog) {
         return with(copy -> copy.catalog = catalog);
@@ -285,6 +297,10 @@ public final class PluginDeclaration {
 
     Optional<Method> trial() {
         return Optional.ofNullable(trial);
+    }
+
+    Optional<Readiness> readiness() {
+        return readiness == null ? Optional.empty() : Optional.ofNullable(readiness.now());
     }
 
     private static <E> List<E> list(Supplier<? extends List<? extends E>> surface) {

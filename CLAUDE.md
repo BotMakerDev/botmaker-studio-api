@@ -55,8 +55,9 @@ no back door. If the SDK needs something this module does not expose, the contra
 - **Every surface is declared by steps; factories are method references**, with the two strings in
   `two-strings.md` kept. **No public constructor on a value a plugin builds** (`no-public-constructor.md`).
 - **The catalog degrades, never throws** (`catalog.md`). **No Jackson here.**
-- **japicmp fails on any incompatible change, with no ignore list**; the baseline is pinned ahead to `v0.11.0`,
-  the next release (`--studio-api 0.11.0`), which removes `TypeSteps.Fresh.filledBy` for `@Fills` (`japicmp.md`).
+- **japicmp fails on any incompatible change, with no ignore list**; the baseline is `v0.11.0`, released, and
+  `main` has only compatible additions since (`readiness()`), so the next release is `--studio-api 0.12.0`
+  (`japicmp.md`).
 
 ## Style
 

@@ -17,9 +17,13 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
-No source changes since v0.11.0; re-released for updated upstream pins.
-
 ### Added
+
+- **`StudioPlugin.readiness()` and `run.Readiness`** (2026-10-25): a plugin says whether the open project's bot
+  can start now, as a level (`READY`, `WAITING`, `BLOCKED`) and a reason. Declare it with
+  `PluginDeclaration.readiness(MyReadiness::now)`. The host asks every plugin off the JavaFX thread, every few
+  seconds while the bot's Run window is open, and shows the least ready answer. `null` means nothing to say.
+  A default method: a plugin built earlier says nothing.
 
 - **`PluginValues.appendCall(method, call, arguments…)`** appends `Owner.call(…);` to a bot's method
   (`Tavern::body`), before its closing `return`. The call is a typed method reference to a plugin's

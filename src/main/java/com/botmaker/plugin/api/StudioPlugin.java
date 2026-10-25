@@ -3,6 +3,7 @@ package com.botmaker.plugin.api;
 import com.botmaker.plugin.api.assist.AssistantTool;
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.overlay.OverlayPart;
+import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
@@ -238,6 +239,15 @@ public interface StudioPlugin {
      * statement on its own, only run whole.
      */
     default Optional<Method> trialEntry() {
+        return Optional.empty();
+    }
+
+    /**
+     * Whether the open project's bot can start now, as this plugin sees it — see {@link Readiness}. Asked off the
+     * JavaFX application thread, every few seconds while the bot's run window is open; links no JavaFX. Empty:
+     * nothing to say.
+     */
+    default Optional<Readiness> readiness() {
         return Optional.empty();
     }
 

@@ -2,6 +2,7 @@ package com.botmaker.plugin.api;
 
 import com.botmaker.plugin.api.managed.ManagedMarker;
 import com.botmaker.plugin.api.overlay.OverlayPart;
+import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.source.ManagedValue;
 import com.botmaker.plugin.api.value.ComponentType;
@@ -88,6 +89,26 @@ class DeclaredPluginTest {
         assertEquals(0, asked.get(), "constructing a plugin must build nothing");
         assertEquals(List.of(NOTE), plugin.managedValues());
         assertEquals(1, asked.get());
+    }
+
+    static Readiness windowFound() {
+        return Readiness.ready(" game window found ");
+    }
+
+    static Readiness nothingToSay() {
+        return null;
+    }
+
+    @Test
+    void readinessIsAskedEachTimeAndNothingToSayIsEmpty() {
+        assertTrue(new Declared(new AtomicInteger()).readiness().isEmpty());
+        StudioPlugin ready = new DeclaredPlugin(StudioPlugin.id("com.example.r").named("R")
+                .readiness(DeclaredPluginTest::windowFound)) {};
+        assertEquals(Optional.of(Readiness.ready("game window found")), ready.readiness());
+        assertEquals("Ready — game window found", ready.readiness().orElseThrow().line());
+        assertTrue(new DeclaredPlugin(StudioPlugin.id("com.example.q").named("Q")
+                .readiness(DeclaredPluginTest::nothingToSay)) {}.readiness().isEmpty());
+        assertEquals("Not ready", Readiness.blocked("").line());
     }
 
     @Test
