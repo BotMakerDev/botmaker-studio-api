@@ -7,7 +7,7 @@ import java.util.Objects;
  * the reason behind it, "● Ready — game window found" (2026-10-25).
  *
  * <pre>{@code
- * StudioPlugin.id("com.example.mine").named("Mine").readiness(MyReadiness::now)
+ * StudioPlugin.declare().readiness(MyReadiness::now)
  *
  * static Readiness now() {
  *     return windowOpen() ? Readiness.ready("game window found")

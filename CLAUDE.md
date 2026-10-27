@@ -18,7 +18,7 @@ on 2026-10-05).
 | Touching | Read (`docs/architecture/`) |
 |---|---|
 | any public member | `easy-to-break.md`, then `../docs/refactor/25-compatibility.md` |
-| `StudioPlugin.id(…)`, `PluginType`, `ComponentType`, `ManagedValue`, `SlotEditor`, `ToolbarItem` steps, `Ref` | `declaration-steps.md` |
+| `StudioPlugin.declare()`, `PluginType`, `ComponentType`, `ManagedValue`, `SlotEditor`, `ToolbarItem` steps, `Ref` | `declaration-steps.md` |
 | `Ref.member`, the SDK's activity-body text | `two-strings.md` |
 | a new value a plugin constructs | `no-public-constructor.md` |
 | which package a type goes in, `StyleClasses`, the palette annotations, `@Migrate`, `@Refactor` | `packages.md` |
@@ -44,7 +44,7 @@ no back door. If the SDK needs something this module does not expose, the contra
 ## Rules
 
 - **An interface a plugin implements grows only by `default` members.** Its abstract ones are what every
-  plugin writes: `StudioPlugin.id()`, `PluginType`'s `type()`/`fresh()`, `EditableType.editor`,
+  plugin writes: `PluginType`'s `type()`/`fresh()`, `EditableType.editor`,
   `ComponentType`'s four, `SlotEditor`'s two, `Probe.probe`. An interface only the host
   implements (`StudioServices`, `PluginValues`, the contexts) may add abstract ones. A member an already-built
   plugin cannot survive is a Studio major (`easy-to-break.md`).
@@ -55,9 +55,10 @@ no back door. If the SDK needs something this module does not expose, the contra
 - **Every surface is declared by steps; factories are method references**, with the two strings in
   `two-strings.md` kept. **No public constructor on a value a plugin builds** (`no-public-constructor.md`).
 - **The catalog degrades, never throws** (`catalog.md`). **No Jackson here.**
-- **japicmp fails on any incompatible change, with no ignore list**; the baseline is `v0.11.0`, released, and
-  `main` has only compatible additions since (`readiness()`), so the next release is `--studio-api 0.12.0`
-  (`japicmp.md`).
+- **A plugin is one jar, named by its pom** (2026-10-27): the `botmaker.plugin` property names its
+  `DeclaredPlugin` subclass, the coordinate is its id. `StudioPlugin` is sealed to `DeclaredPlugin`.
+- **japicmp fails on any incompatible change, with no ignore list**; the baseline is pinned ahead to `v0.13.0`
+  (the pom-named plugin break), so the next release is `--studio-api 0.13.0` (`japicmp.md`).
 
 ## Style
 

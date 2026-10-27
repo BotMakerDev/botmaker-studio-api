@@ -16,9 +16,17 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * What a BotMaker Studio plugin is, from the host's side: an id and a set of contributions.
+ * What a BotMaker Studio plugin is, from the host's side: a set of contributions.
  *
- * <p><b>Every method but {@link #id()} is {@code default}, and that is the versioning rule of the whole
+ * <p><b>A plugin is its jar, and its pom says which class it is</b> (2026-10-27). The host reads the jar's
+ * {@code META-INF/maven/<groupId>/<artifactId>/pom.xml}: exactly one pom there sets the property
+ * {@code botmaker.plugin} to the plugin's class, a {@code public final} subclass of {@link DeclaredPlugin} with a
+ * public no-argument constructor. That pom's {@code groupId:artifactId} is the plugin's identity and its
+ * {@code <name>} what a user reads, so neither is code and both are known before any plugin code runs. A jar
+ * whose poms name no class is a library; one naming two is refused. The interface is sealed to
+ * {@link DeclaredPlugin}: a plugin is one declaration.
+ *
+ * <p><b>Every method is {@code default}, and that is the versioning rule of the whole
  * platform.</b> A bot's own source can be rewritten when the SDK changes — Studio holds an AST of it — but a
  * plugin's compiled {@code .class} files cannot be rewritten by anybody. So this contract may only gain
  * members that older plugins can ignore. A method a plugin has not implemented returns "nothing to
@@ -60,27 +68,15 @@ import java.util.Optional;
  * behaviour is a static method the user calls, and anything that followed from project data was data all
  * along and is read at runtime.
  */
-public interface StudioPlugin {
+public sealed interface StudioPlugin permits DeclaredPlugin {
 
     /**
-     * <b>The way to declare a plugin</b>: the first step of a {@link PluginDeclaration}, handed to
-     * {@link DeclaredPlugin}'s constructor — {@code StudioPlugin.id(ID).named(NAME).types(() -> …)…}.
-     * Implementing this interface by hand still works; the declaration is there so that nobody has to find
-     * out which of its methods to override.
+     * <b>The way to declare a plugin</b>: an empty {@link PluginDeclaration}, handed to {@link DeclaredPlugin}'s
+     * constructor — {@code StudioPlugin.declare().types(MyTypes.class).toolbar(() -> …)…}. It names no id and
+     * no name: those are the pom's.
      */
-    static PluginDeclaration.Naming id(String id) {
-        return new PluginDeclaration.Naming(id);
-    }
-
-    /**
-     * A stable identifier for this plugin — {@code "botmaker-sdk"} — used to attribute a contribution and to
-     * order the host's merge. Never shown as-is; see {@link #displayName()}.
-     */
-    String id();
-
-    /** The name a user reads. Defaults to {@link #id()}. */
-    default String displayName() {
-        return id();
+    static PluginDeclaration declare() {
+        return PluginDeclaration.empty();
     }
 
     /**
@@ -256,7 +252,7 @@ public interface StudioPlugin {
      *
      * <p><b>The mirror of {@link #projectClosing()}, and a capability for the same reason.</b> Which project
      * is open is the one fact a plugin cannot establish for itself: a plugin is constructed once by
-     * {@code ServiceLoader} and then serves whatever the host binds to it, so without being told it is
+     * the host and then serves whatever the host binds to it, so without being told it is
      * holding a project it cannot name. Nothing else can supply it — a plugin polling for the answer would
      * be guessing at a moment the host knows precisely, which is the argument {@code projectClosing()}
      * already makes from the other end.
@@ -299,7 +295,7 @@ public interface StudioPlugin {
      * the host already knows precisely. Everything that can be released by garbage collection should be, and
      * needs no implementation here.
      *
-     * <p><b>The instance is reused.</b> A plugin is constructed once by {@code ServiceLoader} and serves
+     * <p><b>The instance is reused.</b> A plugin is constructed once by the host and serves
      * every project bound to it afterwards, so this says *this project is over*, never *you are being
      * discarded*. Leave the object usable: whatever is released here has to be reacquired on demand.
      *

@@ -36,7 +36,7 @@ class DeclaredPluginTest {
 
     static final class Declared extends DeclaredPlugin {
         Declared(AtomicInteger asked) {
-            super(StudioPlugin.id("com.example.notes").named("Notes")
+            super(StudioPlugin.declare()
                     .values(() -> {
                         asked.incrementAndGet();
                         return List.of(NOTE);
@@ -47,8 +47,6 @@ class DeclaredPluginTest {
     @Test
     void aSurfaceLeftOutContributesNothing() {
         Declared plugin = new Declared(new AtomicInteger());
-        assertEquals("com.example.notes", plugin.id());
-        assertEquals("Notes", plugin.displayName());
         assertTrue(plugin.types().isEmpty());
         assertTrue(plugin.componentTypes().isEmpty());
         assertTrue(plugin.slotEditors().isEmpty());
@@ -60,7 +58,7 @@ class DeclaredPluginTest {
     @Test
     void runOverlayPartsAreDeclaredLikeTheToolbar() {
         RunOverlayPart part = RunOverlayPart.id("notes.run").bar(ctx -> null);
-        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.z").named("Z")
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare()
                 .runOverlay(() -> List.of(part))) {};
         assertEquals(List.of(part), plugin.runOverlayParts());
     }
@@ -69,7 +67,7 @@ class DeclaredPluginTest {
     void anOverlayPartIsAskedForOnlyWhenTheHostAsks() {
         AtomicInteger asked = new AtomicInteger();
         OverlayPart part = OverlayPart.of().targets(Runnable.class, "Home");
-        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.o").named("O")
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare()
                 .overlay(() -> {
                     asked.incrementAndGet();
                     return part;
@@ -78,7 +76,7 @@ class DeclaredPluginTest {
         assertEquals(Optional.of(part), plugin.overlayPart());
         assertEquals(1, asked.get());
         assertTrue(new Declared(new AtomicInteger()).overlayPart().isEmpty());
-        assertTrue(new DeclaredPlugin(StudioPlugin.id("com.example.e").named("E")
+        assertTrue(new DeclaredPlugin(StudioPlugin.declare()
                 .overlay(OverlayPart::of)) {}.overlayPart().isEmpty(), "a part declaring nothing is no part");
     }
 
@@ -102,11 +100,11 @@ class DeclaredPluginTest {
     @Test
     void readinessIsAskedEachTimeAndNothingToSayIsEmpty() {
         assertTrue(new Declared(new AtomicInteger()).readiness().isEmpty());
-        StudioPlugin ready = new DeclaredPlugin(StudioPlugin.id("com.example.r").named("R")
+        StudioPlugin ready = new DeclaredPlugin(StudioPlugin.declare()
                 .readiness(DeclaredPluginTest::windowFound)) {};
         assertEquals(Optional.of(Readiness.ready("game window found")), ready.readiness());
         assertEquals("Ready — game window found", ready.readiness().orElseThrow().line());
-        assertTrue(new DeclaredPlugin(StudioPlugin.id("com.example.q").named("Q")
+        assertTrue(new DeclaredPlugin(StudioPlugin.declare()
                 .readiness(DeclaredPluginTest::nothingToSay)) {}.readiness().isEmpty());
         assertEquals("Not ready", Readiness.blocked("").line());
     }
@@ -114,18 +112,17 @@ class DeclaredPluginTest {
     @Test
     void theAssistantsGuideIsTheDeclaredTextTrimmed() {
         assertEquals("", new Declared(new AtomicInteger()).assistantGuide());
-        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.g").named("G")
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare()
                 .assistantGuide("\n  One activity per chore.\n")) {};
         assertEquals("One activity per chore.", plugin.assistantGuide());
-        assertEquals("", new DeclaredPlugin(StudioPlugin.id("com.example.n").named("N")
+        assertEquals("", new DeclaredPlugin(StudioPlugin.declare()
                 .assistantGuide(null)) {}.assistantGuide());
     }
 
     @Test
-    void aBlankNameIsTheId() {
-        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.x").named(" ")) {};
-        assertEquals("com.example.x", plugin.displayName());
-        assertThrows(IllegalArgumentException.class, () -> StudioPlugin.id(" "));
+    void aPluginIsADeclaredPlugin() {
+        assertTrue(StudioPlugin.class.isSealed());
+        assertEquals(List.of(DeclaredPlugin.class), List.of(StudioPlugin.class.getPermittedSubclasses()));
     }
 
     public record Mark() {
@@ -166,7 +163,7 @@ class DeclaredPluginTest {
 
     @Test
     void aHolderClassGivesItsFieldsInDeclaredOrderOnceEach() {
-        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.h").named("H")
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare()
                 .types(Types.class).values(Values.class)) {};
         assertEquals(List.of(Types.COUNT, Types.LABEL), plugin.types(), "a type is not a part; ALL adds nothing");
         assertEquals(List.of(Types.MARK, Types.MARKS.getFirst()), plugin.componentTypes(),
@@ -176,7 +173,7 @@ class DeclaredPluginTest {
 
     @Test
     void aHolderIsInitialisedOnlyWhenTheHostAsks() {
-        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.i").named("I")
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare()
                 .types(Lazy.class)) {};
         assertEquals(0, LAZY_INITIALISED.get(), "naming a class must not initialise it");
         assertEquals(List.of(Lazy.LETTER), plugin.types());
@@ -187,7 +184,7 @@ class DeclaredPluginTest {
     void aListAndAHolderAreBothKept() {
         PluginType<Long> big = PluginType.value(long.class).fresh(() -> 0L).editor(() -> ctx -> null)
                 .writtenAsLiteral();
-        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.j").named("J")
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare()
                 .types(Types.class).types(() -> List.of(big, Types.COUNT))) {};
         assertEquals(List.of(big, Types.COUNT, Types.LABEL), plugin.types());
     }
@@ -195,15 +192,15 @@ class DeclaredPluginTest {
     @Test
     void aHolderStepNeedsAClass() {
         IllegalArgumentException none = assertThrows(IllegalArgumentException.class,
-                () -> StudioPlugin.id("com.example.k").named("K").types(new Class<?>[0]));
+                () -> StudioPlugin.declare().types(new Class<?>[0]));
         assertTrue(none.getMessage().contains(".types(MyTypes.class)"), none.getMessage());
         assertThrows(IllegalArgumentException.class,
-                () -> StudioPlugin.id("com.example.k").named("K").values((Class<?>) null));
+                () -> StudioPlugin.declare().values((Class<?>) null));
     }
 
     @Test
     void aTypeListIsCopied() {
-        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.y").named("Y")
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare()
                 .types(() -> List.of(PluginType.value(int.class).fresh(() -> 0).editor(() -> ctx -> null)
                         .writtenAsLiteral()))) {};
         assertEquals(1, plugin.types().size());

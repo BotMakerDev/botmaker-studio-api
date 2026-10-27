@@ -46,7 +46,7 @@ import java.util.function.Supplier;
  *       answering {@code null}, means no icon, which is an ordinary state: the label already carries a glyph
  *       in most of this application</li>
  *   <li>{@code group}: which section of the bar; {@link ToolbarGroup#STUDIO} is refused</li>
- *   <li>{@code order}: position within the group, low first. Ties break on the plugin's id, so a bar built
+ *   <li>{@code order}: position within the group, low first. Ties break on the plugin's coordinate, so a bar built
  *       from two plugins is stable rather than dependent on discovery order</li>
  *   <li>{@code enabledWhen}: when the item may be pressed</li>
  *   <li>{@code onClick}: what pressing it does, given the host facts in {@link ActionContext}</li>

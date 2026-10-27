@@ -43,7 +43,7 @@ import java.util.function.Function;
  *
  * <p><b>Where it goes.</b> {@code .in("Sdk")} names the bot's class that holds it, by its simple name, because the
  * class is the bot's and your plugin never compiles against it. A bot without one gets it under
- * {@code plugins/<the last segment of your plugin's id>/}.
+ * {@code plugins/<a folder the host names after your plugin's artifactId>/}.
  *
  * <p>Plain data, like every other contribution: a host reads the id as text and matches it itself, so no plugin
  * code runs while a file is drawn. Only the steps build one, so a new part is a new step and never a changed

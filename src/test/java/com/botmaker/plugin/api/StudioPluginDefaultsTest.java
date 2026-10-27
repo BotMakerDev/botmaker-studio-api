@@ -9,9 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The versioning rule of the whole platform, in one test: a plugin compiled against an earlier contract
- * implements nothing but its id, and the host reads "nothing to contribute" rather than catching an
- * {@code AbstractMethodError}.
+ * The versioning rule of the whole platform, in one test: a plugin that declares nothing contributes nothing,
+ * and the host reads "nothing to contribute" rather than catching an {@code AbstractMethodError}.
  *
  * <p>Held {@code ParameterRow}'s tests beside it until 2026-09-28 as {@code ParameterDataTest}; the row moved
  * to Studio, which is the only thing that ever built or read one.
@@ -19,10 +18,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class StudioPluginDefaultsTest {
 
     @Test
-    void aPluginThatImplementsOnlyItsIdContributesNothing() {
-        StudioPlugin older = () -> "com.example.older";
+    void aPluginThatDeclaresNothingContributesNothing() {
+        StudioPlugin older = new DeclaredPlugin(StudioPlugin.declare()) {};
 
-        assertEquals("com.example.older", older.displayName());
         assertEquals(PaletteCatalog.empty().facades(), older.catalog().facades());
         assertEquals(List.of(), older.slotEditors());
         assertEquals(List.of(), older.toolbarItems());

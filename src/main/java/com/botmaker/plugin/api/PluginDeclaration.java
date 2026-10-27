@@ -32,7 +32,7 @@ import java.util.function.Supplier;
  * <pre>{@code
  * public final class SdkPlugin extends DeclaredPlugin {
  *     public SdkPlugin() {
- *         super(StudioPlugin.id("com.botmaker.sdk").named("BotMaker SDK")
+ *         super(StudioPlugin.declare()
  *                 .types(SdkTypes.class, FlowTypes.class, CaptureTypes.class)
  *                 .values(SdkValues.class)
  *                 .editors(() -> SdkEditors.ALL)
@@ -46,7 +46,8 @@ import java.util.function.Supplier;
  * }
  * }</pre>
  *
- * <p>Each surface after {@code named} is optional and names what it lists, so a reader sees the whole plugin
+ * <p>It names no id and no name: the plugin's pom carries both ({@link StudioPlugin}). Each surface is optional
+ * and names what it lists, so a reader sees the whole plugin
  * in one place instead of one override per surface. A surface left out contributes nothing, as the
  * contract's {@code default} does. The palette is left out by nearly every plugin: the host finds the
  * {@code @Palette} classes in its jar.
@@ -69,26 +70,7 @@ import java.util.function.Supplier;
  */
 public final class PluginDeclaration {
 
-    /** After {@link StudioPlugin#id}: the name a user reads. */
-    public static final class Naming {
-
-        private final String id;
-
-        Naming(String id) {
-            if (id == null || id.isBlank()) throw new IllegalArgumentException("A plugin needs an id");
-            this.id = id;
-        }
-
-        /** The name shown in Manage Plugins and wherever a contribution is attributed. */
-        public PluginDeclaration named(String displayName) {
-            String shown = displayName == null || displayName.isBlank() ? id : displayName;
-            return new PluginDeclaration(id, shown);
-        }
-    }
-
     // Set only on a fresh copy, inside with(…), before any step hands it out.
-    private final String id;
-    private final String displayName;
     private Supplier<PaletteCatalog> catalog;
     private List<Class<?>> typeHolders = List.of();
     private Supplier<? extends List<? extends PluginType<?>>> types;
@@ -104,14 +86,17 @@ public final class PluginDeclaration {
     private Method trial;
     private Readiness.Check readiness;
 
-    private PluginDeclaration(String id, String displayName) {
-        this.id = id;
-        this.displayName = displayName;
+    private PluginDeclaration() {
+    }
+
+    /** What {@link StudioPlugin#declare()} answers: no surface yet. */
+    static PluginDeclaration empty() {
+        return new PluginDeclaration();
     }
 
     /** A copy of this declaration with {@code set} applied to it: every step's one way to answer a copy. */
     private PluginDeclaration with(Consumer<PluginDeclaration> set) {
-        PluginDeclaration copy = new PluginDeclaration(id, displayName);
+        PluginDeclaration copy = new PluginDeclaration();
         copy.catalog = catalog;
         copy.typeHolders = typeHolders;
         copy.types = types;
@@ -241,14 +226,6 @@ public final class PluginDeclaration {
     /** A palette built by hand, overriding the one the host discovers — rarely wanted; see {@link StudioPlugin#catalog()}. */
     public PluginDeclaration catalog(Supplier<PaletteCatalog> catalog) {
         return with(copy -> copy.catalog = catalog);
-    }
-
-    String id() {
-        return id;
-    }
-
-    String displayName() {
-        return displayName;
     }
 
     PaletteCatalog catalog() {

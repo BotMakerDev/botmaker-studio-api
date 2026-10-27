@@ -74,8 +74,12 @@
              bot fills in is its method marked @Fills, which the host declares.
              Still v0.11.0 on 2026-10-22: api.record (@Records, Gesture, RecordedValue), StudioPlugin
              .recordedValues and PluginDeclaration.recorded went with the macro recorder; PluginValues.appendCall
-             was added. -->
-        <botmaker.japicmp.baseline>v0.11.0</botmaker.japicmp.baseline>
+             was added.
+             v0.13.0 the same way on 2026-10-27: StudioPlugin.id()/displayName(), StudioPlugin.id(String) and
+             PluginDeclaration.Naming went; StudioPlugin is sealed to DeclaredPlugin and a declaration starts at
+             StudioPlugin.declare(). A plugin is named by the botmaker.plugin property of its jar's pom, whose
+             coordinate is its id. -->
+        <botmaker.japicmp.baseline>v0.13.0</botmaker.japicmp.baseline>
         <botmaker.japicmp.skip>false</botmaker.japicmp.skip>
     </properties>
 

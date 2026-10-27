@@ -16,17 +16,20 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * A plugin stated as one {@link PluginDeclaration}. Extend it with a public no-argument constructor — the
- * host finds a plugin through {@code ServiceLoader} — and pass the declaration to {@code super}:
+ * A plugin stated as one {@link PluginDeclaration}. Extend it with a {@code public final} class and a public
+ * no-argument constructor, pass the declaration to {@code super}, and name the class in the plugin's pom — the
+ * host reads it there, and the pom's coordinate and {@code <name>} are the plugin's id and name:
  *
  * <pre>{@code
  * public final class DiscordPlugin extends DeclaredPlugin {
  *     public DiscordPlugin() {
- *         super(StudioPlugin.id("com.example.discord").named("Discord")
+ *         super(StudioPlugin.declare()
  *                 .types(DiscordTypes.class)
  *                 .toolbar(() -> DiscordToolbar.ALL));
  *     }
  * }
+ *
+ * <properties><botmaker.plugin>com.example.discord.DiscordPlugin</botmaker.plugin></properties>
  * }</pre>
  *
  * <p>Each surface asks its supplier, or reads its holder classes' fields, every time the host asks, and keeps
@@ -37,23 +40,13 @@ import java.util.Optional;
  *
  * <p>Each list is a supplier or a holder class, so nothing is built while the plugin is constructed.
  */
-public class DeclaredPlugin implements StudioPlugin {
+public non-sealed class DeclaredPlugin implements StudioPlugin {
 
     private final PluginDeclaration declaration;
 
     protected DeclaredPlugin(PluginDeclaration declaration) {
         if (declaration == null) throw new IllegalArgumentException("No declaration given");
         this.declaration = declaration;
-    }
-
-    @Override
-    public final String id() {
-        return declaration.id();
-    }
-
-    @Override
-    public final String displayName() {
-        return declaration.displayName();
     }
 
     @Override

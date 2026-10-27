@@ -147,7 +147,7 @@ class AssistantToolTest {
     @Test
     void theTrialEntryIsNamedAndCheckedOnlyWhenAsked() throws NoSuchMethodException {
         AtomicInteger asked = new AtomicInteger();
-        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.id("com.example.t").named("T")
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare()
                 .assistant(() -> {
                     asked.incrementAndGet();
                     return List.of(CROP);
@@ -159,10 +159,10 @@ class AssistantToolTest {
 
         // Refused where it is declared, so the plugin's own tests catch it rather than the user's ▶ Try.
         assertThrows(IllegalArgumentException.class,
-                () -> StudioPlugin.id("com.example.h").named("H").trial(Entry::hidden));
+                () -> StudioPlugin.declare().trial(Entry::hidden));
         assertThrows(IllegalArgumentException.class,
-                () -> StudioPlugin.id("com.example.l").named("L").trial((body, values) -> body.run()));
-        assertTrue(new DeclaredPlugin(StudioPlugin.id("com.example.n").named("N")) {}.trialEntry().isEmpty());
+                () -> StudioPlugin.declare().trial((body, values) -> body.run()));
+        assertTrue(new DeclaredPlugin(StudioPlugin.declare()) {}.trialEntry().isEmpty());
     }
 
     record Box(@Describe("its name") String name, int x, @Describe(value = "skipped", optional = true) Integer w) {

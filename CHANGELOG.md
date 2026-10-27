@@ -15,6 +15,19 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Changed (breaking)
+
+- **A plugin is named in its pom, and its coordinate is its id** (2026-10-27). Set
+  `<properties><botmaker.plugin>com.example.MyPlugin</botmaker.plugin></properties>` in the plugin's pom; the host
+  reads it from the jar's `META-INF/maven/<groupId>/<artifactId>/pom.xml`, with `groupId:artifactId` as the id and
+  `<name>` as what a user reads. Exactly one pom in a jar may name a class: one jar is one plugin. Delete
+  `META-INF/services/com.botmaker.plugin.api.StudioPlugin`. A flattened pom must keep `properties`.
+- **`StudioPlugin.id()`, `displayName()`, `StudioPlugin.id(String)` and `PluginDeclaration.Naming` are gone.** Start
+  a declaration with `StudioPlugin.declare()`. `StudioPlugin` is sealed to `DeclaredPlugin`, which is
+  `non-sealed`: the plugin class is a `public final` subclass of it with a public no-argument constructor.
+
 ## [0.12.0] — 2026-10-25
 
 ### Added

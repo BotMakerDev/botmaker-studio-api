@@ -1,6 +1,7 @@
 # The rules that are easy to break
 
-**1. Every method but `StudioPlugin.id()` is `default`, and stays that way.** A bot's source can be
+**1. Every method of `StudioPlugin` is `default`, and stays that way** (`id()` went on 2026-10-27: a
+plugin's id is its pom's coordinate). A bot's source can be
 rewritten when the SDK changes — Studio holds an AST of it. A plugin's compiled `.class` files cannot be
 rewritten by anyone. So a new member here that an already-built plugin cannot survive is a **major** change,
 and only a Studio major release may make one. This is the whole reason the module is separate from the SDK:

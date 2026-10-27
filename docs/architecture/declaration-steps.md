@@ -4,7 +4,7 @@ Every surface a plugin fills is declared through small final step classes, each 
 valid next, so the compiler walks an author through a declaration and an incomplete one does not compile (the
 maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare itself):
 
-- **The plugin**: `StudioPlugin.id(ID).named(NAME).types(MyTypes.class).editors(…).values(MyValues.class)
+- **The plugin**: `StudioPlugin.declare().types(MyTypes.class).editors(…).values(MyValues.class)
   .toolbar(…)`, a `PluginDeclaration` handed to `DeclaredPlugin`'s constructor. Types (with their
   parts) and managed values are named by their holder classes: the host takes each `public static final` field
   of the kind, or each element of a list field, in field order, once each (2026-10-19, so no hand-kept `ALL`
