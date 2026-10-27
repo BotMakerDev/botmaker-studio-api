@@ -20,10 +20,8 @@ no implementation, no Studio types, no parser.
 ```java
 public final class ExamplePlugin extends DeclaredPlugin {
 
-    public static final String ID = "com.example.greetings";   // the identity; never changes
-
     public ExamplePlugin() {
-        super(StudioPlugin.id(ID).named("Greetings")
+        super(StudioPlugin.declare()
                 .types(ExampleTypes.class)                    // every type field of the class
                 .editors(() -> ExampleEditors.ALL));
     }
@@ -37,7 +35,20 @@ public final class ExampleTypes {
 }
 ```
 
-Each step after `named` is optional. Types and managed values are named by the class holding them: the host
+The plugin's pom names it, and that is how a host finds it (2026-10-27; no services file, no id):
+
+```xml
+<name>Greetings</name>                                         <!-- the name a user reads -->
+<properties>
+    <botmaker.plugin>com.example.greetings.ExamplePlugin</botmaker.plugin>
+</properties>
+```
+
+Its `groupId:artifactId` is the plugin's identity. `StudioPlugin` is sealed to `DeclaredPlugin`, and the class must
+be `public final`, extend it directly and live in the jar that pom is in. A pom flattened at build keeps
+`properties` (`<pomElements><properties>keep</properties>`), or the jar's pom no longer says it is a plugin.
+
+Every step is optional. Types and managed values are named by the class holding them: the host
 takes every `public static final` one there, in field order, so a new type is declared by writing its field.
 The other surfaces are ordered lists behind a supplier. Neither is read before the host asks, so a headless
 host (the registry's CI, `botmaker plugin validate`) constructs the plugin without loading JavaFX. The steps lead the
