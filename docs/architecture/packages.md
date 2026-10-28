@@ -7,7 +7,7 @@
   than a reason for Studio to depend on the toolkit. `StyleClassesTest` in Studio holds the stylesheet to it.
 - **One package per contribution surface**: `…api.slot` (`SlotEditor`, `EditorSteps`, `SlotContext`,
   `SlotRun`, `ValueContext`, `TypeRef`, `Bounds`), `…api.toolbar` (`ToolbarItem`, `ToolbarSteps`, `Pressed`,
-  `EnabledWhen`, `ActionContext`), `…api.overlay` (`OverlayPart`, `OverlayTool`,
+  `EnabledWhen`, `ActionContext`; no groups since 2026-10-28 — an item is placed `onBar` or `inOverlay`), `…api.overlay` (`OverlayPart`, `OverlayTool`,
   `OverlayContext`, `FrameContext`, `OverlayToolContext`, `OverlayFrame`, `Probe`, `ProbeContext`, `ProbeResult`,
   `Marks`, `Pixel`, `Area`, `Watched`), `…api.run` (`RunOverlayPart`, `RunOverlayContext`, `RunProperty`), `…api.assist`
   (`AssistantTool`, `ToolSchema`, `@Describe`, `@Key`, `AgentContext`, `AgentReply`, `TrialEntry`, and the
