@@ -9,7 +9,7 @@ import java.util.function.Supplier;
  * <p>Deliberately unlike {@link com.botmaker.plugin.api.slot.SlotEditor}, which hands back a {@code Node} the plugin built itself. The
  * difference is not consistency but expressiveness: a bespoke image picker cannot be described as data and a
  * button can, and describing it as data is what lets the host own the things a shared bar has to own —
- * grouping, ordering, separators, packing, the overflow menu, the icon box and the theme. A plugin returning
+ * tabs, ordering, packing, the overflow menu, the icon box and the theme. A plugin returning
  * a {@code Node} would take all of that with it, and two plugins doing so would produce a bar with two
  * different button heights.
  *
@@ -45,9 +45,9 @@ import java.util.function.Supplier;
  *       {@code jar:}) — called like {@code label}, so an icon may arrive late. {@code null}, or a supplier
  *       answering {@code null}, means no icon, which is an ordinary state: the label already carries a glyph
  *       in most of this application</li>
- *   <li>{@code group}: which section of the bar; {@link ToolbarGroup#STUDIO} is refused</li>
- *   <li>{@code order}: position within the group, low first. Ties break on the plugin's coordinate, so a bar built
- *       from two plugins is stable rather than dependent on discovery order</li>
+ *   <li>{@code place}: the plugin's row on the main bar, or the overlay editor's Actions tab ({@link Place})</li>
+ *   <li>{@code order}: position among this plugin's items in that place, low first. Each plugin has its own
+ *       tab on the bar, so no order is shared with another plugin</li>
  *   <li>{@code enabledWhen}: when the item may be pressed</li>
  *   <li>{@code onClick}: what pressing it does, given the host facts in {@link ActionContext}</li>
  * </ul>
@@ -58,18 +58,30 @@ public final class ToolbarItem {
     private final Supplier<String> label;
     private final String tooltip;
     private final Supplier<String> icon;
-    private final ToolbarGroup group;
+    private final Place place;
     private final int order;
     private final EnabledWhen enabledWhen;
     private final Consumer<ActionContext> onClick;
 
-    ToolbarItem(String id, Supplier<String> label, String tooltip, Supplier<String> icon, ToolbarGroup group,
+    /**
+     * Where an item is drawn: the plugin's row on the main bar, or the overlay editor's Actions tab. A plugin
+     * picks it through {@link ToolbarSteps.Placing#onBar(int)} or {@link ToolbarSteps.Placing#inOverlay(int)};
+     * the host reads it to put each item in one place.
+     */
+    public enum Place {
+        /** The plugin's own row on the main bar, shown when its tab is selected. */
+        BAR,
+        /** The overlay editor's Actions tab; never on the main bar. */
+        OVERLAY
+    }
+
+    ToolbarItem(String id, Supplier<String> label, String tooltip, Supplier<String> icon, Place place,
                 int order, EnabledWhen enabledWhen, Consumer<ActionContext> onClick) {
         this.id = id;
         this.label = label;
         this.tooltip = tooltip;
         this.icon = icon;
-        this.group = group;
+        this.place = place;
         this.order = order;
         this.enabledWhen = enabledWhen;
         this.onClick = onClick;
@@ -77,7 +89,8 @@ public final class ToolbarItem {
 
     /**
      * Declares an item, one named step at a time ({@link ToolbarSteps}): {@code ToolbarItem.id(ID).label(…)
-     * .tooltip(…).in(group, order).onPress(() -> MyWindow::open)}; {@code .enabledWhen(…)} and
+     * .tooltip(…).onBar(order).onPress(() -> MyWindow::open)} ({@code .inOverlay(order)} for the overlay
+     * editor); {@code .enabledWhen(…)} and
      * {@code .icon(…)} are the optional steps before the press.
      */
     public static ToolbarSteps.Labelling id(String id) {
@@ -100,8 +113,8 @@ public final class ToolbarItem {
         return icon;
     }
 
-    public ToolbarGroup group() {
-        return group;
+    public Place place() {
+        return place;
     }
 
     public int order() {
@@ -118,6 +131,6 @@ public final class ToolbarItem {
 
     @Override
     public String toString() {
-        return "ToolbarItem[" + id + " in " + group + " at " + order + "]";
+        return "ToolbarItem[" + id + " on " + place + " at " + order + "]";
     }
 }

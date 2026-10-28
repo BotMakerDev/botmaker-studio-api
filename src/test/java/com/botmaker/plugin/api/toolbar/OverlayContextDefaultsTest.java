@@ -46,8 +46,12 @@ class OverlayContextDefaultsTest {
     }
 
     @Test
-    void the_overlay_group_exists_and_is_not_the_hosts_own() {
-        assertEquals("OVERLAY", ToolbarGroup.OVERLAY.name());
-        assertTrue(ToolbarGroup.OVERLAY != ToolbarGroup.STUDIO);
+    void an_overlay_item_is_placed_in_the_overlay_not_on_the_bar() {
+        ToolbarItem item = ToolbarItem.id("here").label("⌖ Here").tooltip("Points the bot here")
+                .inOverlay(10)
+                .onPress(() -> context -> {});
+
+        assertEquals(ToolbarItem.Place.OVERLAY, item.place());
+        assertEquals(10, item.order());
     }
 }

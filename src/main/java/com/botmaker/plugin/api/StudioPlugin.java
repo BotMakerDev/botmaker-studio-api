@@ -45,7 +45,7 @@ import java.util.Optional;
  *   <li><b>slot editors</b> — {@link #slotEditors()}: the two editors a type cannot choose — one picked by
  *       the call a slot sits in, and an override of an editor for a type another plugin declared.</li>
  *   <li><b>toolbar</b> &mdash; {@link #toolbarItems()}: buttons, contributed as data. The host owns the
- *       grouping, the order, the packing and the overflow menu; a plugin owns what a press does.</li>
+ *       plugin's tab, the order, the packing and the overflow menu; a plugin owns what a press does.</li>
  *   <li><b>managed values</b> &mdash; {@link #managedValues()}: the values this plugin maintains through
  *       its own window, which the host shows but does not let its code canvas edit.</li>
  * </ul>
@@ -173,13 +173,9 @@ public sealed interface StudioPlugin permits DeclaredPlugin {
      * The toolbar buttons this plugin contributes.
      *
      * <p>Data, not nodes — see {@link ToolbarItem} for why, and for the rule that the label is a supplier so
-     * a button may say what the project currently holds. The host groups, orders, packs, overflows and
-     * themes them; this decides only what is offered and what a press does.
-     *
-     * <p>{@link com.botmaker.plugin.api.toolbar.ToolbarGroup#STUDIO} is <b>refused</b>, with the plugin named. It is the host's own section,
-     * for the things that would still make sense with every plugin uninstalled, and an item quietly re-homed
-     * out of it would be worse than a refusal: a user reads that part of the bar as the application rather
-     * than as their project.
+     * a button may say what the project currently holds. The host gives the plugin a tab of its own on the
+     * bar, orders, packs, overflows and themes its buttons; this decides only what is offered and what a
+     * press does. Studio's own row is not a place a plugin can name.
      *
      * <p>Called once when a project's plugins are bound, not on every layout. A plugin whose set of items
      * depends on state should return them all and let a supplier or an {@link com.botmaker.plugin.api.toolbar.EnabledWhen} say which apply.

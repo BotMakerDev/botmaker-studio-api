@@ -9,11 +9,12 @@ import java.util.function.Supplier;
  * <pre>{@code
  * ToolbarItem.id(BOT_SETTINGS).label("⚙ Bot Settings")
  *         .tooltip("How the bot clicks and looks")
- *         .in(ToolbarGroup.PROJECT, 60)
+ *         .onBar(40)
  *         .onPress(() -> BotSettingsWindow::open);
  * }</pre>
  *
- * <p>The label, the tooltip and the place are required and named, rather than three strings in a row. When it
+ * <p>The label, the tooltip and the place ({@code onBar} or {@code inOverlay}) are required and named, rather
+ * than three strings in a row. When it
  * may be pressed and its icon are optional, and sit between
  * the place and the press.
  */
@@ -79,10 +80,22 @@ public final class ToolbarSteps {
             this.tooltip = tooltip;
         }
 
-        /** The section of the bar, and the position in it, low first. */
-        public Pressing in(ToolbarGroup group, int order) {
-            Objects.requireNonNull(group, "group");
-            return new Pressing(id, label, tooltip, group, order, EnabledWhen.ALWAYS, null);
+        /**
+         * On the main bar, in this plugin's own row, at {@code order} (low first). The host gives each plugin
+         * a tab of its own, so the order is only among this plugin's items.
+         */
+        public Pressing onBar(int order) {
+            return new Pressing(id, label, tooltip, ToolbarItem.Place.BAR, order, EnabledWhen.ALWAYS, null);
+        }
+
+        /**
+         * In the overlay editor's Actions tab, at {@code order} (low first), never on the main bar: an action
+         * whose subject is the window the HUD is drawn over, handed a context that answers
+         * {@link ActionContext#overWindowTitle()}. A pane rather than a button is an
+         * {@link com.botmaker.plugin.api.overlay.OverlayTool}.
+         */
+        public Pressing inOverlay(int order) {
+            return new Pressing(id, label, tooltip, ToolbarItem.Place.OVERLAY, order, EnabledWhen.ALWAYS, null);
         }
     }
 
@@ -92,17 +105,17 @@ public final class ToolbarSteps {
         private final String id;
         private final Supplier<String> label;
         private final String tooltip;
-        private final ToolbarGroup group;
+        private final ToolbarItem.Place place;
         private final int order;
         private final EnabledWhen enabledWhen;
         private final Supplier<String> icon;
 
-        private Pressing(String id, Supplier<String> label, String tooltip, ToolbarGroup group, int order,
+        private Pressing(String id, Supplier<String> label, String tooltip, ToolbarItem.Place place, int order,
                          EnabledWhen enabledWhen, Supplier<String> icon) {
             this.id = id;
             this.label = label;
             this.tooltip = tooltip;
-            this.group = group;
+            this.place = place;
             this.order = order;
             this.enabledWhen = enabledWhen;
             this.icon = icon;
@@ -110,24 +123,24 @@ public final class ToolbarSteps {
 
         /** When it may be pressed; {@link EnabledWhen#ALWAYS} unless said. */
         public Pressing enabledWhen(EnabledWhen when) {
-            return new Pressing(id, label, tooltip, group, order, Objects.requireNonNull(when, "when"), icon);
+            return new Pressing(id, label, tooltip, place, order, Objects.requireNonNull(when, "when"), icon);
         }
 
         /** An icon: a resource in the plugin's own jar, or a URI the host can load. */
         public Pressing icon(String icon) {
             Objects.requireNonNull(icon, "icon");
-            return new Pressing(id, label, tooltip, group, order, enabledWhen, () -> icon);
+            return new Pressing(id, label, tooltip, place, order, enabledWhen, () -> icon);
         }
 
         /** An icon read like the label, so it may arrive late. */
         public Pressing icon(Supplier<String> icon) {
-            return new Pressing(id, label, tooltip, group, order, enabledWhen, Objects.requireNonNull(icon, "icon"));
+            return new Pressing(id, label, tooltip, place, order, enabledWhen, Objects.requireNonNull(icon, "icon"));
         }
 
         /** What pressing it does: {@code () -> MyWindow::open}, a method taking the {@link ActionContext}. */
         public ToolbarItem onPress(Pressed pressed) {
             Objects.requireNonNull(pressed, "pressed");
-            return new ToolbarItem(id, label, tooltip, icon, group, order, enabledWhen, pressed::press);
+            return new ToolbarItem(id, label, tooltip, icon, place, order, enabledWhen, pressed::press);
         }
     }
 }

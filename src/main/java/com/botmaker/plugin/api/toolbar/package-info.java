@@ -2,7 +2,8 @@
  * A button a plugin puts on the host's toolbar, contributed as data.
  *
  * <p>{@link com.botmaker.plugin.api.toolbar.ToolbarItem} is the button,
- * {@link com.botmaker.plugin.api.toolbar.ToolbarGroup} says where on the toolbar it sits,
+ * {@link com.botmaker.plugin.api.toolbar.ToolbarItem.Place} says whether it sits on the main bar (in the
+ * plugin's own tab) or in the overlay editor,
  * {@link com.botmaker.plugin.api.toolbar.EnabledWhen} when it may be pressed, and
  * {@link com.botmaker.plugin.api.toolbar.ActionContext} is what its click is handed.
  *

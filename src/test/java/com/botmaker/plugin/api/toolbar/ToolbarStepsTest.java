@@ -21,14 +21,14 @@ class ToolbarStepsTest {
     void theStepsFillEveryComponent() {
         ToolbarItem item = ToolbarItem.id("settings").label("⚙ Settings")
                 .tooltip("Opens the settings")
-                .in(ToolbarGroup.PROJECT, 60)
+                .onBar(60)
                 .onPress(() -> ToolbarStepsTest::open);
 
         assertEquals("settings", item.id());
         assertEquals("⚙ Settings", item.label().get());
         assertEquals("Opens the settings", item.tooltip());
         assertNull(item.icon());
-        assertEquals(ToolbarGroup.PROJECT, item.group());
+        assertEquals(ToolbarItem.Place.BAR, item.place());
         assertEquals(60, item.order());
         assertEquals(EnabledWhen.ALWAYS, item.enabledWhen());
     }
@@ -37,7 +37,7 @@ class ToolbarStepsTest {
     void theOptionalStepsSitBeforeThePress() {
         ToolbarItem item = ToolbarItem.id("run").label(() -> "▶ Run")
                 .tooltip("Runs the bot")
-                .in(ToolbarGroup.RUN, 1)
+                .onBar(1)
                 .enabledWhen(EnabledWhen.BOT_STOPPED)
                 .icon("run.png")
                 .onPress(() -> ToolbarStepsTest::open);
@@ -50,7 +50,7 @@ class ToolbarStepsTest {
     @Test
     void thePressIsResolvedOnlyWhenPressed() {
         AtomicInteger resolved = new AtomicInteger();
-        ToolbarItem item = ToolbarItem.id("late").label("Late").tooltip("Late").in(ToolbarGroup.TOOLS, 1)
+        ToolbarItem item = ToolbarItem.id("late").label("Late").tooltip("Late").onBar(1)
                 .onPress(() -> {
                     resolved.incrementAndGet();
                     return (Consumer<ActionContext>) ToolbarStepsTest::open;
@@ -67,8 +67,7 @@ class ToolbarStepsTest {
     void aBlankIdOrTooltipIsRefused() {
         assertThrows(IllegalArgumentException.class, () -> ToolbarItem.id(" "));
         assertThrows(IllegalArgumentException.class, () -> ToolbarItem.id("x").label("X").tooltip(""));
-        assertThrows(NullPointerException.class, () -> ToolbarItem.id("x").label("X").tooltip("t").in(null, 1));
         assertThrows(NullPointerException.class,
-                () -> ToolbarItem.id("x").label("X").tooltip("t").in(ToolbarGroup.RUN, 1).onPress(null));
+                () -> ToolbarItem.id("x").label("X").tooltip("t").onBar(1).onPress(null));
     }
 }

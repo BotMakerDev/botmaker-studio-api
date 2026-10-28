@@ -50,7 +50,8 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   the annotation's binary name through `SlotContext.parameter()`; an editor reads its settings off it, or
   off a table the plugin keys by `Parameter.getDeclaringExecutable()` (the SDK's `SettingHints`). A preview is a small, non-interactive picture of one value, for a value
   shown in a list of choices rather than edited.
-- **A toolbar item**: `ToolbarItem.id(ID).label(…).tooltip(…).in(group, order)` → optional
+- **A toolbar item**: `ToolbarItem.id(ID).label(…).tooltip(…).onBar(order)` (or `.inOverlay(order)`: the
+  overlay editor's Actions tab) → optional
   `.enabledWhen(…)`/`.icon(…)` → `.onPress(() -> MyWindow::open)` (`ToolbarSteps`). The press is a `Pressed`,
   a supplier of the handler, for `Drawn`'s reason: the item list is built headless.
   Listed by a `ToolbarHolder`.

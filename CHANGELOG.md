@@ -19,6 +19,10 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Changed (breaking)
 
+- **Toolbar groups are gone** (2026-10-28). `ToolbarGroup` is deleted: Studio gives each plugin a tab of its own on
+  the bar, below Studio's row, so a plugin no longer picks a section. Replace `.in(group, order)` with
+  `.onBar(order)`, or `.inOverlay(order)` for what was `ToolbarGroup.OVERLAY` (the overlay editor's Actions tab).
+  `ToolbarItem.group()` is now `place()`, answering `ToolbarItem.Place.BAR` or `OVERLAY`.
 - **A plugin is named in its pom, and its coordinate is its id** (2026-10-27). Set
   `<properties><botmaker.plugin>com.example.MyPlugin</botmaker.plugin></properties>` in the plugin's pom; the host
   reads it from the jar's `META-INF/maven/<groupId>/<artifactId>/pom.xml`, with `groupId:artifactId` as the id and
