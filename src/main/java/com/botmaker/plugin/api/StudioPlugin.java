@@ -72,8 +72,8 @@ public sealed interface StudioPlugin permits DeclaredPlugin {
 
     /**
      * <b>The way to declare a plugin</b>: an empty {@link PluginDeclaration}, handed to {@link DeclaredPlugin}'s
-     * constructor — {@code StudioPlugin.declare().types(MyTypes.class).toolbar(() -> …)…}. It names no id and
-     * no name: those are the pom's.
+     * constructor — {@code StudioPlugin.declare().types(MyTypes.class).toolbar(MyToolbar.class)…}, each list named
+     * by the class holding it. It names no id and no name: those are the pom's.
      */
     static PluginDeclaration declare() {
         return PluginDeclaration.empty();
@@ -162,7 +162,7 @@ public sealed interface StudioPlugin permits DeclaredPlugin {
      * answer for: what the plugin declares here is what it may read and write.
      *
      * <p>Read once per project bind, like the toolbar. A plugin that throws here costs only its own entries.
-     * {@code default} for the reason every method here but {@code id()} is: an older plugin manages nothing,
+     * {@code default} for the reason every method here is: an older plugin manages nothing,
      * and every value stays exactly as editable as it was.
      */
     default List<ManagedValue<?>> managedValues() {
@@ -248,7 +248,8 @@ public sealed interface StudioPlugin permits DeclaredPlugin {
     }
 
     /**
-     * A project has been bound to this plugin — this is which one.
+     * A project has been bound to this plugin — this is which one. A plugin declares what to do with
+     * {@link PluginDeclaration#onProjectOpened}; {@link DeclaredPlugin} makes this method final.
      *
      * <p><b>The mirror of {@link #projectClosing()}, and a capability for the same reason.</b> Which project
      * is open is the one fact a plugin cannot establish for itself: a plugin is constructed once by
@@ -268,7 +269,7 @@ public sealed interface StudioPlugin permits DeclaredPlugin {
      *
      * <p><b>Do nothing expensive here.</b> This runs while a project is opening, on the path the user is
      * waiting on. Read the file when a surface is asked for, not now — the same rule that keeps
-     * {@link DeclaredPlugin}'s surfaces behind suppliers, and for the same reason: a plugin that parses a
+     * {@link DeclaredPlugin}'s surfaces in holder classes initialised only when asked, and for the same reason: a plugin that parses a
      * project on bind is a plugin every project open pays for whether or not anything reads the result.
      *
      * <p>Throwing is contained and reported, and the project still opens: a plugin must not be able to
@@ -280,7 +281,8 @@ public sealed interface StudioPlugin permits DeclaredPlugin {
     }
 
     /**
-     * The open project is closing — release anything held on its behalf.
+     * The open project is closing — release anything held on its behalf. A plugin declares what to release with
+     * {@link PluginDeclaration#onProjectClosing}; {@link DeclaredPlugin} makes this method final.
      *
      * <p>Called once per bind, on the plugins that were serving the project being left, and <b>before</b>
      * their classloader is closed, so a plugin may still run its own code here. It is called on the way to

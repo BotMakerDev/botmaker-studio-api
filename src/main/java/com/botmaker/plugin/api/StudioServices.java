@@ -94,4 +94,15 @@ public interface StudioServices {
      */
     default void status(String message) {
     }
+
+    /**
+     * Where this plugin writes what happened, shown by the host under the plugin's name — see {@link PluginLog}.
+     *
+     * <p>Host-only because attribution is: a line a plugin prints itself reaches the host's standard error with
+     * no name on it. {@code default} for the reason {@link #runs()} is: a host that keeps no log answers
+     * {@link PluginLog#STANDARD_ERROR}.
+     */
+    default PluginLog log() {
+        return PluginLog.STANDARD_ERROR;
+    }
 }

@@ -25,20 +25,23 @@ import java.util.Optional;
  *     public DiscordPlugin() {
  *         super(StudioPlugin.declare()
  *                 .types(DiscordTypes.class)
- *                 .toolbar(() -> DiscordToolbar.ALL));
+ *                 .toolbar(DiscordToolbar.class)
+ *                 .onProjectClosing(DiscordSession::close));
  *     }
+ * }
+ *
+ * final class DiscordToolbar implements ToolbarHolder {
+ *     public static final ToolbarItem SEND_TEST = ToolbarItem.button("Send test")…;
  * }
  *
  * <properties><botmaker.plugin>com.example.discord.DiscordPlugin</botmaker.plugin></properties>
  * }</pre>
  *
- * <p>Each surface asks its supplier, or reads its holder classes' fields, every time the host asks, and keeps
- * nothing: the values are {@code static final} constants, built once when their class loads, and the host
- * keeps what it gets for the bound project. {@link #projectOpened} and {@link #projectClosing} are the two
- * methods left to override, because they are not lists — a plugin holding something the operating system
- * counts releases it in the second.
- *
- * <p>Each list is a supplier or a holder class, so nothing is built while the plugin is constructed.
+ * <p>Each surface reads its holder classes' fields every time the host asks, and keeps nothing: the values are
+ * {@code static final} constants, built once when their class loads, and the host keeps what it gets for the
+ * bound project. Nothing is left to override: the lifecycle is declared too
+ * ({@link PluginDeclaration#onProjectOpened}, {@link PluginDeclaration#onProjectClosing}), so the class is the
+ * declaration and nothing else.
  */
 public non-sealed class DeclaredPlugin implements StudioPlugin {
 
@@ -107,5 +110,15 @@ public non-sealed class DeclaredPlugin implements StudioPlugin {
     @Override
     public final Optional<Readiness> readiness() {
         return declaration.readiness();
+    }
+
+    @Override
+    public final void projectOpened(StudioServices services) {
+        declaration.opened(services);
+    }
+
+    @Override
+    public final void projectClosing() {
+        declaration.closing();
     }
 }

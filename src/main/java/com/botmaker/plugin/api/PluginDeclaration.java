@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * Everything a plugin contributes, stated in one expression and handed to {@link DeclaredPlugin}:
@@ -35,56 +34,55 @@ import java.util.function.Supplier;
  *         super(StudioPlugin.declare()
  *                 .types(SdkTypes.class, FlowTypes.class, CaptureTypes.class)
  *                 .values(SdkValues.class)
- *                 .editors(() -> SdkEditors.ALL)
- *                 .toolbar(() -> SdkToolbarItems.ALL)
- *                 .runOverlay(() -> List.of(SdkRunOverlay.PART))
- *                 .overlay(() -> SdkOverlay.PART)
- *                 .assistant(() -> SdkAssist.ALL)
+ *                 .editors(SdkEditors.class)
+ *                 .toolbar(SdkToolbarItems.class)
+ *                 .runOverlay(SdkRunOverlay.class)
+ *                 .overlay(SdkOverlay.class)
+ *                 .assistant(SdkAssist.class)
  *                 .assistantGuide(SdkAssist.GUIDE)
- *                 .trial(Bot::trial));
+ *                 .trial(Bot::trial)
+ *                 .onProjectOpened(SdkSession::open)
+ *                 .onProjectClosing(SdkSession::close));
  *     }
  * }
  * }</pre>
  *
- * <p>It names no id and no name: the plugin's pom carries both ({@link StudioPlugin}). Each surface is optional
- * and names what it lists, so a reader sees the whole plugin
- * in one place instead of one override per surface. A surface left out contributes nothing, as the
- * contract's {@code default} does. The palette is left out by nearly every plugin: the host finds the
- * {@code @Palette} classes in its jar.
+ * <p>It names no id and no name: the plugin's pom carries both ({@link StudioPlugin}). Each surface is optional,
+ * so a reader sees the whole plugin in one place. A surface left out contributes nothing. The palette is left out
+ * by nearly every plugin: the host finds the {@code @Palette} classes in its jar.
  *
- * <p><b>Types and managed values are named by the classes that hold them.</b> {@code .types(MyTypes.class)}
- * contributes every {@code public static final} {@link PluginType} and {@link ComponentType} field of
- * {@code MyTypes}, and every one inside a {@code public static final} list there; {@code .values(...)} the same
- * for {@link ManagedValue}. A new field is declared by being written: there is no list to forget it in. The
- * other surfaces stay lists, because their order is what a user sees.
+ * <p><b>Every list is named by the classes that hold it, and that is the one way to declare one.</b>
+ * {@code .toolbar(MyToolbar.class)} contributes every {@code public static final} {@link ToolbarItem} field of
+ * {@code MyToolbar}, and every one inside a {@code public static final} list there, in field order — the order a
+ * user sees. A new field is declared by being written: there is no list to forget it in. Each step takes only its
+ * own kind of holder ({@link TypeHolder}, {@link ToolbarHolder}, …), so a holder handed to the wrong step does not
+ * compile. A field reached twice counts once; other fields are ignored, and so are fields a holder inherits:
+ * name the superclass as a holder of its own.
  *
  * <p><b>Nothing is built before the host asks, and that is the one rule to keep.</b> A plugin is constructed
  * while a project opens, and by headless hosts that have no JavaFX ({@code botmaker plugin validate}, the
- * registry's CI). A list built in the constructor — a toolbar item referring to a dialog, say — loads classes
- * on that path, and a class that links JavaFX fails it: the plugin does not load at all. A holder class is
- * initialised, and a supplier asked, only when the host asks for that surface. Point a supplier at a
- * {@code static final} list; the host keeps what it gets for the bound project, so there is nothing to cache
- * here.
+ * registry's CI). Naming a holder class initialises nothing; the host's first ask for that surface does, so a
+ * toolbar holder linking JavaFX costs a headless host nothing. The host keeps what it gets for the bound project,
+ * so there is nothing to cache here.
  *
  * <p>Immutable: each step answers a copy.
  */
 public final class PluginDeclaration {
 
     // Set only on a fresh copy, inside with(…), before any step hands it out.
-    private Supplier<PaletteCatalog> catalog;
+    private List<Class<?>> catalogHolders = List.of();
     private List<Class<?>> typeHolders = List.of();
-    private Supplier<? extends List<? extends PluginType<?>>> types;
-    private Supplier<? extends List<? extends ComponentType<?>>> parts;
-    private Supplier<? extends List<? extends SlotEditor>> editors;
+    private List<Class<?>> editorHolders = List.of();
     private List<Class<?>> valueHolders = List.of();
-    private Supplier<? extends List<? extends ManagedValue<?>>> values;
-    private Supplier<? extends List<? extends ToolbarItem>> toolbar;
-    private Supplier<? extends List<? extends RunOverlayPart>> runOverlay;
-    private Supplier<OverlayPart> overlay;
-    private Supplier<? extends List<? extends AssistantTool<?>>> assistant;
+    private List<Class<?>> toolbarHolders = List.of();
+    private List<Class<?>> runOverlayHolders = List.of();
+    private List<Class<?>> overlayHolders = List.of();
+    private List<Class<?>> assistantHolders = List.of();
     private String guide = "";
     private Method trial;
     private Readiness.Check readiness;
+    private Consumer<StudioServices> opened;
+    private Runnable closing;
 
     private PluginDeclaration() {
     }
@@ -97,97 +95,100 @@ public final class PluginDeclaration {
     /** A copy of this declaration with {@code set} applied to it: every step's one way to answer a copy. */
     private PluginDeclaration with(Consumer<PluginDeclaration> set) {
         PluginDeclaration copy = new PluginDeclaration();
-        copy.catalog = catalog;
+        copy.catalogHolders = catalogHolders;
         copy.typeHolders = typeHolders;
-        copy.types = types;
-        copy.parts = parts;
-        copy.editors = editors;
+        copy.editorHolders = editorHolders;
         copy.valueHolders = valueHolders;
-        copy.values = values;
-        copy.toolbar = toolbar;
-        copy.runOverlay = runOverlay;
-        copy.overlay = overlay;
-        copy.assistant = assistant;
+        copy.toolbarHolders = toolbarHolders;
+        copy.runOverlayHolders = runOverlayHolders;
+        copy.overlayHolders = overlayHolders;
+        copy.assistantHolders = assistantHolders;
         copy.guide = guide;
         copy.trial = trial;
         copy.readiness = readiness;
+        copy.opened = opened;
+        copy.closing = closing;
         set.accept(copy);
         return copy;
     }
 
     /**
      * The classes holding this plugin's types — {@link StudioPlugin#types()} and
-     * {@link StudioPlugin#componentTypes()} at once: each {@code public static final} field of a holder that is a
-     * {@link PluginType} or a {@link ComponentType}, or a list of them, in the order the fields are declared,
-     * holder by holder. A field reached twice counts once. Naming a class initialises nothing; the host's first
-     * ask does.
+     * {@link StudioPlugin#componentTypes()} at once: each {@link PluginType} and {@link ComponentType} field, the
+     * parts inside a value included. Calling it again adds holders.
      *
      * @throws IllegalArgumentException when no holder is given, or one is {@code null}
      */
-    public PluginDeclaration types(Class<?>... holders) {
-        List<Class<?>> named = holders("types", holders);
-        return with(copy -> copy.typeHolders = named);
+    @SafeVarargs
+    public final PluginDeclaration types(Class<? extends TypeHolder>... holders) {
+        List<Class<?>> named = holders("types", "MyTypes", holders);
+        return with(copy -> copy.typeHolders = added(typeHolders, named));
     }
 
     /**
-     * The types this plugin owns as a list it builds — {@link StudioPlugin#types()}. {@link #types(Class[])} is
-     * the usual way; this one is for a list computed at run time. Both may be given: the host gets the two.
-     */
-    public PluginDeclaration types(Supplier<? extends List<? extends PluginType<?>>> types) {
-        return with(copy -> copy.types = types);
-    }
-
-    /**
-     * The calls inside its values that are not types of their own, as a list it builds —
-     * {@link StudioPlugin#componentTypes()}. A holder named by {@link #types(Class[])} already gives its parts.
-     */
-    public PluginDeclaration parts(Supplier<? extends List<? extends ComponentType<?>>> parts) {
-        return with(copy -> copy.parts = parts);
-    }
-
-    /** The editors a type cannot choose for itself, narrowest first — {@link StudioPlugin#slotEditors()}. */
-    public PluginDeclaration editors(Supplier<? extends List<? extends SlotEditor>> editors) {
-        return with(copy -> copy.editors = editors);
-    }
-
-    /**
-     * The classes holding the managed values its windows keep — {@link StudioPlugin#managedValues()}: each
-     * {@code public static final} {@link ManagedValue} field of a holder, or a list of them, in the order the
-     * fields are declared, holder by holder. A field reached twice counts once.
+     * The classes holding the editors a type cannot choose for itself, narrowest first —
+     * {@link StudioPlugin#slotEditors()}.
      *
      * @throws IllegalArgumentException when no holder is given, or one is {@code null}
      */
-    public PluginDeclaration values(Class<?>... holders) {
-        List<Class<?>> named = holders("values", holders);
-        return with(copy -> copy.valueHolders = named);
+    @SafeVarargs
+    public final PluginDeclaration editors(Class<? extends EditorHolder>... holders) {
+        List<Class<?>> named = holders("editors", "MyEditors", holders);
+        return with(copy -> copy.editorHolders = added(editorHolders, named));
     }
 
     /**
-     * The managed values its windows keep, as a list it builds — {@link StudioPlugin#managedValues()}.
-     * {@link #values(Class[])} is the usual way; both may be given.
+     * The classes holding the managed values its windows keep — {@link StudioPlugin#managedValues()}.
+     *
+     * @throws IllegalArgumentException when no holder is given, or one is {@code null}
      */
-    public PluginDeclaration values(Supplier<? extends List<? extends ManagedValue<?>>> values) {
-        return with(copy -> copy.values = values);
+    @SafeVarargs
+    public final PluginDeclaration values(Class<? extends ValueHolder>... holders) {
+        List<Class<?>> named = holders("values", "MyValues", holders);
+        return with(copy -> copy.valueHolders = added(valueHolders, named));
     }
 
-    /** Its toolbar buttons — {@link StudioPlugin#toolbarItems()}. */
-    public PluginDeclaration toolbar(Supplier<? extends List<? extends ToolbarItem>> toolbar) {
-        return with(copy -> copy.toolbar = toolbar);
+    /**
+     * The classes holding its toolbar buttons — {@link StudioPlugin#toolbarItems()}.
+     *
+     * @throws IllegalArgumentException when no holder is given, or one is {@code null}
+     */
+    @SafeVarargs
+    public final PluginDeclaration toolbar(Class<? extends ToolbarHolder>... holders) {
+        List<Class<?>> named = holders("toolbar", "MyToolbar", holders);
+        return with(copy -> copy.toolbarHolders = added(toolbarHolders, named));
     }
 
-    /** What it shows in the host's run overlay while the bot runs — {@link StudioPlugin#runOverlayParts()}. */
-    public PluginDeclaration runOverlay(Supplier<? extends List<? extends RunOverlayPart>> runOverlay) {
-        return with(copy -> copy.runOverlay = runOverlay);
+    /**
+     * The classes holding what it shows in the host's run overlay while the bot runs —
+     * {@link StudioPlugin#runOverlayParts()}.
+     *
+     * @throws IllegalArgumentException when no holder is given, or one is {@code null}
+     */
+    @SafeVarargs
+    public final PluginDeclaration runOverlay(Class<? extends RunOverlayHolder>... holders) {
+        List<Class<?>> named = holders("runOverlay", "MyRunOverlay", holders);
+        return with(copy -> copy.runOverlayHolders = added(runOverlayHolders, named));
     }
 
-    /** Its part of the overlay editor: targets, watched screen, tools, probes — {@link StudioPlugin#overlayPart()}. */
-    public PluginDeclaration overlay(Supplier<OverlayPart> overlay) {
-        return with(copy -> copy.overlay = overlay);
+    /**
+     * The class holding its one part of the overlay editor: targets, watched screen, tools, probes —
+     * {@link StudioPlugin#overlayPart()}.
+     */
+    public PluginDeclaration overlay(Class<? extends OverlayHolder> holder) {
+        List<Class<?>> named = holders("overlay", "MyOverlay", holder);
+        return with(copy -> copy.overlayHolders = added(overlayHolders, named));
     }
 
-    /** The tools it offers the AI assistant — {@link StudioPlugin#assistantTools()}. */
-    public PluginDeclaration assistant(Supplier<? extends List<? extends AssistantTool<?>>> assistant) {
-        return with(copy -> copy.assistant = assistant);
+    /**
+     * The classes holding the tools it offers the AI assistant — {@link StudioPlugin#assistantTools()}.
+     *
+     * @throws IllegalArgumentException when no holder is given, or one is {@code null}
+     */
+    @SafeVarargs
+    public final PluginDeclaration assistant(Class<? extends AssistantHolder>... holders) {
+        List<Class<?>> named = holders("assistant", "MyTools", holders);
+        return with(copy -> copy.assistantHolders = added(assistantHolders, named));
     }
 
     /**
@@ -223,49 +224,70 @@ public final class PluginDeclaration {
         return with(copy -> copy.readiness = check);
     }
 
-    /** A palette built by hand, overriding the one the host discovers — rarely wanted; see {@link StudioPlugin#catalog()}. */
-    public PluginDeclaration catalog(Supplier<PaletteCatalog> catalog) {
-        return with(copy -> copy.catalog = catalog);
+    /**
+     * What to do when a project is bound to this plugin, by method reference:
+     * {@code .onProjectOpened(MySession::open)}, a {@code static void open(StudioServices)} —
+     * {@link StudioPlugin#projectOpened}. Do nothing expensive there; the user is waiting on the project.
+     */
+    public PluginDeclaration onProjectOpened(Consumer<StudioServices> opened) {
+        Consumer<StudioServices> told = Objects.requireNonNull(opened, "onProjectOpened");
+        return with(copy -> copy.opened = told);
+    }
+
+    /**
+     * What to release when the bound project closes, by method reference: {@code .onProjectClosing(MySession::close)}
+     * — {@link StudioPlugin#projectClosing}. For what the operating system counts: a port, a display, a process.
+     */
+    public PluginDeclaration onProjectClosing(Runnable closing) {
+        Runnable told = Objects.requireNonNull(closing, "onProjectClosing");
+        return with(copy -> copy.closing = told);
+    }
+
+    /**
+     * The class holding a palette built by hand, overriding the one the host discovers — rarely wanted; see
+     * {@link StudioPlugin#catalog()}.
+     */
+    public PluginDeclaration catalog(Class<? extends CatalogHolder> holder) {
+        List<Class<?>> named = holders("catalog", "MyCatalog", holder);
+        return with(copy -> copy.catalogHolders = added(catalogHolders, named));
     }
 
     PaletteCatalog catalog() {
-        PaletteCatalog built = catalog == null ? null : catalog.get();
-        return built == null ? PaletteCatalog.empty() : built;
+        return one(catalogHolders, PaletteCatalog.class).orElseGet(PaletteCatalog::empty);
     }
 
     List<PluginType<?>> types() {
-        return joined(list(types), held(typeHolders, PluginType.class));
+        return held(typeHolders, PluginType.class);
     }
 
     List<ComponentType<?>> parts() {
         List<ComponentType<?>> held = new ArrayList<>(held(typeHolders, ComponentType.class));
         held.removeIf(PluginType.class::isInstance);
-        return joined(list(parts), held);
+        return List.copyOf(held);
     }
 
     List<SlotEditor> editors() {
-        return list(editors);
+        return held(editorHolders, SlotEditor.class);
     }
 
     List<ManagedValue<?>> values() {
-        return joined(list(values), held(valueHolders, ManagedValue.class));
+        return held(valueHolders, ManagedValue.class);
     }
 
     List<ToolbarItem> toolbar() {
-        return list(toolbar);
+        return held(toolbarHolders, ToolbarItem.class);
     }
 
     List<RunOverlayPart> runOverlay() {
-        return list(runOverlay);
+        return held(runOverlayHolders, RunOverlayPart.class);
     }
 
     Optional<OverlayPart> overlay() {
-        OverlayPart built = overlay == null ? null : overlay.get();
-        return built == null || built.isEmpty() ? Optional.empty() : Optional.of(built);
+        return one(overlayHolders, OverlayPart.class).filter(part -> !part.isEmpty());
     }
 
     List<AssistantTool<?>> assistant() {
-        return list(assistant);
+        return held(assistantHolders, AssistantTool.class);
     }
 
     String guide() {
@@ -280,20 +302,39 @@ public final class PluginDeclaration {
         return readiness == null ? Optional.empty() : Optional.ofNullable(readiness.now());
     }
 
-    private static <E> List<E> list(Supplier<? extends List<? extends E>> surface) {
-        List<? extends E> built = surface == null ? null : surface.get();
-        return built == null ? List.of() : List.copyOf(built);
+    void opened(StudioServices services) {
+        if (opened != null) opened.accept(services);
     }
 
-    private static List<Class<?>> holders(String step, Class<?>... holders) {
+    void closing() {
+        if (closing != null) closing.run();
+    }
+
+    private static List<Class<?>> holders(String step, String example, Class<?>... holders) {
         if (holders == null || holders.length == 0) {
             throw new IllegalArgumentException("." + step + "(…) needs the class that holds them: ." + step
-                    + "(MyTypes.class)");
+                    + "(" + example + ".class)");
         }
         for (Class<?> holder : holders) {
             if (holder == null) throw new IllegalArgumentException("." + step + "(…) was given a null class");
         }
         return List.of(holders);
+    }
+
+    private static List<Class<?>> added(List<Class<?>> before, List<Class<?>> named) {
+        List<Class<?>> all = new ArrayList<>(before);
+        all.addAll(named);
+        return List.copyOf(all);
+    }
+
+    /** The one {@code kind} value a single-value holder holds; two are refused, naming the holder. */
+    private static <E> Optional<E> one(List<Class<?>> holders, Class<E> kind) {
+        List<E> found = held(holders, kind);
+        if (found.size() > 1) {
+            throw new IllegalStateException(holders.getFirst().getName() + " holds " + found.size() + " "
+                    + kind.getSimpleName() + " fields; a plugin has one");
+        }
+        return found.stream().findFirst();
     }
 
     /**
@@ -319,7 +360,7 @@ public final class PluginDeclaration {
                 }
             }
         }
-        return found;
+        return List.copyOf(found);
     }
 
     private static Object valueOf(Field field) {
@@ -330,14 +371,5 @@ public final class PluginDeclaration {
             throw new IllegalStateException(field.getDeclaringClass().getName() + "." + field.getName()
                     + " cannot be read; make its class public", e);
         }
-    }
-
-    private static <E> List<E> joined(List<E> listed, List<E> held) {
-        if (listed.isEmpty()) return List.copyOf(held);
-        Set<Object> seen = Collections.newSetFromMap(new IdentityHashMap<>());
-        seen.addAll(listed);
-        List<E> all = new ArrayList<>(listed);
-        for (E one : held) if (seen.add(one)) all.add(one);
-        return List.copyOf(all);
     }
 }

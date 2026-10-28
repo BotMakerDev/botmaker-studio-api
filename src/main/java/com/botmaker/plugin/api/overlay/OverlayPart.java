@@ -22,7 +22,8 @@ import java.util.Optional;
  *         .probe(ImageClicker::click, ImageTemplate.class, Probe.acting(SdkProbes::wouldClick));
  * }</pre>
  *
- * <p>Declared through {@code PluginDeclaration.overlay(() -> SdkOverlay.PART)}, one per plugin. Every step is
+ * <p>Declared through {@code PluginDeclaration.overlay(SdkOverlay.class)}, the one field of an
+ * {@link com.botmaker.plugin.api.OverlayHolder}. Every step is
  * optional and answers a copy. {@link #watchedFor} and {@link #framesFor} are asked again whenever the bot's
  * code changes, on the FX thread, and must be quick: read the plugin's own values, never the screen. The
  * {@link FrameSource} the second answers is what grabs, off the FX thread.

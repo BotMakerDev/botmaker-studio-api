@@ -1,5 +1,6 @@
 package com.botmaker.plugin.api.assist;
 
+import com.botmaker.plugin.api.AssistantHolder;
 import com.botmaker.plugin.api.DeclaredPlugin;
 import com.botmaker.plugin.api.StudioPlugin;
 import com.botmaker.plugin.api.assist.ToolSchema.Field;
@@ -10,7 +11,6 @@ import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -144,16 +144,15 @@ class AssistantToolTest {
         }
     }
 
+    public static final class Tools implements AssistantHolder {
+        public static final List<AssistantTool<?>> ALL = List.of(CROP);
+    }
+
     @Test
     void theTrialEntryIsNamedAndCheckedOnlyWhenAsked() throws NoSuchMethodException {
-        AtomicInteger asked = new AtomicInteger();
         StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare()
-                .assistant(() -> {
-                    asked.incrementAndGet();
-                    return List.of(CROP);
-                })
+                .assistant(Tools.class)
                 .trial(Entry::trial)) {};
-        assertEquals(0, asked.get());
         assertEquals(List.of(CROP), plugin.assistantTools());
         assertEquals(Entry.class.getMethod("trial", Runnable.class, Class[].class), plugin.trialEntry().orElseThrow());
 

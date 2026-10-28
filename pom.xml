@@ -78,7 +78,10 @@
              v0.13.0 the same way on 2026-10-27: StudioPlugin.id()/displayName(), StudioPlugin.id(String) and
              PluginDeclaration.Naming went; StudioPlugin is sealed to DeclaredPlugin and a declaration starts at
              StudioPlugin.declare(). A plugin is named by the botmaker.plugin property of its jar's pom, whose
-             coordinate is its id. -->
+             coordinate is its id.
+             Still v0.13.0 on 2026-10-28: every PluginDeclaration list step takes typed holder classes only (the
+             Supplier overloads and parts(…) went), lifecycle is declared (onProjectOpened/onProjectClosing) and
+             DeclaredPlugin's projectOpened/projectClosing are final; StudioServices.log() was added. -->
         <botmaker.japicmp.baseline>v0.13.0</botmaker.japicmp.baseline>
         <botmaker.japicmp.skip>false</botmaker.japicmp.skip>
     </properties>

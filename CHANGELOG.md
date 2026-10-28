@@ -27,6 +27,19 @@ is allowed to make. Additions arrive as `default` methods.
 - **`StudioPlugin.id()`, `displayName()`, `StudioPlugin.id(String)` and `PluginDeclaration.Naming` are gone.** Start
   a declaration with `StudioPlugin.declare()`. `StudioPlugin` is sealed to `DeclaredPlugin`, which is
   `non-sealed`: the plugin class is a `public final` subclass of it with a public no-argument constructor.
+- **Every list is named by the class holding it** (2026-10-28). `editors`, `toolbar`, `runOverlay`, `assistant`,
+  `overlay` and `catalog` take holder classes like `types` and `values` do, and each step takes only its own kind:
+  the holder implements `TypeHolder`, `ValueHolder`, `EditorHolder`, `ToolbarHolder`, `RunOverlayHolder`,
+  `OverlayHolder`, `AssistantHolder` or `CatalogHolder`. Replace `.toolbar(() -> MyToolbar.ALL)` with
+  `.toolbar(MyToolbar.class)` and add `implements ToolbarHolder` to `MyToolbar`. The `Supplier` overloads and
+  `parts(…)` are gone: a types holder gives its parts. An overlay or catalog holder holds exactly one value.
+- **The lifecycle is declared** (2026-10-28): `.onProjectOpened(MySession::open)` and
+  `.onProjectClosing(MySession::close)`. `DeclaredPlugin.projectOpened` and `projectClosing` are `final`.
+
+### Added
+
+- **`StudioServices.log()`** (2026-10-28), a `PluginLog` (`info`, `warn`, `error`) the host shows under the
+  plugin's name, instead of printing to standard error.
 
 ## [0.12.0] — 2026-10-25
 
