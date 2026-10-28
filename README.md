@@ -22,16 +22,21 @@ public final class ExamplePlugin extends DeclaredPlugin {
 
     public ExamplePlugin() {
         super(StudioPlugin.declare()
-                .types(ExampleTypes.class)                    // every type field of the class
-                .editors(() -> ExampleEditors.ALL));
+                .types(ExampleTypes.class)                    // a TypeHolder: its types()
+                .editors(ExampleEditors.class));              // an EditorHolder: its editors()
     }
 }
 
-public final class ExampleTypes {
+public final class ExampleTypes implements TypeHolder {
     public static final DeclaredCallType<Greeting> GREETING = PluginType.value(Greeting.class)
             .fresh(() -> new Greeting("world", 1))     // what a new one is
             .editor(() -> GreetingEditor::of)          // how a person edits one
             .writtenAsRecord();                        // how the host writes its Java
+
+    @Override
+    public List<PluginType<?>> types() {
+        return List.of(GREETING);
+    }
 }
 ```
 
@@ -48,10 +53,13 @@ Its `groupId:artifactId` is the plugin's identity. `StudioPlugin` is sealed to `
 be `public final`, extend it directly and live in the jar that pom is in. A pom flattened at build keeps
 `properties` (`<pomElements><properties>keep</properties>`), or the jar's pom no longer says it is a plugin.
 
-Every step is optional. Types and managed values are named by the class holding them: the host
-takes every `public static final` one there, in field order, so a new type is declared by writing its field.
-The other surfaces are ordered lists behind a supplier. Neither is read before the host asks, so a headless
-host (the registry's CI, `botmaker plugin validate`) constructs the plugin without loading JavaFX. The steps lead the
+Every step is optional, and each is named by holder classes: the step's interface (`TypeHolder`, `ValueHolder`,
+`EditorHolder`, `ToolbarHolder`, …) has one method saying what the holder gives, so a holder handed to the wrong
+step does not compile. A holder is a concrete class with a no-argument constructor, built only when the host
+first asks for its surface, so a headless host (the catalog's gate, `botmaker plugin validate`) constructs the
+plugin without loading JavaFX. The lifecycle is declared too (`.onProjectOpened(…)`, `.onProjectClosing(…)`);
+`StudioServices.log()` writes lines the host shows under the plugin's name. The toolkit's
+`PluginTests.assertDeclared(MyPlugin.class)` runs the host's load check in the plugin's own build. The steps lead the
 author through what the host needs: the compiler refuses a type with no fresh value or no way to be
 written. Factories are method references (`writtenAs(Owner::factory, Type::part, …)`), never strings.
 
@@ -61,7 +69,8 @@ written. Factories are method references (`writtenAs(Owner::factory, Type::part,
 | `types` | the classes holding the types this plugin owns (what a new one is, how it is edited, how its Java is written) and the calls inside a value that are not types of their own |
 | `editors` | an editor chosen by the call or the parameter around a value (`SlotEditor.onParameter(…)`) |
 | `values` | the classes holding its **managed values**: values a window of the plugin keeps in the bot's own Java |
-| `toolbar`, `recorded`, `runOverlay`, `overlay`, `assistant` | a toolbar button, recorded input, what a run draws, the overlay editor's tools, assistant tools |
+| `toolbar`, `runOverlay`, `overlay`, `assistant` | a toolbar button, what a run draws, the overlay editor's tools, assistant tools |
+| `onProjectOpened`, `onProjectClosing` | what the plugin does when a project is bound, and when it closes |
 | `trial` | ▶ Try: a method reference (`.trial(Bot::trial)`), not a supplier |
 
 **Panels are deliberately not a surface.** A plugin contributes to the editor; it does not contribute

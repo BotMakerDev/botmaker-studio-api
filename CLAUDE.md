@@ -18,11 +18,11 @@ on 2026-10-05).
 | Touching | Read (`docs/architecture/`) |
 |---|---|
 | any public member | `easy-to-break.md`, then `../docs/refactor/25-compatibility.md` |
-| `StudioPlugin.declare()`, `PluginType`, `ComponentType`, `ManagedValue`, `SlotEditor`, `ToolbarItem` steps, `Ref` | `declaration-steps.md` |
+| `StudioPlugin.declare()`, the `…Holder` interfaces, the lifecycle steps, `PluginType`, `ComponentType`, `ManagedValue`, `SlotEditor`, `ToolbarItem` steps, `Ref` | `declaration-steps.md` |
 | `Ref.member`, the SDK's activity-body text | `two-strings.md` |
 | a new value a plugin constructs | `no-public-constructor.md` |
 | which package a type goes in, `StyleClasses`, the palette annotations, `@Migrate`, `@Refactor` | `packages.md` |
-| `StudioServices`, `Runs`, `projectClosing`, `pluginValues()` | `studio-services.md` |
+| `StudioServices`, `Runs`, `log()`, `onProjectOpened`/`onProjectClosing`, `pluginValues()` | `studio-services.md` |
 | `PluginType`/`EditableType`/`ComponentType` semantics | `value-vocabulary.md` |
 | `PaletteCatalog`, `SourceOrder`, `MemberId` | `catalog.md` |
 | `botmaker.japicmp.baseline`, a japicmp failure | `japicmp.md` |
@@ -53,12 +53,15 @@ no back door. If the SDK needs something this module does not expose, the contra
 - **A service goes on `StudioServices` only when the host is the sole possible source of it** — a
   capability, never a vocabulary (`studio-services.md`).
 - **Every surface is declared by steps; factories are method references**, with the two strings in
-  `two-strings.md` kept. **No public constructor on a value a plugin builds** (`no-public-constructor.md`).
+  `two-strings.md` kept. **A list surface is named by holder classes** (2026-10-28): one holder interface per
+  step, its one method what the holder gives (`ToolbarHolder.toolbar()`); the host builds a holder by its
+  no-argument constructor only when it asks. No supplier overloads, no field reflection, no overridable
+  lifecycle: `onProjectOpened`/`onProjectClosing` are steps. **No public constructor on a value a plugin builds** (`no-public-constructor.md`).
 - **The catalog degrades, never throws** (`catalog.md`). **No Jackson here.**
 - **A plugin is one jar, named by its pom** (2026-10-27): the `botmaker.plugin` property names its
   `DeclaredPlugin` subclass, the coordinate is its id. `StudioPlugin` is sealed to `DeclaredPlugin`.
 - **japicmp fails on any incompatible change, with no ignore list**; the baseline is pinned ahead to `v0.13.0`
-  (the pom-named plugin break), so the next release is `--studio-api 0.13.0` (`japicmp.md`).
+  (the pom-named plugin break, then holders and lifecycle steps), so the next release is `--studio-api 0.13.0` (`japicmp.md`).
 
 ## Style
 

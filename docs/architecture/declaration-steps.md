@@ -4,14 +4,24 @@ Every surface a plugin fills is declared through small final step classes, each 
 valid next, so the compiler walks an author through a declaration and an incomplete one does not compile (the
 maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare itself):
 
-- **The plugin**: `StudioPlugin.declare().types(MyTypes.class).editors(…).values(MyValues.class)
-  .toolbar(…)`, a `PluginDeclaration` handed to `DeclaredPlugin`'s constructor. Types (with their
-  parts) and managed values are named by their holder classes: the host takes each `public static final` field
-  of the kind, or each element of a list field, in field order, once each (2026-10-19, so no hand-kept `ALL`
-  list can miss one). The other surfaces are ordered lists behind a supplier; `types(Supplier)`,
-  `parts(Supplier)` and `values(Supplier)` stay for a list computed at run time. Each is read when the host
-  asks and cached nowhere: a list built in the constructor would load its classes — JavaFX among them — on a
-  headless host.
+- **The plugin**: `StudioPlugin.declare().types(MyTypes.class).values(MyValues.class).editors(MyEditors.class)
+  .toolbar(MyToolbar.class)`, a `PluginDeclaration` handed to `DeclaredPlugin`'s constructor. **Every surface
+  is named by holder classes, and that is the one way** (2026-10-28): each step takes its own holder interface,
+  whose one method says what it gives — `TypeHolder.types()` (and the default `components()` for parts),
+  `ValueHolder.values()`, `EditorHolder.editors()`, `ToolbarHolder.toolbar()`, `RunOverlayHolder.runOverlay()`,
+  `AssistantHolder.tools()`, and for the two single surfaces `OverlayHolder.overlay()` and
+  `CatalogHolder.catalog()`, each refusing a second holder at the step. So `.toolbar(MyTypes.class)` does not
+  compile, and the interface tells the author what to write; the method names differ so one class may give
+  several. A holder is a concrete class with a constructor taking no arguments (package-private is fine);
+  several holders of one list give their values in the order named, a value given twice once. The host builds
+  a holder only when it first asks for that surface and keeps what it gets for the bound project: naming a
+  class initialises nothing, so a toolbar holder that links JavaFX costs a headless host nothing. Two shapes
+  went with this: holders read by field reflection (2026-10-19, members came from `public static final`
+  fields), and `() -> X.ALL` suppliers beside them, with `parts(…)` — four ways to say one thing, and a
+  member-less marker interface that told the author nothing (2026-10-28, the user's call).
+- **The lifecycle**: `.onProjectOpened(Owner::open)` (a `Consumer<StudioServices>`) and
+  `.onProjectClosing(Owner::close)`; `DeclaredPlugin.projectOpened`/`projectClosing` are `final` and call them,
+  so a plugin class is its declaration and nothing else (`studio-services.md` says when a plugin needs either).
 - **A type**: `PluginType.value(X.class)` → `fresh(…)` | `firstConstant()` →
   `editor(() -> E::draw)` → optional `preview(…)` → `writtenAs(Owner::factory, X::part, …)` |
   `writtenAsEach(…)` | `writtenAsRecord()` | `writtenAsConstant()` | `writtenAsLiteral()` | `writtenAsParts()`
@@ -32,8 +42,9 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   `.ofEnum(E.class, Owner::byName)` instead of `of` makes the holder an enum implementing the interface `E`,
   whose constants the host reads as `byName(name)`. `id` is a constant of the enum nested in the plugin's
   `@ManagedMarker` annotation (`SdkValue.Id.FLOW`). It
-  is typed and declared once: a plugin keeps one constant per value and uses it in `managedValues()`, in
-  `ManagedValues.claim`, and through the toolkit's `ManagedHandle` or, for an open set, `ManagedSet`.- **A slot editor**: `SlotEditor.onParameter(Annotation.class)` | `forType(X.class)` | `when(predicate)` →
+  is typed and declared once: a plugin keeps one constant per value and lists it in its `ValueHolder`, uses it
+  in `ManagedValues.claim`, and through the toolkit's `ManagedHandle` or, for an open set, `ManagedSet`.
+- **A slot editor**: `SlotEditor.onParameter(Annotation.class)` | `forType(X.class)` | `when(predicate)` →
   `.draw(() -> E::draw[, () -> E::preview])` (`EditorSteps`). A value the type cannot tell apart is told apart
   by a `RUNTIME` annotation on the parameter it is passed to (`outcome(@OutcomeName String)`), matched by
   the annotation's binary name through `SlotContext.parameter()`; an editor reads its settings off it, or
@@ -42,19 +53,20 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
 - **A toolbar item**: `ToolbarItem.id(ID).label(…).tooltip(…).in(group, order)` → optional
   `.enabledWhen(…)`/`.icon(…)` → `.onPress(() -> MyWindow::open)` (`ToolbarSteps`). The press is a `Pressed`,
   a supplier of the handler, for `Drawn`'s reason: the item list is built headless.
-  `DeclaredPlugin.toolbarItems()` is `final`.
+  Listed by a `ToolbarHolder`.
 - **An overlay part**: `OverlayPart.of()` → any of `.targets(Body.class, "Group")` (a functional interface;
   the host finds the methods passed as one), `.watched(Owner::watched)`,
   `.changeWatched(() -> Owner::change)`, `.tool(OverlayTool.id(ID).named(LABEL).pane(Owner::pane))`,
   `.probe(Call::ref, Param.class…, Owner::probe)` (the parameter classes pick an overloaded call, which a bare
   reference cannot; `probeMember` for `Ref.member`). One per
-  plugin, through `.overlay(() -> PART)`; a part declaring nothing is no part.
+  plugin, through `.overlay(MyOverlay.class)` (an `OverlayHolder`); a part declaring nothing is no part.
 - **An assistant tool**: `AssistantTool.named("snake_name").describedAs(…)` → `.takes(Params.class)` (a
   record; its components are the schema, checked here) | `.takesNothing()` → `.handledBy(Owner::handle)`.
-  Listed through `.assistant(() -> ALL)`. **The trial entry**: `.trial(Bot::trial)`, a `TrialEntry`. It is
+  Listed by an `AssistantHolder`, through `.assistant(MyTools.class)`. **The trial entry**: `.trial(Bot::trial)`, a `TrialEntry`. It is
   resolved and checked to be a public static `(Runnable, Class<?>...)` in the step itself, so a bad one fails
   the plugin's own construction.
 
-Implementing the interfaces by hand still works and the host cannot tell the two apart; the steps are how
-nobody has to know which methods to override, which may answer `null`, or how to name a factory without a
-string.
+`StudioPlugin` is sealed to `DeclaredPlugin` and every surface method of `DeclaredPlugin` is `final`
+(2026-10-27, 2026-10-28): there is no second way to be a plugin, so nobody has to know which methods to
+override, which may answer `null`, or how to name a factory without a string. `PluginTests.assertDeclared`
+(toolkit) runs the host's load check in the plugin's own `mvn verify`: it builds every holder and asks it.

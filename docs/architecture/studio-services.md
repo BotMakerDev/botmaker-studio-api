@@ -24,15 +24,23 @@ encoded telemetry frame, and this module has no idea what is in it: the wire alr
 one definition, and a decoded record would have put one runtime's vocabulary in the contract. `runs()` and
 `status` are `default` (`Runs.NONE`, nothing), so a host that runs no bots implements neither.
 
-**`StudioPlugin.projectClosing()` is not a surface.** It is the one fact a plugin cannot establish for
-itself: that the project it opened an operating-system resource for (the Remote Pilot's bound port and nested
-display) is gone. **Only a resource the OS counts justifies a lifecycle.** The instance is reused across
-projects, so it means *this project is over*, never *you are being discarded*.
+**`log()` is a capability**: the host is the only one who can attribute a line to the plugin that wrote it and
+show it where the author looks (Studio: the plugin's row in *Plugins & Libraries*, and Studio's own log). A
+`PluginLog` has `info`, `warn` and `error(message, cause)`; its `default` writes to standard error,
+unattributed, which is what a host keeping no log answers (the cli's validator does). Not a channel to the
+user: that is a dialog or `status`.
+
+**The lifecycle steps are not surfaces.** `.onProjectOpened(…)` hands the plugin the services of the project
+being bound — where it keeps a `services.log()` or `runs()` it needs later. `.onProjectClosing(…)` is the one
+fact a plugin cannot establish for itself: that the project it opened an operating-system resource for (the
+Remote Pilot's bound port and nested display) is gone. **Only a resource the OS counts justifies a closing
+step.** The instance is reused across projects, so it means *this project is over*, never *you are being
+discarded*. Both are steps since 2026-10-28; `DeclaredPlugin`'s `projectOpened`/`projectClosing` are `final`.
 
 **`pluginValues()` rewrites one expression inside a file the host did not write**
 (`../docs/refactor/33-plugin-java.md`). A bot holds a plugin's values as methods marked with the plugin's own
 annotation (`@SdkValue(SdkValue.Id.FLOW)`, meta-annotated `@ManagedMarker`) in its own
-`src/main/java/<bot package>/plugins/<last id segment>/`, and the host never touches the class around them.
+`src/main/java/<bot package>/plugins/<groupId>/<artifactId>/` (each one lower-cased package name: `plugins/com_github_botmakerdev/botmaker_sdk/`), and the host never touches the class around them.
 `open(id)` hands back a **`ValueContext`**, so a slot, a Parameters row and a managed value are all edited
 through one interface and no second way to edit a value exists; a body that is not a single
 `return <expression>;` answers empty and is shown read-only with the reason. An open set (the mark on a
