@@ -56,7 +56,12 @@ class DeclaredPluginTest {
     }
 
     static final class RunOverlay implements RunOverlayHolder {
-        public static final RunOverlayPart PART = RunOverlayPart.id("notes.run").bar(ctx -> null);
+        static final RunOverlayPart PART = RunOverlayPart.id("notes.run").bar(ctx -> null);
+
+        @Override
+        public List<RunOverlayPart> runOverlay() {
+            return List.of(PART);
+        }
     }
 
     @Test
@@ -66,16 +71,19 @@ class DeclaredPluginTest {
     }
 
     static final class Overlay implements OverlayHolder {
-        public static final OverlayPart PART = OverlayPart.of().targets(Runnable.class, "Home");
+        static final OverlayPart PART = OverlayPart.of().targets(Runnable.class, "Home");
+
+        @Override
+        public OverlayPart overlay() {
+            return PART;
+        }
     }
 
     static final class NoOverlay implements OverlayHolder {
-        public static final OverlayPart PART = OverlayPart.of();
-    }
-
-    static final class TwoOverlays implements OverlayHolder {
-        public static final OverlayPart ONE = OverlayPart.of().targets(Runnable.class, "Home");
-        public static final OverlayPart TWO = OverlayPart.of().targets(Runnable.class, "Away");
+        @Override
+        public OverlayPart overlay() {
+            return OverlayPart.of();
+        }
     }
 
     @Test
@@ -84,18 +92,25 @@ class DeclaredPluginTest {
                 new DeclaredPlugin(StudioPlugin.declare().overlay(Overlay.class)) {}.overlayPart());
         assertTrue(new DeclaredPlugin(StudioPlugin.declare().overlay(NoOverlay.class)) {}.overlayPart().isEmpty(),
                 "a part declaring nothing is no part");
-        StudioPlugin two = new DeclaredPlugin(StudioPlugin.declare().overlay(TwoOverlays.class)) {};
-        IllegalStateException refused = assertThrows(IllegalStateException.class, two::overlayPart);
-        assertTrue(refused.getMessage().contains("TwoOverlays holds 2 OverlayPart fields"), refused.getMessage());
+        IllegalStateException twice = assertThrows(IllegalStateException.class,
+                () -> StudioPlugin.declare().overlay(Overlay.class).overlay(NoOverlay.class));
+        assertTrue(twice.getMessage().contains("a plugin has one"), twice.getMessage());
     }
 
     static final class Catalog implements CatalogHolder {
-        public static final PaletteCatalog BY_HAND = PaletteCatalog.of(DeclaredPluginTest.class);
+        static final PaletteCatalog BY_HAND = PaletteCatalog.of(DeclaredPluginTest.class);
+
+        @Override
+        public PaletteCatalog catalog() {
+            return BY_HAND;
+        }
     }
 
     @Test
     void aCatalogHolderOverridesDiscovery() {
         assertSame(Catalog.BY_HAND, new DeclaredPlugin(StudioPlugin.declare().catalog(Catalog.class)) {}.catalog());
+        assertThrows(IllegalStateException.class,
+                () -> StudioPlugin.declare().catalog(Catalog.class).catalog(Catalog.class));
     }
 
     static Readiness windowFound() {
@@ -188,47 +203,61 @@ class DeclaredPluginTest {
             LAZY_INITIALISED.incrementAndGet();
         }
 
-        public static final PluginType<Character> LETTER = PluginType.value(char.class).fresh(() -> 'a')
+        static final PluginType<Character> LETTER = PluginType.value(char.class).fresh(() -> 'a')
                 .editor(() -> ctx -> null).writtenAsLiteral();
+
+        @Override
+        public List<PluginType<?>> types() {
+            return List.of(LETTER);
+        }
     }
 
     static final class Types implements TypeHolder {
-        public static final PluginType<Integer> COUNT = PluginType.value(int.class).fresh(() -> 0)
+        static final PluginType<Integer> COUNT = PluginType.value(int.class).fresh(() -> 0)
                 .editor(() -> ctx -> null).writtenAsLiteral();
-        public static final DeclaredCall<Mark> MARK = ComponentType.part(Mark.class).writtenAs(Mark::make);
-        public static final PluginType<String> LABEL = PluginType.value(String.class).fresh(() -> "")
+        static final PluginType<String> LABEL = PluginType.value(String.class).fresh(() -> "")
                 .editor(() -> ctx -> null).writtenAsLiteral();
-        public static final List<DeclaredCall<Mark>> MARKS = List.of(
-                ComponentType.part(Mark.class).writtenAs(Mark::make));
-        public static final List<PluginType<?>> ALL = List.of(LABEL, COUNT);
-        static final PluginType<Boolean> HIDDEN = PluginType.value(boolean.class).fresh(() -> false)
-                .editor(() -> ctx -> null).writtenAsLiteral();
-        public static final String NOT_A_TYPE = "x";
+        static final DeclaredCall<Mark> MARK = ComponentType.part(Mark.class).writtenAs(Mark::make);
+
+        @Override
+        public List<PluginType<?>> types() {
+            return List.of(COUNT, LABEL, COUNT);
+        }
+
+        @Override
+        public List<ComponentType<?>> components() {
+            return List.of(MARK);
+        }
     }
 
     static final class MoreTypes implements TypeHolder {
-        public static final PluginType<Long> BIG = PluginType.value(long.class).fresh(() -> 0L)
+        static final PluginType<Long> BIG = PluginType.value(long.class).fresh(() -> 0L)
                 .editor(() -> ctx -> null).writtenAsLiteral();
-        public static final PluginType<Integer> COUNT_TOO = Types.COUNT;
+
+        @Override
+        public List<PluginType<?>> types() {
+            return List.of(BIG, Types.COUNT);
+        }
     }
 
     static final class Values implements ValueHolder {
-        public static final ManagedValue<String> NOTE_TOO = NOTE;
-        public static final List<ManagedValue<?>> ALL = List.of(NOTE);
+        @Override
+        public List<ManagedValue<?>> values() {
+            return List.of(NOTE);
+        }
     }
 
     @Test
-    void aHolderClassGivesItsFieldsInDeclaredOrderOnceEach() {
+    void aHolderGivesWhatItsMethodAnswersOnceEach() {
         StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare()
                 .types(Types.class).values(Values.class)) {};
-        assertEquals(List.of(Types.COUNT, Types.LABEL), plugin.types(), "a type is not a part; ALL adds nothing");
-        assertEquals(List.of(Types.MARK, Types.MARKS.getFirst()), plugin.componentTypes(),
-                "a list field gives its elements");
+        assertEquals(List.of(Types.COUNT, Types.LABEL), plugin.types(), "a value given twice counts once");
+        assertEquals(List.of(Types.MARK), plugin.componentTypes());
         assertEquals(List.of(NOTE), plugin.managedValues());
     }
 
     @Test
-    void aHolderIsInitialisedOnlyWhenTheHostAsks() {
+    void aHolderIsBuiltOnlyWhenTheHostAsks() {
         StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare()
                 .types(Lazy.class)) {};
         assertEquals(0, LAZY_INITIALISED.get(), "naming a class must not initialise it");
@@ -237,10 +266,57 @@ class DeclaredPluginTest {
     }
 
     @Test
-    void aStepCalledTwiceAddsItsHolders() {
+    void aStepCalledTwiceAddsItsHoldersInOrder() {
         StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare()
                 .types(Types.class).types(MoreTypes.class)) {};
         assertEquals(List.of(Types.COUNT, Types.LABEL, MoreTypes.BIG), plugin.types());
+    }
+
+    abstract static class Unbuildable implements TypeHolder {
+    }
+
+    final class Inner implements TypeHolder {
+        @Override
+        public List<PluginType<?>> types() {
+            return List.of();
+        }
+    }
+
+    static final class NeedsArgument implements TypeHolder {
+        NeedsArgument(String unused) {
+        }
+
+        @Override
+        public List<PluginType<?>> types() {
+            return List.of();
+        }
+    }
+
+    enum Enumerated implements TypeHolder {
+        ONLY;
+
+        @Override
+        public List<PluginType<?>> types() {
+            return List.of();
+        }
+    }
+
+    static final class Throws implements TypeHolder {
+        Throws() {
+            throw new IllegalArgumentException("broken");
+        }
+
+        @Override
+        public List<PluginType<?>> types() {
+            return List.of();
+        }
+    }
+
+    static final class GivesNull implements TypeHolder {
+        @Override
+        public List<PluginType<?>> types() {
+            return null;
+        }
     }
 
     /** No holder at all; {@code types()} alone would name the package-private accessor from this package. */
@@ -250,12 +326,31 @@ class DeclaredPluginTest {
     }
 
     @Test
-    void aHolderStepNeedsAClass() {
+    void aHolderStepRefusesWhatTheHostCouldNotBuild() {
         IllegalArgumentException none = assertThrows(IllegalArgumentException.class,
                 () -> StudioPlugin.declare().types(noHolders()));
         assertTrue(none.getMessage().contains(".types(MyTypes.class)"), none.getMessage());
         assertThrows(IllegalArgumentException.class,
                 () -> StudioPlugin.declare().values((Class<? extends ValueHolder>) null));
         assertThrows(IllegalArgumentException.class, () -> StudioPlugin.declare().overlay(null));
+        assertThrows(IllegalArgumentException.class, () -> StudioPlugin.declare().types(Unbuildable.class));
+        assertThrows(IllegalArgumentException.class, () -> StudioPlugin.declare().types(Inner.class));
+        assertThrows(IllegalArgumentException.class, () -> StudioPlugin.declare().types(Enumerated.class));
+        final class Local implements TypeHolder {
+            @Override
+            public List<PluginType<?>> types() {
+                return List.of();
+            }
+        }
+        assertThrows(IllegalArgumentException.class, () -> StudioPlugin.declare().types(Local.class));
+
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare().types(NeedsArgument.class)) {};
+        IllegalStateException refused = assertThrows(IllegalStateException.class, plugin::types);
+        assertTrue(refused.getMessage().contains("needs a constructor with no arguments"), refused.getMessage());
+        IllegalStateException broken = assertThrows(IllegalStateException.class,
+                new DeclaredPlugin(StudioPlugin.declare().types(Throws.class)) {}::types);
+        assertEquals("broken", broken.getCause().getMessage());
+        assertTrue(new DeclaredPlugin(StudioPlugin.declare().types(GivesNull.class)) {}.types().isEmpty(),
+                "a holder answering null gives nothing");
     }
 }

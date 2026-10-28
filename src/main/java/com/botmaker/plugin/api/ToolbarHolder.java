@@ -1,11 +1,15 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.toolbar.ToolbarItem;
+
+import java.util.List;
+
 /**
- * A class holding a plugin's toolbar buttons, named by {@link PluginDeclaration#toolbar(Class[])}: each
- * {@code public static final} {@link com.botmaker.plugin.api.toolbar.ToolbarItem} field, or a list of them, in
- * the order the fields are declared.
- *
- * <p>It has no members; see {@link TypeHolder} for why it exists.
+ * A class giving a plugin's toolbar buttons, named by {@link PluginDeclaration#toolbar(Class[])}. See
+ * {@link TypeHolder} for how a holder is built and asked.
  */
 public interface ToolbarHolder {
+
+    /** The buttons, in the order a user sees them — {@link StudioPlugin#toolbarItems()}. */
+    List<ToolbarItem> toolbar();
 }

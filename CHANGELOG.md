@@ -27,12 +27,15 @@ is allowed to make. Additions arrive as `default` methods.
 - **`StudioPlugin.id()`, `displayName()`, `StudioPlugin.id(String)` and `PluginDeclaration.Naming` are gone.** Start
   a declaration with `StudioPlugin.declare()`. `StudioPlugin` is sealed to `DeclaredPlugin`, which is
   `non-sealed`: the plugin class is a `public final` subclass of it with a public no-argument constructor.
-- **Every list is named by the class holding it** (2026-10-28). `editors`, `toolbar`, `runOverlay`, `assistant`,
-  `overlay` and `catalog` take holder classes like `types` and `values` do, and each step takes only its own kind:
-  the holder implements `TypeHolder`, `ValueHolder`, `EditorHolder`, `ToolbarHolder`, `RunOverlayHolder`,
-  `OverlayHolder`, `AssistantHolder` or `CatalogHolder`. Replace `.toolbar(() -> MyToolbar.ALL)` with
-  `.toolbar(MyToolbar.class)` and add `implements ToolbarHolder` to `MyToolbar`. The `Supplier` overloads and
-  `parts(…)` are gone: a types holder gives its parts. An overlay or catalog holder holds exactly one value.
+- **Every surface is named by the class giving it** (2026-10-28). Every step but `assistantGuide`, `trial`,
+  `readiness` and the lifecycle takes holder classes, and each takes only its own kind: the holder implements
+  `TypeHolder` (`types()`, and `components()` when a type has parts), `ValueHolder` (`values()`), `EditorHolder`
+  (`editors()`, narrowest first), `ToolbarHolder` (`toolbar()`), `RunOverlayHolder` (`runOverlay()`),
+  `AssistantHolder` (`tools()`), `OverlayHolder` (`overlay()`) or `CatalogHolder` (`catalog()`). Replace
+  `.toolbar(() -> MyToolbar.ALL)` with `.toolbar(MyToolbar.class)`, and make `MyToolbar` implement
+  `ToolbarHolder` with `toolbar()` answering the list. A holder is a concrete class, static if nested, with a
+  constructor taking no arguments; the host builds it only when it asks. Holders are no longer read field by
+  field. The `Supplier` overloads and `parts(…)` are gone, and `overlay`/`catalog` refuse a second holder.
 - **The lifecycle is declared** (2026-10-28): `.onProjectOpened(MySession::open)` and
   `.onProjectClosing(MySession::close)`. `DeclaredPlugin.projectOpened` and `projectClosing` are `final`.
 

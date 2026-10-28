@@ -1,11 +1,15 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.run.RunOverlayPart;
+
+import java.util.List;
+
 /**
- * A class holding what a plugin shows in the host's run overlay, named by
- * {@link PluginDeclaration#runOverlay(Class[])}: each {@code public static final}
- * {@link com.botmaker.plugin.api.run.RunOverlayPart} field, or a list of them, in the order the fields are declared.
- *
- * <p>It has no members; see {@link TypeHolder} for why it exists.
+ * A class giving what a plugin shows in the host's run overlay, named by
+ * {@link PluginDeclaration#runOverlay(Class[])}. See {@link TypeHolder} for how a holder is built and asked.
  */
 public interface RunOverlayHolder {
+
+    /** The parts, in the order they are drawn — {@link StudioPlugin#runOverlayParts()}. */
+    List<RunOverlayPart> runOverlay();
 }

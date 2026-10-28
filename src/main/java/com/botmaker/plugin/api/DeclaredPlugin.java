@@ -31,13 +31,18 @@ import java.util.Optional;
  * }
  *
  * final class DiscordToolbar implements ToolbarHolder {
- *     public static final ToolbarItem SEND_TEST = ToolbarItem.button("Send test")…;
+ *     static final ToolbarItem SEND_TEST = ToolbarItem.button("Send test")…;
+ *
+ *     @Override
+ *     public List<ToolbarItem> toolbar() {
+ *         return List.of(SEND_TEST);
+ *     }
  * }
  *
  * <properties><botmaker.plugin>com.example.discord.DiscordPlugin</botmaker.plugin></properties>
  * }</pre>
  *
- * <p>Each surface reads its holder classes' fields every time the host asks, and keeps nothing: the values are
+ * <p>Each surface builds its holder classes and asks them every time the host asks, and keeps nothing: the values are
  * {@code static final} constants, built once when their class loads, and the host keeps what it gets for the
  * bound project. Nothing is left to override: the lifecycle is declared too
  * ({@link PluginDeclaration#onProjectOpened}, {@link PluginDeclaration#onProjectClosing}), so the class is the

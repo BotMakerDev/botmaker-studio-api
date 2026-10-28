@@ -39,12 +39,11 @@ import java.util.Optional;
  * the editor panel's header then, instead of the floating run bar.
  *
  * <p><b>A part links JavaFX</b>: a factory returns a {@link Node}, so building the list of parts loads it. Keep
- * the parts in a {@code RunOverlayHolder}, which constructing the plugin never initialises;
+ * the parts in a {@code RunOverlayHolder}, which constructing the plugin never builds;
  * a host without JavaFX must not call {@link com.botmaker.plugin.api.StudioPlugin#runOverlayParts()}.
  *
  * <p>Declared like a toolbar item, through {@code PluginDeclaration.runOverlay(MyRunOverlay.class)}, a
- * {@link com.botmaker.plugin.api.RunOverlayHolder}, or
- * {@link com.botmaker.plugin.api.StudioPlugin#runOverlayParts()}. The id is unique within the plugin.
+ * {@link com.botmaker.plugin.api.RunOverlayHolder}. The id is unique within the plugin.
  */
 public final class RunOverlayPart {
 

@@ -269,7 +269,7 @@ public sealed interface StudioPlugin permits DeclaredPlugin {
      *
      * <p><b>Do nothing expensive here.</b> This runs while a project is opening, on the path the user is
      * waiting on. Read the file when a surface is asked for, not now — the same rule that keeps
-     * {@link DeclaredPlugin}'s surfaces in holder classes initialised only when asked, and for the same reason: a plugin that parses a
+     * {@link DeclaredPlugin}'s surfaces in holder classes built only when asked, and for the same reason: a plugin that parses a
      * project on bind is a plugin every project open pays for whether or not anything reads the result.
      *
      * <p>Throwing is contained and reported, and the project still opens: a plugin must not be able to

@@ -144,8 +144,11 @@ class AssistantToolTest {
         }
     }
 
-    public static final class Tools implements AssistantHolder {
-        public static final List<AssistantTool<?>> ALL = List.of(CROP);
+    static final class Tools implements AssistantHolder {
+        @Override
+        public List<AssistantTool<?>> tools() {
+            return List.of(CROP);
+        }
     }
 
     @Test

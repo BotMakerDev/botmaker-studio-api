@@ -1,11 +1,13 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.overlay.OverlayPart;
+
 /**
- * The class holding a plugin's part of the overlay editor, named by {@link PluginDeclaration#overlay(Class)}: its
- * one {@code public static final} {@link com.botmaker.plugin.api.overlay.OverlayPart} field. A plugin has one
- * part, so a holder with two is refused when the host asks.
- *
- * <p>It has no members; see {@link TypeHolder} for why it exists.
+ * The class giving a plugin's one part of the overlay editor, named by {@link PluginDeclaration#overlay(Class)}.
+ * See {@link TypeHolder} for how a holder is built and asked.
  */
 public interface OverlayHolder {
+
+    /** The part: targets, watched screen, tools, probes — {@link StudioPlugin#overlayPart()}. */
+    OverlayPart overlay();
 }

@@ -1,11 +1,15 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.assist.AssistantTool;
+
+import java.util.List;
+
 /**
- * A class holding the tools a plugin offers the AI assistant, named by {@link PluginDeclaration#assistant(Class[])}:
- * each {@code public static final} {@link com.botmaker.plugin.api.assist.AssistantTool} field, or a list of them,
- * in the order the fields are declared.
- *
- * <p>It has no members; see {@link TypeHolder} for why it exists.
+ * A class giving the tools a plugin offers the AI assistant, named by {@link PluginDeclaration#assistant(Class[])}.
+ * See {@link TypeHolder} for how a holder is built and asked.
  */
 public interface AssistantHolder {
+
+    /** The tools — {@link StudioPlugin#assistantTools()}. */
+    List<AssistantTool<?>> tools();
 }

@@ -12,7 +12,8 @@ import com.botmaker.plugin.api.toolbar.ToolbarItem;
 import com.botmaker.plugin.api.value.ComponentType;
 import com.botmaker.plugin.api.value.PluginType;
 
-import java.lang.reflect.Field;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Everything a plugin contributes, stated in one expression and handed to {@link DeclaredPlugin}:
@@ -51,33 +53,32 @@ import java.util.function.Consumer;
  * so a reader sees the whole plugin in one place. A surface left out contributes nothing. The palette is left out
  * by nearly every plugin: the host finds the {@code @Palette} classes in its jar.
  *
- * <p><b>Every list is named by the classes that hold it, and that is the one way to declare one.</b>
- * {@code .toolbar(MyToolbar.class)} contributes every {@code public static final} {@link ToolbarItem} field of
- * {@code MyToolbar}, and every one inside a {@code public static final} list there, in field order — the order a
- * user sees. A new field is declared by being written: there is no list to forget it in. Each step takes only its
- * own kind of holder ({@link TypeHolder}, {@link ToolbarHolder}, …), so a holder handed to the wrong step does not
- * compile. A field reached twice counts once; other fields are ignored, and so are fields a holder inherits:
- * name the superclass as a holder of its own.
+ * <p><b>Every surface is named by the classes that give it, and that is the one way to declare one.</b> Each step
+ * takes its own kind of holder ({@link TypeHolder}, {@link ToolbarHolder}, …), whose one method says what the
+ * holder must give: {@code .toolbar(MyToolbar.class)} contributes {@code MyToolbar}'s {@code toolbar()}, and a
+ * holder handed to the wrong step does not compile. A holder is a concrete class with a constructor taking no
+ * arguments; it may be package-private. Several holders of a list give their values in the order they are named;
+ * a value given twice counts once.
  *
  * <p><b>Nothing is built before the host asks, and that is the one rule to keep.</b> A plugin is constructed
  * while a project opens, and by headless hosts that have no JavaFX ({@code botmaker plugin validate}, the
- * registry's CI). Naming a holder class initialises nothing; the host's first ask for that surface does, so a
- * toolbar holder linking JavaFX costs a headless host nothing. The host keeps what it gets for the bound project,
- * so there is nothing to cache here.
+ * registry's CI). Naming a holder class initialises nothing; the host's first ask for that surface builds the
+ * holder, so a toolbar holder linking JavaFX costs a headless host nothing. The host keeps what it gets for the
+ * bound project, so there is nothing to cache here.
  *
  * <p>Immutable: each step answers a copy.
  */
 public final class PluginDeclaration {
 
     // Set only on a fresh copy, inside with(…), before any step hands it out.
-    private List<Class<?>> catalogHolders = List.of();
-    private List<Class<?>> typeHolders = List.of();
-    private List<Class<?>> editorHolders = List.of();
-    private List<Class<?>> valueHolders = List.of();
-    private List<Class<?>> toolbarHolders = List.of();
-    private List<Class<?>> runOverlayHolders = List.of();
-    private List<Class<?>> overlayHolders = List.of();
-    private List<Class<?>> assistantHolders = List.of();
+    private List<Class<? extends TypeHolder>> typeHolders = List.of();
+    private List<Class<? extends EditorHolder>> editorHolders = List.of();
+    private List<Class<? extends ValueHolder>> valueHolders = List.of();
+    private List<Class<? extends ToolbarHolder>> toolbarHolders = List.of();
+    private List<Class<? extends RunOverlayHolder>> runOverlayHolders = List.of();
+    private List<Class<? extends AssistantHolder>> assistantHolders = List.of();
+    private Class<? extends OverlayHolder> overlayHolder;
+    private Class<? extends CatalogHolder> catalogHolder;
     private String guide = "";
     private Method trial;
     private Readiness.Check readiness;
@@ -95,14 +96,14 @@ public final class PluginDeclaration {
     /** A copy of this declaration with {@code set} applied to it: every step's one way to answer a copy. */
     private PluginDeclaration with(Consumer<PluginDeclaration> set) {
         PluginDeclaration copy = new PluginDeclaration();
-        copy.catalogHolders = catalogHolders;
         copy.typeHolders = typeHolders;
         copy.editorHolders = editorHolders;
         copy.valueHolders = valueHolders;
         copy.toolbarHolders = toolbarHolders;
         copy.runOverlayHolders = runOverlayHolders;
-        copy.overlayHolders = overlayHolders;
         copy.assistantHolders = assistantHolders;
+        copy.overlayHolder = overlayHolder;
+        copy.catalogHolder = catalogHolder;
         copy.guide = guide;
         copy.trial = trial;
         copy.readiness = readiness;
@@ -113,82 +114,98 @@ public final class PluginDeclaration {
     }
 
     /**
-     * The classes holding this plugin's types — {@link StudioPlugin#types()} and
-     * {@link StudioPlugin#componentTypes()} at once: each {@link PluginType} and {@link ComponentType} field, the
-     * parts inside a value included. Calling it again adds holders.
+     * The classes giving this plugin's types — {@link StudioPlugin#types()} and {@link StudioPlugin#componentTypes()}
+     * at once. Calling it again adds holders.
      *
-     * @throws IllegalArgumentException when no holder is given, or one is {@code null}
+     * @throws IllegalArgumentException when no holder is given, or one is {@code null}, abstract or an inner class
      */
     @SafeVarargs
     public final PluginDeclaration types(Class<? extends TypeHolder>... holders) {
-        List<Class<?>> named = holders("types", "MyTypes", holders);
+        List<Class<? extends TypeHolder>> named = holders("types", "MyTypes", holders);
         return with(copy -> copy.typeHolders = added(typeHolders, named));
     }
 
     /**
-     * The classes holding the editors a type cannot choose for itself, narrowest first —
+     * The classes giving the editors a type cannot choose for itself, narrowest first —
      * {@link StudioPlugin#slotEditors()}.
      *
-     * @throws IllegalArgumentException when no holder is given, or one is {@code null}
+     * @throws IllegalArgumentException when no holder is given, or one is {@code null}, abstract or an inner class
      */
     @SafeVarargs
     public final PluginDeclaration editors(Class<? extends EditorHolder>... holders) {
-        List<Class<?>> named = holders("editors", "MyEditors", holders);
+        List<Class<? extends EditorHolder>> named = holders("editors", "MyEditors", holders);
         return with(copy -> copy.editorHolders = added(editorHolders, named));
     }
 
     /**
-     * The classes holding the managed values its windows keep — {@link StudioPlugin#managedValues()}.
+     * The classes giving the managed values its windows keep — {@link StudioPlugin#managedValues()}.
      *
-     * @throws IllegalArgumentException when no holder is given, or one is {@code null}
+     * @throws IllegalArgumentException when no holder is given, or one is {@code null}, abstract or an inner class
      */
     @SafeVarargs
     public final PluginDeclaration values(Class<? extends ValueHolder>... holders) {
-        List<Class<?>> named = holders("values", "MyValues", holders);
+        List<Class<? extends ValueHolder>> named = holders("values", "MyValues", holders);
         return with(copy -> copy.valueHolders = added(valueHolders, named));
     }
 
     /**
-     * The classes holding its toolbar buttons — {@link StudioPlugin#toolbarItems()}.
+     * The classes giving its toolbar buttons — {@link StudioPlugin#toolbarItems()}.
      *
-     * @throws IllegalArgumentException when no holder is given, or one is {@code null}
+     * @throws IllegalArgumentException when no holder is given, or one is {@code null}, abstract or an inner class
      */
     @SafeVarargs
     public final PluginDeclaration toolbar(Class<? extends ToolbarHolder>... holders) {
-        List<Class<?>> named = holders("toolbar", "MyToolbar", holders);
+        List<Class<? extends ToolbarHolder>> named = holders("toolbar", "MyToolbar", holders);
         return with(copy -> copy.toolbarHolders = added(toolbarHolders, named));
     }
 
     /**
-     * The classes holding what it shows in the host's run overlay while the bot runs —
+     * The classes giving what it shows in the host's run overlay while the bot runs —
      * {@link StudioPlugin#runOverlayParts()}.
      *
-     * @throws IllegalArgumentException when no holder is given, or one is {@code null}
+     * @throws IllegalArgumentException when no holder is given, or one is {@code null}, abstract or an inner class
      */
     @SafeVarargs
     public final PluginDeclaration runOverlay(Class<? extends RunOverlayHolder>... holders) {
-        List<Class<?>> named = holders("runOverlay", "MyRunOverlay", holders);
+        List<Class<? extends RunOverlayHolder>> named = holders("runOverlay", "MyRunOverlay", holders);
         return with(copy -> copy.runOverlayHolders = added(runOverlayHolders, named));
     }
 
     /**
-     * The class holding its one part of the overlay editor: targets, watched screen, tools, probes —
-     * {@link StudioPlugin#overlayPart()}.
-     */
-    public PluginDeclaration overlay(Class<? extends OverlayHolder> holder) {
-        List<Class<?>> named = holders("overlay", "MyOverlay", holder);
-        return with(copy -> copy.overlayHolders = added(overlayHolders, named));
-    }
-
-    /**
-     * The classes holding the tools it offers the AI assistant — {@link StudioPlugin#assistantTools()}.
+     * The classes giving the tools it offers the AI assistant — {@link StudioPlugin#assistantTools()}.
      *
-     * @throws IllegalArgumentException when no holder is given, or one is {@code null}
+     * @throws IllegalArgumentException when no holder is given, or one is {@code null}, abstract or an inner class
      */
     @SafeVarargs
     public final PluginDeclaration assistant(Class<? extends AssistantHolder>... holders) {
-        List<Class<?>> named = holders("assistant", "MyTools", holders);
+        List<Class<? extends AssistantHolder>> named = holders("assistant", "MyTools", holders);
         return with(copy -> copy.assistantHolders = added(assistantHolders, named));
+    }
+
+    /**
+     * The class giving its one part of the overlay editor: targets, watched screen, tools, probes —
+     * {@link StudioPlugin#overlayPart()}.
+     *
+     * @throws IllegalArgumentException when {@code holder} is {@code null}, abstract or an inner class
+     * @throws IllegalStateException    when an overlay holder was already declared: a plugin has one part
+     */
+    public PluginDeclaration overlay(Class<? extends OverlayHolder> holder) {
+        Class<? extends OverlayHolder> named = holders("overlay", "MyOverlay", holder).getFirst();
+        once("overlay", overlayHolder);
+        return with(copy -> copy.overlayHolder = named);
+    }
+
+    /**
+     * The class giving a palette built by hand, overriding the one the host discovers — rarely wanted; see
+     * {@link StudioPlugin#catalog()}.
+     *
+     * @throws IllegalArgumentException when {@code holder} is {@code null}, abstract or an inner class
+     * @throws IllegalStateException    when a catalog holder was already declared: a plugin has one palette
+     */
+    public PluginDeclaration catalog(Class<? extends CatalogHolder> holder) {
+        Class<? extends CatalogHolder> named = holders("catalog", "MyCatalog", holder).getFirst();
+        once("catalog", catalogHolder);
+        return with(copy -> copy.catalogHolder = named);
     }
 
     /**
@@ -243,51 +260,42 @@ public final class PluginDeclaration {
         return with(copy -> copy.closing = told);
     }
 
-    /**
-     * The class holding a palette built by hand, overriding the one the host discovers — rarely wanted; see
-     * {@link StudioPlugin#catalog()}.
-     */
-    public PluginDeclaration catalog(Class<? extends CatalogHolder> holder) {
-        List<Class<?>> named = holders("catalog", "MyCatalog", holder);
-        return with(copy -> copy.catalogHolders = added(catalogHolders, named));
-    }
-
     PaletteCatalog catalog() {
-        return one(catalogHolders, PaletteCatalog.class).orElseGet(PaletteCatalog::empty);
+        PaletteCatalog given = catalogHolder == null ? null : built(catalogHolder).catalog();
+        return given == null ? PaletteCatalog.empty() : given;
     }
 
     List<PluginType<?>> types() {
-        return held(typeHolders, PluginType.class);
+        return given(typeHolders, TypeHolder::types);
     }
 
     List<ComponentType<?>> parts() {
-        List<ComponentType<?>> held = new ArrayList<>(held(typeHolders, ComponentType.class));
-        held.removeIf(PluginType.class::isInstance);
-        return List.copyOf(held);
+        return given(typeHolders, TypeHolder::components);
     }
 
     List<SlotEditor> editors() {
-        return held(editorHolders, SlotEditor.class);
+        return given(editorHolders, EditorHolder::editors);
     }
 
     List<ManagedValue<?>> values() {
-        return held(valueHolders, ManagedValue.class);
+        return given(valueHolders, ValueHolder::values);
     }
 
     List<ToolbarItem> toolbar() {
-        return held(toolbarHolders, ToolbarItem.class);
+        return given(toolbarHolders, ToolbarHolder::toolbar);
     }
 
     List<RunOverlayPart> runOverlay() {
-        return held(runOverlayHolders, RunOverlayPart.class);
+        return given(runOverlayHolders, RunOverlayHolder::runOverlay);
     }
 
     Optional<OverlayPart> overlay() {
-        return one(overlayHolders, OverlayPart.class).filter(part -> !part.isEmpty());
+        if (overlayHolder == null) return Optional.empty();
+        return Optional.ofNullable(built(overlayHolder).overlay()).filter(part -> !part.isEmpty());
     }
 
     List<AssistantTool<?>> assistant() {
-        return held(assistantHolders, AssistantTool.class);
+        return given(assistantHolders, AssistantHolder::tools);
     }
 
     String guide() {
@@ -310,66 +318,86 @@ public final class PluginDeclaration {
         if (closing != null) closing.run();
     }
 
-    private static List<Class<?>> holders(String step, String example, Class<?>... holders) {
+    /**
+     * The named holders, refused here when the host could never build one. Reads only the class's modifiers, which
+     * loads nothing more and initialises nothing.
+     */
+    @SafeVarargs
+    private static <H> List<Class<? extends H>> holders(String step, String example, Class<? extends H>... holders) {
         if (holders == null || holders.length == 0) {
-            throw new IllegalArgumentException("." + step + "(…) needs the class that holds them: ." + step
+            throw new IllegalArgumentException("." + step + "(…) needs the class that gives them: ." + step
                     + "(" + example + ".class)");
         }
         for (Class<?> holder : holders) {
             if (holder == null) throw new IllegalArgumentException("." + step + "(…) was given a null class");
+            int modifiers = holder.getModifiers();
+            if (holder.isInterface() || Modifier.isAbstract(modifiers)) {
+                throw new IllegalArgumentException(holder.getName() + " is abstract; the host builds the holder, so "
+                        + "." + step + "(…) needs a concrete class");
+            }
+            if (holder.isEnum()) {
+                throw new IllegalArgumentException(holder.getName() + " is an enum; the host builds the holder, so "
+                        + "." + step + "(…) needs a class");
+            }
+            if (holder.isMemberClass() && !Modifier.isStatic(modifiers)) {
+                throw new IllegalArgumentException(holder.getName() + " is an inner class; make it static so the "
+                        + "host can build it");
+            }
+            if (holder.isLocalClass() || holder.isAnonymousClass()) {
+                throw new IllegalArgumentException(holder.getName() + " is declared inside a method; make it a "
+                        + "class of its own, or a static nested one, so the host can build it");
+            }
         }
         return List.of(holders);
     }
 
-    private static List<Class<?>> added(List<Class<?>> before, List<Class<?>> named) {
-        List<Class<?>> all = new ArrayList<>(before);
+    private static void once(String step, Class<?> already) {
+        if (already != null) {
+            throw new IllegalStateException("." + step + "(…) was already given " + already.getName()
+                    + "; a plugin has one");
+        }
+    }
+
+    private static <H> List<Class<? extends H>> added(List<Class<? extends H>> before,
+                                                       List<Class<? extends H>> named) {
+        List<Class<? extends H>> all = new ArrayList<>(before);
         all.addAll(named);
         return List.copyOf(all);
     }
 
-    /** The one {@code kind} value a single-value holder holds; two are refused, naming the holder. */
-    private static <E> Optional<E> one(List<Class<?>> holders, Class<E> kind) {
-        List<E> found = held(holders, kind);
-        if (found.size() > 1) {
-            throw new IllegalStateException(holders.getFirst().getName() + " holds " + found.size() + " "
-                    + kind.getSimpleName() + " fields; a plugin has one");
-        }
-        return found.stream().findFirst();
-    }
-
-    /**
-     * The {@code kind} values a holder's {@code public static final} fields hold, directly or in a collection, in
-     * field order. {@link Class#getDeclaredFields} promises no order and gives the declared one on every JVM a
-     * host runs on; {@code DeclaredPluginTest} pins it.
-     */
-    @SuppressWarnings("unchecked")
-    private static <E> List<E> held(List<Class<?>> holders, Class<? super E> kind) {
+    /** What each holder gives, in the order the holders were named; a value given twice counts once. */
+    private static <H, E> List<E> given(List<Class<? extends H>> holders,
+                                        Function<H, ? extends Collection<? extends E>> gives) {
         Set<Object> seen = Collections.newSetFromMap(new IdentityHashMap<>());
         List<E> found = new ArrayList<>();
-        for (Class<?> holder : holders) {
-            for (Field field : holder.getDeclaredFields()) {
-                int modifiers = field.getModifiers();
-                if (!Modifier.isPublic(modifiers) || !Modifier.isStatic(modifiers) || !Modifier.isFinal(modifiers)
-                        || field.isSynthetic()) {
-                    continue;
-                }
-                Object value = valueOf(field);
-                Collection<?> each = value instanceof Collection<?> many ? many : Collections.singletonList(value);
-                for (Object one : each) {
-                    if (kind.isInstance(one) && seen.add(one)) found.add((E) one);
-                }
+        for (Class<? extends H> holder : holders) {
+            Collection<? extends E> each = gives.apply(built(holder));
+            if (each == null) continue;
+            for (E one : each) {
+                if (one != null && seen.add(one)) found.add(one);
             }
         }
         return List.copyOf(found);
     }
 
-    private static Object valueOf(Field field) {
+    /**
+     * A fresh holder, built through its constructor with no arguments, whatever its access. Every way that fails —
+     * its class failing to initialise or to link included — is an {@link IllegalStateException} naming the holder.
+     */
+    private static <H> H built(Class<? extends H> holder) {
         try {
-            field.trySetAccessible();
-            return field.get(null);
-        } catch (IllegalAccessException e) {
-            throw new IllegalStateException(field.getDeclaringClass().getName() + "." + field.getName()
-                    + " cannot be read; make its class public", e);
+            Constructor<? extends H> constructor = holder.getDeclaredConstructor();
+            constructor.trySetAccessible();
+            return constructor.newInstance();
+        } catch (NoSuchMethodException e) {
+            throw new IllegalStateException(holder.getName() + " needs a constructor with no arguments", e);
+        } catch (InvocationTargetException e) {
+            throw new IllegalStateException(holder.getName() + " failed while it was built", e.getCause());
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(holder.getName() + " cannot be built from the host; make the class and "
+                    + "its constructor public, or open its package", e);
+        } catch (LinkageError e) {
+            throw new IllegalStateException(holder.getName() + " could not be loaded", e);
         }
     }
 }
