@@ -36,6 +36,7 @@
   that member is not offered and reaches nothing. Facades are listed alphabetically by label.
 - `…api.meta` — **`@Refactor(value, done)`**, the mark on a function where a refactor wrote a value the user
   never chose; **`@Migrate`** (a bot's rule saying what one element of an old API becomes — a method,
-  constructor, field or whole type, named by the rule's own signature — written by the bot's author, never run)
-  and **`@Migrated`** (a managed value such a rule wrote and nobody edited since), all three `SOURCE`. A plugin
-  says nothing about its own changes.
+  constructor, field or whole type, named by the rule's own signature — never run) and **`@Migrated`** (a managed
+  value such a rule wrote and nobody edited since), all three `SOURCE`. A bot's author writes a rule in the bot; a
+  plugin may ship one beside an element it marks `@Deprecated(forRemoval = true)`, which Studio reads from the
+  plugin's sources jar, and removes both in its next release (2026-10-28). The author's rule wins.

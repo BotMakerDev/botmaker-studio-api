@@ -7,9 +7,19 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Written on a bot's static method, a <em>rule</em>: what one element of an API the bot used to call becomes, as
- * the bot's author wrote it. The author decides what replaces what; a plugin says nothing about its own changes,
- * and the host never guesses a successor.
+ * Written on a static method, a <em>rule</em>: what one element of an API a bot used to call becomes. The host
+ * never guesses a successor; a rule says it, written by the bot's author or by the plugin that owns the element.
+ *
+ * <p><b>In a plugin</b> (2026-10-28), a rule stands beside an element it marks
+ * {@code @Deprecated(forRemoval = true)}, so it compiles against the element in the plugin's own build. The host
+ * reads it from the plugin's {@code -sources.jar} (this annotation has source retention), in any class, and
+ * rewrites a bot's uses with it; nothing is copied into the bot. The next release removes the element and its rule
+ * together. The host reads the sources jar of the version the bot moves <em>from</em>, so an upgrade from the
+ * release carrying the rule still finds it; a bot that moves from an earlier version straight past that release
+ * gets no rule from the plugin, only the host's default repair.
+ *
+ * <p><b>In a bot</b>, a rule the author writes wins over a plugin's for the same element; two plugin rules for one
+ * element are both refused.
  *
  * <pre>{@code
  * @Migrate(GameScreen.class)                                    // an instance method
@@ -64,7 +74,8 @@ import java.lang.annotation.Target;
  * the old element in the project it substitutes the site's parts into the body. A managed value is written beside
  * its original, marked {@link Migrated}, and the original stays; any other site is rewritten in place.
  *
- * <p>{@link RetentionPolicy#SOURCE}, like {@link Refactor}: the host finds it by class in the bot's source.
+ * <p>{@link RetentionPolicy#SOURCE}, like {@link Refactor}: the host finds it by class in the bot's source, or in
+ * the plugin's sources jar.
  */
 @Documented
 @Retention(RetentionPolicy.SOURCE)

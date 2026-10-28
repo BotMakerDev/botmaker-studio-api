@@ -47,6 +47,10 @@ is allowed to make. Additions arrive as `default` methods.
 
 - **`StudioServices.log()`** (2026-10-28), a `PluginLog` (`info`, `warn`, `error`) the host shows under the
   plugin's name, instead of printing to standard error.
+- **A plugin may ship `@Migrate` rules** (2026-10-28, javadoc only, no member changed). To remove or reshape an
+  element, mark it `@Deprecated(forRemoval = true)` and write its rule anywhere in the plugin, compiled against
+  it; Studio reads the rule from the plugin's `-sources.jar` and rewrites each bot's uses. The next release
+  removes the element and its rule together. A rule the bot's author writes wins over the plugin's.
 
 ## [0.12.0] — 2026-10-25
 
