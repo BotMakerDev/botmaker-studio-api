@@ -47,4 +47,16 @@ public interface Dialogs {
 
     /** Lets the user choose a directory. */
     Choice chooseDirectory(String title, Path initialDir);
+
+    /**
+     * Lets the user name a file to write, proposing {@code fileName} in {@code initialDir}, filtered to the given
+     * extensions as {@link #chooseFile} is. The host asks before replacing a file that exists.
+     *
+     * <p>Added after 0.13.0, as a default so the contract stays compatible; the default answers cancelled, and
+     * Studio overrides it. A plugin that calls it needs a Studio that has it: an older one refuses the plugin at
+     * load, naming this method.
+     */
+    default Choice saveFile(String title, Path initialDir, String fileName, String... extensions) {
+        return Choice.cancelled(false);
+    }
 }

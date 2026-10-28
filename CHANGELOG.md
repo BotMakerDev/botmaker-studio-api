@@ -15,6 +15,14 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Added
+
+- **`Dialogs.saveFile(title, initialDir, fileName, extensions…)`** (2026-10-28): a chooser for a file to write,
+  proposing a name. A default answering cancelled, so nothing already built breaks; Studio implements it. A
+  plugin that calls it is refused at load by a Studio older than it.
+
 ## [0.13.0] — 2026-10-28
 
 ### Changed (breaking)
