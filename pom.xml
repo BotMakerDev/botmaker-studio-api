@@ -81,8 +81,10 @@
              coordinate is its id.
              Still v0.13.0 on 2026-10-28: every PluginDeclaration list step takes typed holder classes only (the
              Supplier overloads and parts(…) went), lifecycle is declared (onProjectOpened/onProjectClosing) and
-             DeclaredPlugin's projectOpened/projectClosing are final; StudioServices.log() was added. -->
-        <botmaker.japicmp.baseline>v0.13.0</botmaker.japicmp.baseline>
+             DeclaredPlugin's projectOpened/projectClosing are final; StudioServices.log() was added.
+             Pinned ahead to v0.14.0 (2026-10-29): @Param's min/max/options, slot.Bounds and
+             ValueContext.bounds() went. -->
+        <botmaker.japicmp.baseline>v0.14.0</botmaker.japicmp.baseline>
         <botmaker.japicmp.skip>false</botmaker.japicmp.skip>
     </properties>
 

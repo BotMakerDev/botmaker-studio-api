@@ -6,7 +6,7 @@
   names, and it is the one thing a plugin's widgets and Studio's own both need — which is why it is here rather
   than a reason for Studio to depend on the toolkit. `StyleClassesTest` in Studio holds the stylesheet to it.
 - **One package per contribution surface**: `…api.slot` (`SlotEditor`, `EditorSteps`, `SlotContext`,
-  `SlotRun`, `ValueContext`, `TypeRef`, `Bounds`), `…api.toolbar` (`ToolbarItem`, `ToolbarSteps`, `Pressed`,
+  `SlotRun`, `ValueContext`, `TypeRef`), `…api.toolbar` (`ToolbarItem`, `ToolbarSteps`, `Pressed`,
   `EnabledWhen`, `ActionContext`; no groups since 2026-10-28 — an item is placed `onBar` or `inOverlay`), `…api.overlay` (`OverlayPart`, `OverlayTool`,
   `OverlayContext`, `FrameContext`, `OverlayToolContext`, `OverlayFrame`, `Probe`, `ProbeContext`, `ProbeResult`,
   `Marks`, `Pixel`, `Area`, `Watched`), `…api.run` (`RunOverlayPart`, `RunOverlayContext`, `RunProperty`), `…api.assist`

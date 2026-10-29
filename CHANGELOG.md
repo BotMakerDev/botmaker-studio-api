@@ -17,6 +17,13 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
+### Changed (breaking)
+
+- **`@Param` describes the field only** (2026-10-29): `min()`, `max()` and `options()` removed, and with them
+  `slot.Bounds` and `ValueContext.bounds()`. A value that needs a range or a closed choice gets a type of its
+  own (an `enum`, or a plugin type whose editor holds its limits); the contract carries no value rules. Studio's
+  upgrade strips the three members from a bot's `@Param`.
+
 ### Added
 
 - **`Dialogs.saveFile(title, initialDir, fileName, extensions…)`** (2026-10-28): a chooser for a file to write,

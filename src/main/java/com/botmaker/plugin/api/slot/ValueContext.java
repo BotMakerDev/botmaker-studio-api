@@ -147,18 +147,6 @@ public interface ValueContext {
     }
 
     /**
-     * The range the value is declared to stay within, {@link Bounds#NONE} when nothing is declared.
-     *
-     * <p>A capability only the host has: the limit is a rule about the <em>field</em>, written as
-     * {@code @Param(min = …, max = …)} on the bot's own declaration, and the value alone does not carry it. A
-     * number editor stops its stepper at the ends and clamps what is typed; the host also clamps what
-     * {@link #set(Object)} writes, so an editor that ignores this cannot write a value outside it.
-     */
-    default Bounds bounds() {
-        return Bounds.NONE;
-    }
-
-    /**
      * The call declaration the host writes a {@code type} with, or empty when {@code type} is written some other
      * way or nothing declares it.
      *

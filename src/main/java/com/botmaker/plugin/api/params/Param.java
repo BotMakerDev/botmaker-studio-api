@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  *     @Param(description = "How long to rest between attempts")
  *     public static Duration restBetween = Duration.ofSeconds(3);
  *
- *     @Param(category = "Limits", min = 1, max = 50)
+ *     @Param(category = "Limits")
  *     public static int maxAttempts = 10;
  * }
  * }</pre>
@@ -55,8 +55,11 @@ import java.lang.annotation.Target;
  * {@code PluginLoader} is parent-first for {@code com.botmaker.plugin.api.**}, so a plugin still links
  * against the <em>host's</em> copy however many are on a bot's classpath.
  *
- * <p>{@link #min} and {@link #max} are numbers, not strings a plugin's codec would parse: no plugin parses
- * anything.
+ * <h2>It describes the field, never the value</h2>
+ *
+ * <p>No range and no list of choices (removed 2026-10-29, the user's call): a rule about what a value may be
+ * belongs to the value's type — an {@code enum} for a closed choice, or a type of its own whose editor knows its
+ * limits. Each member here is about the row, so the contract between Studio and a plugin carries no value rules.
  *
  * @see com.botmaker.plugin.api.managed.ManagedMarker the same idea for a value a <em>plugin's</em> window keeps
  */
@@ -137,29 +140,4 @@ public @interface Param {
      * people rather than more.
      */
     String visibility() default EDITOR;
-
-    /**
-     * Inclusive lower bound. The default is no bound, and the two ends are independent — "at most 10" is a
-     * sentence a person says.
-     *
-     * <p>Advice to the widget and a clamp when a value is normalised, never a validation that can fail: a
-     * value outside the range is pulled to the nearest bound, because the alternative is a project that
-     * refuses to save because of a limit somebody tightened after the fact.
-     *
-     * <p>A {@code double} covers every bounded type, including the ones measured by a number rather than
-     * being one: a {@code Duration}'s bound is its millisecond count.
-     */
-    double min() default Double.NEGATIVE_INFINITY;
-
-    /** Inclusive upper bound. See {@link #min}. */
-    double max() default Double.POSITIVE_INFINITY;
-
-    /**
-     * The only values offered, each as the Java expression that writes one — a closed choice for a type
-     * that is not an enum.
-     *
-     * <p>Empty means the type's own editor decides. For an {@code enum} field this is unnecessary: the
-     * constants are the choices, and anything named here is merged with them.
-     */
-    String[] options() default {};
 }

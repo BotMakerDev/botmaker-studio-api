@@ -10,10 +10,9 @@ the rule is unconditional — only a Studio major release may break a plugin, an
 block — so there is nothing to distinguish. The baseline is set to the previous tag in every release commit
 (`Japicmp.bump`, never backwards).
 
-**The baseline is pinned to `v0.13.0`** (2026-10-27), ahead of the tag: `StudioPlugin.id()`/`displayName()`,
-`StudioPlugin.id(String)` and `PluginDeclaration.Naming` went, `StudioPlugin` is sealed to `DeclaredPlugin` and a
-plugin is named by its pom's `botmaker.plugin`, so the next release is **`--studio-api 0.13.0`**. A break is
-pinned ahead to the next minor's tag, as was done for `v0.2.0`, `v0.3.0`, `v0.4.0`, `v0.6.0`, `v0.9.0`,
-`v0.10.0` and `v0.11.0`. An absent
+**The baseline is pinned to `v0.14.0`** (2026-10-29), ahead of the tag: `@Param`'s `min()`, `max()` and
+`options()` went, with `slot.Bounds` and `ValueContext.bounds()`, so the next release is **`--studio-api
+0.14.0`**. A break is pinned ahead to the next minor's tag, as was done for `v0.2.0`, `v0.3.0`, `v0.4.0`,
+`v0.6.0`, `v0.9.0`, `v0.10.0`, `v0.11.0` and `v0.13.0`. An absent
 baseline tag reports and passes. **When a baseline "passes", look at the first line of `target/japicmp/japicmp.diff`**:
 `against` followed by nothing means nothing was compared.
