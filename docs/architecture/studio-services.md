@@ -12,7 +12,9 @@ window a dialog is owned by** (`dialogs()`), **the bot as a process** (`runs()`:
 (`pluginValues()`, below). Nothing else does. A plugin can enumerate monitors, windows and emulator
 instances, grab pixels from any of them and read a launcher's installed-game library, because
 **`botmaker-shared` is published and any plugin may depend on it** — so nothing shared can do is a
-privilege. The files under `resourcesDir()` are ordinary files.
+privilege. The files under `resourcesDir()` are ordinary files. Since 2026-10-30 it is each plugin's own folder,
+`plugins/<group>/<artifact>/` of the resources, the host telling the plugin by the class calling it: two plugins
+writing `images/` at the root wrote over each other's files, as their holders could before 2026-10-27.
 
 When a plugin's editor needs something the host has and the contract does not expose, ask *could any plugin
 have built this on shared plus its own files?* If yes, it builds it. If no, and only then, the contract grows

@@ -23,6 +23,10 @@ is allowed to make. Additions arrive as `default` methods.
   `slot.Bounds` and `ValueContext.bounds()`. A value that needs a range or a closed choice gets a type of its
   own (an `enum`, or a plugin type whose editor holds its limits); the contract carries no value rules. Studio's
   upgrade strips the three members from a bot's `@Param`.
+- **`StudioServices.resourcesDir()` is the calling plugin's own folder** (2026-10-30, javadoc only):
+  `src/main/resources/plugins/<group>/<artifact>/`, named as its holders' package, so two plugins never write the
+  same file. A plugin writes a path under it into the bot (`images/ore.png`) and finds it on the bot's classpath
+  as `plugins/<group>/<artifact>/images/ore.png`. No signature changed.
 
 ### Added
 

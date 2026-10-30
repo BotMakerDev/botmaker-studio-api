@@ -27,10 +27,14 @@ public interface StudioServices {
     Path projectDir();
 
     /**
-     * The open project's resources directory, where images and other assets a bot loads by name live.
+     * This plugin's own folder of the open project's resources, where the images and other assets its values name
+     * live: {@code src/main/resources/plugins/<group>/<artifact>/} (2026-10-30), so two plugins never write the same
+     * file. The folder is named as the plugin's holders' package: its groupId and its artifactId, each lower case
+     * with {@code _} for any mark a Java name cannot hold ({@code com_github_botmakerdev/botmaker_sdk}).
      *
-     * <p>An editor that lets the user pick an image writes the file here and puts its <em>name</em> in the
-     * slot, so the bot resolves it at runtime the same way on every machine.
+     * <p>An editor that lets the user pick an image writes the file here and puts its path <em>under this
+     * folder</em> in the slot, {@code images/ore.png}; the plugin's runtime finds it on the bot's classpath as
+     * {@code plugins/<group>/<artifact>/images/ore.png}, the same way on every machine.
      */
     Path resourcesDir();
 
