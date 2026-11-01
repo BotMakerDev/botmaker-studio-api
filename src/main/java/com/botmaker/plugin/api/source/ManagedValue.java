@@ -104,13 +104,13 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
 
     /**
      * <b>One value a window of your plugin edits</b>: a method in the bot marked with the id, whose one
-     * {@code return} the host rewrites — {@code @SdkValue(SdkValue.Id.FLOW)}:
+     * {@code return} the host rewrites — {@code @SdkValue(SdkValue.Id.FLOW_LAYOUT)}:
      *
      * <pre>{@code
-     * public static final ManagedMethod<Flow> FLOW = ManagedValue.method(SdkValue.Id.FLOW)
+     * public static final ManagedMethod<FlowLayout> FLOW_LAYOUT = ManagedValue.method(SdkValue.Id.FLOW_LAYOUT)
      *         .in("Sdk")                              // the class that holds it | .openedOnly()
-     *         .holds(Flow.class, Flow.NONE)           // what it returns, and what a created one starts as
-     *         .because("This is the bot's activity flow. Draw it in 🔀 Activity Flow.");
+     *         .holds(FlowLayout.class, FlowLayout.NONE) // what it returns, and what a created one starts as
+     *         .because("These are where the Activity Flow's cards sit. Drag them in 🔀 Activity Flow.");
      * }</pre>
      *
      * @throws IllegalArgumentException when the enum is not nested in such an annotation

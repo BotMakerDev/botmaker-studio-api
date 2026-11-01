@@ -89,12 +89,12 @@ shown read-only. No syntax tree crosses the boundary in either direction.
 ```java
 // the plugin
 @ManagedMarker @Retention(RetentionPolicy.RUNTIME) @Target({ElementType.TYPE, ElementType.METHOD})
-public @interface SdkValue { Id value(); enum Id { FLOW, CAPTURE, ACTIVITIES } }
+public @interface SdkValue { Id value(); enum Id { FLOW_LAYOUT, CAPTURE, ACTIVITIES } }
 
 // the bot
 public final class Sdk {
-    @SdkValue(SdkValue.Id.FLOW)
-    public static Flow flow() { return Flow.of(…); }
+    @SdkValue(SdkValue.Id.FLOW_LAYOUT)
+    public static FlowLayout flowLayout() { return FlowLayout.of(…); }
 }
 ```
 

@@ -53,7 +53,7 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   `ManagedValue.openSet(id).of(E.class).in(holder).because(reason)`, `E` being the class of each constant;
   `.ofEnum(E.class, Owner::byName)` instead of `of` makes the holder an enum implementing the interface `E`,
   whose constants the host reads as `byName(name)`. `id` is a constant of the enum nested in the plugin's
-  `@ManagedMarker` annotation (`SdkValue.Id.FLOW`). It
+  `@ManagedMarker` annotation (`SdkValue.Id.FLOW_LAYOUT`). It
   is typed and declared once: a plugin keeps one constant per value and lists it in its `ValueHolder`, uses it
   in `ManagedValues.claim`, and through the toolkit's `ManagedHandle` or, for an open set, `ManagedSet`.
 - **A slot editor**: `SlotEditor.onParameter(Annotation.class)` | `forType(X.class)` | `when(predicate)` →

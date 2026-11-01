@@ -41,7 +41,7 @@ discarded*. Both are steps since 2026-10-28; `DeclaredPlugin`'s `projectOpened`/
 
 **`pluginValues()` rewrites one expression inside a file the host did not write**
 (`../docs/refactor/33-plugin-java.md`). A bot holds a plugin's values as methods marked with the plugin's own
-annotation (`@SdkValue(SdkValue.Id.FLOW)`, meta-annotated `@ManagedMarker`) in its own
+annotation (`@SdkValue(SdkValue.Id.FLOW_LAYOUT)`, meta-annotated `@ManagedMarker`) in its own
 `src/main/java/<bot package>/plugins/<groupId>/<artifactId>/` (each one lower-cased package name: `plugins/com_github_botmakerdev/botmaker_sdk/`), and the host never touches the class around them.
 `open(id)` hands back a **`ValueContext`**, so a slot, a Parameters row and a managed value are all edited
 through one interface and no second way to edit a value exists; a body that is not a single

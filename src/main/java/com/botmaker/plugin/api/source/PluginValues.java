@@ -11,11 +11,11 @@ import java.util.Optional;
 /**
  * A plugin's own values, as they are written in the bot's Java.
  *
- * <p>Each one is a method marked with the plugin's own annotation ({@code @SdkValue(SdkValue.Id.FLOW)},
+ * <p>Each one is a method marked with the plugin's own annotation ({@code @SdkValue(SdkValue.Id.FLOW_LAYOUT)},
  * meta-annotated {@link com.botmaker.plugin.api.managed.ManagedMarker}) in the bot's own source — the file its
  * template shipped, or the one {@link #create} wrote. Its id is
  * {@link com.botmaker.plugin.api.source.ManagedValue#idOf} that constant: the enum's binary name and the
- * constant's ({@code com.example.SdkValue$Id.FLOW}). The host finds the method by that id, works out its type
+ * constant's ({@code com.example.SdkValue$Id.FLOW_LAYOUT}). The host finds the method by that id, works out its type
  * from the method's declared return type, and hands back a {@link ValueContext} over the expression the method
  * returns — the same context a slot on the canvas and a row in the Parameters window are edited through. So a plugin's own window reads
  * and writes its value with the interface it already knows, and no second way to edit a value exists.

@@ -19,17 +19,17 @@ import java.lang.annotation.Target;
  * public @interface SdkValue {
  *     Id value();
  *
- *     enum Id { FLOW, CAPTURE, ACTIVITIES }
+ *     enum Id { FLOW_LAYOUT, CAPTURE, ACTIVITIES }
  * }
  *
- * public static final ManagedValue<Flow> FLOW = ManagedValue.method(SdkValue.Id.FLOW)…;
+ * public static final ManagedValue<FlowLayout> FLOW_LAYOUT = ManagedValue.method(SdkValue.Id.FLOW_LAYOUT)…;
  *
  * // the bot
  * public final class Sdk {
  *
- *     @SdkValue(SdkValue.Id.FLOW)
- *     public static Flow flow() {
- *         return Flow.of(…);
+ *     @SdkValue(SdkValue.Id.FLOW_LAYOUT)
+ *     public static FlowLayout flowLayout() {
+ *         return FlowLayout.of(…);
  *     }
  * }
  * }</pre>
