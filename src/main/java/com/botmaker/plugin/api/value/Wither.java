@@ -10,8 +10,8 @@ import java.util.function.Predicate;
 
 /**
  * One named link a call is written with after its factory: an instance method of the type answering a copy
- * with one thing changed. Declared with {@link DeclaredCall#with} or {@link DeclaredCall#flag}, read by the
- * host, never built by hand.
+ * with one thing changed. Found by its {@link Link} mark on the plugin's own type, or declared with
+ * {@link DeclaredCall#with} or {@link DeclaredCall#flag}; read by the host, never built by hand.
  *
  * <pre>{@code
  * Flow.activity(COLLECT, Collect::body).described("Picks up ore").goesHome()
@@ -48,18 +48,32 @@ public final class Wither<T> {
     private final boolean flag;
     /** How the part is set, for a link whose part is not what its parameter takes; null to call the method. */
     private final BiFunction<? super T, Object, ? extends T> setter;
+    /** Found by its {@link Link} mark rather than declared, so an explicit step on the same method replaces it. */
+    private final boolean inferred;
 
     private Wither(Class<T> type, Method method, Function<? super T, ?> part, boolean flag,
-                   BiFunction<? super T, Object, ? extends T> setter) {
+                   BiFunction<? super T, Object, ? extends T> setter, boolean inferred) {
         this.type = type;
         this.method = method;
         this.part = part;
         this.flag = flag;
         this.setter = setter;
+        this.inferred = inferred;
     }
 
     static <T> Wither<T> with(Class<T> type, Ref wither, Function<? super T, ?> part) {
-        return new Wither<>(type, checked(type, wither, 1), required(part), false, null);
+        return new Wither<>(type, checked(type, wither, 1), required(part), false, null, false);
+    }
+
+    /**
+     * A link marked {@link Link} on {@code method}, its part read by {@code reader}: a flag when the method takes
+     * no argument. {@code method} is checked as a declared one is.
+     */
+    static <T> Wither<T> linked(Class<T> type, Method method, Function<? super T, ?> reader) {
+        boolean flag = method.getParameterCount() == 0;
+        Method checked = checked(type, method, flag ? 0 : 1);
+        Function<? super T, ?> part = flag ? value -> Boolean.TRUE.equals(reader.apply(value)) : reader;
+        return new Wither<>(type, checked, part, flag, null, true);
     }
 
     /** A link whose part the host holds as an {@code H}, set by {@code apply} once the part read is one. */
@@ -71,12 +85,17 @@ public final class Wither<T> {
         return new Wither<>(type, checked(type, wither, 1), held::take, false, (value, given) -> {
             Object read = held.read(given);
             return read == CallShape.REFUSED ? null : set.apply(value, (H) read);
-        });
+        }, false);
     }
 
     static <T> Wither<T> flag(Class<T> type, Ref wither, Predicate<? super T> on) {
         Predicate<? super T> test = required(on);
-        return new Wither<>(type, checked(type, wither, 0), value -> test.test(value), true, null);
+        return new Wither<>(type, checked(type, wither, 0), value -> test.test(value), true, null, false);
+    }
+
+    /** Whether this link was found by its {@link Link} mark, so a declared one on its method takes its place. */
+    boolean inferred() {
+        return inferred;
     }
 
     private static <F> F required(F given) {
@@ -85,7 +104,10 @@ public final class Wither<T> {
     }
 
     private static Method checked(Class<?> type, Ref wither, int arguments) {
-        Executable executable = Ref.resolve(wither);
+        return checked(type, Ref.resolve(wither), arguments);
+    }
+
+    private static Method checked(Class<?> type, Executable executable, int arguments) {
         String name = executable.getDeclaringClass().getName() + "." + executable.getName();
         if (!(executable instanceof Method method) || Modifier.isStatic(method.getModifiers())) {
             throw new IllegalArgumentException(name + " is not an instance method; a wither is called on the"

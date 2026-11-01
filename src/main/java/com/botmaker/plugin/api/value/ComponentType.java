@@ -135,8 +135,9 @@ public interface ComponentType<T> {
 
     /**
      * Whether this declaration writes {@code value}: true by default. A class written by several factories is
-     * declared once per factory, each answering for its own values ({@link DeclaredCall#when}); the host writes a
-     * value with the first declaration of its class that answers true.
+     * declared once per factory, and the host picks among them by {@link #writer}: usually the one that
+     * {@link #rebuilds} the value, so most need nothing here. {@link DeclaredCall#when} answers for a choice
+     * equality cannot make.
      */
     default boolean writes(T value) {
         return true;
@@ -146,6 +147,49 @@ public interface ComponentType<T> {
     @SuppressWarnings("unchecked")
     default boolean writesAny(Object value) {
         return writes((T) value);
+    }
+
+    /**
+     * Whether {@code value} taken apart by this declaration and built back {@code equals} it: the test that
+     * picks the factory of a class written by several ({@link #writer}). False when either half refuses or
+     * throws, and for a class that does not override {@code equals}, whose copies are never equal.
+     */
+    default boolean rebuilds(Object value) {
+        try {
+            return value != null && value.equals(build(componentsOf(value)));
+        } catch (RuntimeException refused) {
+            return false;
+        }
+    }
+
+    /**
+     * The declaration of {@code declarations} — every one of a class, in declaration order — that writes
+     * {@code value}, or {@code null}: the first that {@link #writes} it and {@link #rebuilds} it, else the first
+     * that writes it. So {@code Hotkey.of(Key)} and {@code Hotkey.of(Combo)} need no predicate: a two-key hotkey
+     * is not rebuilt by the first. A value no declaration rebuilds — one holding a lambda, equal only to itself —
+     * goes to the first that writes it, as a single declaration's always does. One rule for every host.
+     */
+    static ComponentType<?> writer(List<? extends ComponentType<?>> declarations, Object value) {
+        ComponentType<?> first = null;
+        for (ComponentType<?> each : declarations) {
+            if (!accepts(each, value)) continue;
+            if (declarations.size() == 1) return each;
+            if (first == null) first = each;
+            try {
+                if (each.rebuilds(value)) return each;
+            } catch (RuntimeException | LinkageError declined) {
+                // A plugin built against an older contract, or one whose parts throw: not this one.
+            }
+        }
+        return first;
+    }
+
+    private static boolean accepts(ComponentType<?> declaration, Object value) {
+        try {
+            return declaration.writesAny(value);
+        } catch (RuntimeException | LinkageError declined) {
+            return false;
+        }
     }
 
     /**

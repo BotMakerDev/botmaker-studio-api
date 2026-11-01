@@ -36,6 +36,18 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   factory (`LocalDate::of`, `Color::new`); past ten, a plugin declares its own interface extending `Ref` and
   uses `writtenAs(Ref, Function...)`. `build` is invoking the factory on the parts coerced to its parameters,
   `null` when they do not fit or it throws.
+- **A plugin's own type names nothing twice** (2026-11-01). `writtenAs(Tree::of)` with no accessors reads
+  each parameter `p` of a static factory or constructor by `p()`, or `isP()` for a `boolean`, by name and type
+  on the compiled class (`-parameters`, on in `botmaker-plugin-parent`). Every method marked `@Link`, on the
+  type or on one it overrides (`Input`'s), is chained after the factory: `x(A)` read by `x()`, the flag `x()`
+  by `boolean isX()`, in the readers' record-component order, then by name. A mismatch is refused when the
+  declaration is built, so the plugin's own tests (`PluginTests.assertDeclared`) catch it, never a bot; an IDE
+  rename of one side alone is caught there, not by javac. `.with`/`.flag` stay for a JDK type, a reader under
+  another name, or a `Held` part, and an explicit one replaces the marked link in its place.
+- **Several factories, no predicate.** The host writes a value with `ComponentType.writer(declarations, v)`:
+  the first that `writes` it and `rebuilds` it (`build(components(v))` equals `v`), else the first that writes
+  it — so a value holding a lambda, equal only to itself, still has a writer. `.when` is for what equality
+  cannot decide: a value written as its constant (`PictureTag`), or one holding a lambda.
 - **A managed value**: `ManagedValue.method(id).in(holder).holds(T.class, initial).because(reason)`,
   `.openedOnly().holds(T.class)` instead of `in` for one the host may open and never create, and
   `ManagedValue.openSet(id).of(E.class).in(holder).because(reason)`, `E` being the class of each constant;

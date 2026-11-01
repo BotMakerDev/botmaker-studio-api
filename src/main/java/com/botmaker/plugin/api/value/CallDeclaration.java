@@ -46,10 +46,13 @@ abstract sealed class CallDeclaration<T, S extends CallDeclaration<T, S>> implem
      * <p>A part the host holds as something the wither does not take is a {@link Held} part: {@code
      * .with(Run::home, HOME.part(Bots::method))} hands the wither {@code give} of the text it read.
      *
+     * <p>A method marked {@link Link} is chained already; declaring it here replaces that link in its place —
+     * for a part read under another name, or a {@link Held} one.
+     *
      * @param wither an instance method of the type taking the part and answering the changed value
      * @param part   the part a value holds, as the wither takes it
      * @throws IllegalArgumentException for a method that is no wither of the type, a varargs factory, or a
-     *                                  wither declared twice
+     *                                  wither declared twice (a {@link Link} mark and one step is once)
      */
     public <A> S with(Ref.Of2<T, A, T> wither, Function<? super T, ? extends A> part) {
         return next(shape.withWither(Wither.with(shape.type(), wither, part)));
@@ -107,11 +110,11 @@ abstract sealed class CallDeclaration<T, S extends CallDeclaration<T, S>> implem
     }
 
     /**
-     * This call, writing only the values {@code writes} accepts — for a class written by several factories,
-     * each declared on its own: the SDK's {@code Flow.Step} is {@code Flow.activity(…)} for an activity's card
-     * and {@code Flow.subflow(…)} for a sub-flow's. The host reads a call of any of them, and writes a value with
-     * the first declaration of its class that accepts it, in declaration order. Without it a call writes every
-     * value of its class.
+     * This call, writing only the values {@code writes} accepts. A class written by several factories is declared
+     * once per factory, and the host reads a call of any of them; it writes a value with the declaration that
+     * rebuilds it equal ({@link ComponentType#writer}), so most need no predicate. Give one for a choice equality
+     * cannot make — a value written as a constant when one holds it, or a value holding a lambda, which no
+     * declaration rebuilds equal. Without it a call writes every value of its class.
      */
     public S when(Predicate<? super T> writes) {
         if (writes == null) throw new IllegalArgumentException("when needs a predicate");

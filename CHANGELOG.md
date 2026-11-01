@@ -15,6 +15,22 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Added
+
+- **`@Link`**: mark a method of your own type that answers a copy with one thing changed, and every
+  declaration of the type chains it with no `.with`/`.flag`. `x(A)` is read by `x()` (or `isX()` for a
+  `boolean`), the flag `x()` by `boolean isX()`; a mark on an interface method covers every implementation.
+- **`writtenAs(Owner::factory)` with no accessors** (one to ten parts): each parameter is read by the method
+  of its name, or `isName()` for a `boolean`. Needs `-parameters`, which `botmaker-plugin-parent` turns on. A
+  part or a link with no reader is refused when the declaration is built — in your plugin's tests.
+- An explicit `.with`/`.flag` on a marked method replaces the marked link in its place (a reader under
+  another name, a `Held` part).
+- **`ComponentType.rebuilds(value)` and `ComponentType.writer(declarations, value)`**: a class written by
+  several factories needs no `.when` — the host writes a value with the declaration that rebuilds it equal,
+  else the first that writes it. Keep `.when` for a choice equality cannot make.
+
 ## [0.14.0] — 2026-11-01
 
 ### Changed (breaking)

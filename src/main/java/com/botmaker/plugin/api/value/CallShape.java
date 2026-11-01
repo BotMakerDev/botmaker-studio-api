@@ -8,13 +8,17 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -40,6 +44,15 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
 
     static <T> CallShape<T> of(Class<T> type, Executable factory, boolean spreadLast,
                                List<Function<? super T, ?>> accessors) {
+        return of(type, factory, spreadLast, accessors, Set.of());
+    }
+
+    /**
+     * As {@link #of(Class, Executable, boolean, List)}, with every {@link Link} of the type chained after the
+     * factory but those read by a method named in {@code readByFactory}: a part the factory already takes.
+     */
+    static <T> CallShape<T> of(Class<T> type, Executable factory, boolean spreadLast,
+                               List<Function<? super T, ?>> accessors, Set<String> readByFactory) {
         List<Class<?>> parts = partsOf(factory);
         if (accessors.size() != parts.size()) {
             throw new IllegalArgumentException(name(factory) + " takes " + parts.size() + " parts and "
@@ -55,9 +68,177 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
             throw new IllegalArgumentException(name(factory) + " is varargs, so its parts have no fixed places for a"
                     + " Held part");
         }
+        List<Wither<T>> links = links(type, readByFactory);
+        if (factory.isVarArgs() && !links.isEmpty()) {
+            throw new IllegalArgumentException(name(factory) + " is varargs, so the @Link methods of "
+                    + type.getName() + " have no place after its parts");
+        }
         return new CallShape<>(type, factory, parts, taking(accessors, spreadLast),
-                handing(accessors, invoking(type, factory)), List.of(), List.of(), value -> true,
+                handing(accessors, invoking(type, factory)), List.of(), links, value -> true,
                 Collections.unmodifiableList(held));
+    }
+
+    /**
+     * The accessors of {@code factory}'s parts, found by name and type: parameter {@code p} is read by
+     * {@code type}'s public no-argument method {@code p()}, or {@code isP()} for a {@code boolean}, answering
+     * what {@code p} takes. Refused for an instance method, whose receiver has no name; a varargs factory; an
+     * inner class's constructor, whose outer instance is no part; and a class compiled without
+     * {@code -parameters}, whose names are {@code arg0}.
+     */
+    static <T> List<Read<T>> accessorsOf(Class<T> type, Executable factory) {
+        if (factory instanceof Method m && !Modifier.isStatic(m.getModifiers())) {
+            throw new IllegalArgumentException(name(factory) + " is an instance method, whose receiver has no name"
+                    + " to read it by: give an accessor per part");
+        }
+        if (factory.isVarArgs()) {
+            throw new IllegalArgumentException(name(factory) + " is varargs: declare it with writtenAsEach");
+        }
+        List<Read<T>> out = new ArrayList<>();
+        for (Parameter parameter : factory.getParameters()) {
+            if (parameter.isImplicit() || parameter.isSynthetic()) {
+                throw new IllegalArgumentException(name(factory) + " takes an outer instance no value holds: make "
+                        + type.getName() + " a static class, or give an accessor per part");
+            }
+            if (!parameter.isNamePresent()) {
+                throw new IllegalArgumentException(name(factory) + " was compiled without -parameters, so its parts"
+                        + " cannot be read by name: compile with -parameters (botmaker-plugin-parent does), or give"
+                        + " an accessor per part");
+            }
+            Read<T> reader = reader(type, parameter.getName(), parameter.getType());
+            if (reader == null) {
+                throw new IllegalArgumentException(name(factory) + "'s part " + parameter.getName() + " has no reader:"
+                        + " " + type.getName() + " needs a public " + parameter.getName() + "()"
+                        + (parameter.getType() == boolean.class ? " or is" + capital(parameter.getName()) + "()" : "")
+                        + " answering a " + parameter.getType().getName() + ", or give an accessor per part");
+            }
+            out.add(reader);
+        }
+        return out;
+    }
+
+    /** A part's reader: the method's name, and the method as a function of the value. */
+    record Read<T>(String name, Function<? super T, ?> get) {
+    }
+
+    /**
+     * Every method of {@code type} marked {@link Link}, on itself or on a method it overrides, as a link read by
+     * its pair: {@code x(A)} by {@code x()} (or {@code isX()} for a {@code boolean}), the flag {@code x()} by
+     * {@code isX()} — but those whose reader is named in {@code readByFactory}, a part the factory takes already.
+     * In the order of their readers among a record's components, then by name.
+     *
+     * @throws IllegalArgumentException for a marked method with no reader, or that is no link of the type
+     */
+    static <T> List<Wither<T>> links(Class<T> type, Set<String> readByFactory) {
+        List<Method> marks = marks(type);
+        if (marks.isEmpty()) return List.of();
+        record Found<T>(Wither<T> link, String reader) {
+        }
+        List<Found<T>> found = new ArrayList<>();
+        for (Method method : type.getMethods()) {
+            if (Modifier.isStatic(method.getModifiers()) || method.isBridge() || method.isSynthetic()
+                    || !marked(method, marks)) {
+                continue;
+            }
+            String what = type.getName() + "." + method.getName();
+            if (method.getParameterCount() > 1) {
+                throw new IllegalArgumentException(what + " is marked @Link and takes " + method.getParameterCount()
+                        + " arguments, where a link takes the one part it sets, or none for a flag");
+            }
+            if (!type.isAssignableFrom(method.getReturnType())) {
+                throw new IllegalArgumentException(what + " is marked @Link and answers a "
+                        + method.getReturnType().getName() + ": override it in " + type.getName() + " answering a "
+                        + type.getSimpleName() + ", so a bot's chain keeps its type");
+            }
+            boolean flag = method.getParameterCount() == 0;
+            Read<T> reader = flag ? reader(type, "is" + capital(method.getName()), boolean.class)
+                    : reader(type, method.getName(), method.getParameterTypes()[0]);
+            if (reader == null) {
+                throw new IllegalArgumentException(what + " is marked @Link but " + type.getName() + " has no public "
+                        + (flag ? "boolean is" + capital(method.getName()) + "()"
+                        : method.getName() + "() answering a " + method.getParameterTypes()[0].getName())
+                        + " to read its part by: rename the reader, or declare the link with .with/.flag");
+            }
+            if (readByFactory.contains(reader.name())) continue;
+            found.add(new Found<>(Wither.linked(type, method, reader.get()), reader.name()));
+        }
+        List<String> components = type.isRecord()
+                ? Arrays.stream(type.getRecordComponents()).map(RecordComponent::getName).toList() : List.of();
+        return found.stream()
+                .sorted(Comparator.<Found<T>>comparingInt(each -> {
+                    int at = components.indexOf(each.reader());
+                    return at < 0 ? Integer.MAX_VALUE : at;
+                }).thenComparing(each -> each.link().method().getName()))
+                .map(Found::link)
+                .toList();
+    }
+
+    /** Every method marked {@link Link} declared by {@code type} or any of its supertypes. */
+    private static List<Method> marks(Class<?> type) {
+        List<Method> out = new ArrayList<>();
+        List<Class<?>> pending = new ArrayList<>(List.of(type));
+        Set<Class<?>> seen = new HashSet<>();
+        while (!pending.isEmpty()) {
+            Class<?> at = pending.removeLast();
+            if (at == null || !seen.add(at)) continue;
+            for (Method method : at.getDeclaredMethods()) {
+                if (!method.isBridge() && method.isAnnotationPresent(Link.class)) out.add(method);
+            }
+            pending.add(at.getSuperclass());
+            pending.addAll(List.of(at.getInterfaces()));
+        }
+        return out;
+    }
+
+    /**
+     * Whether {@code method} is one of {@code marks} or overrides one: same name and count, each parameter taking
+     * what the mark's does — so a mark on a generic supertype's {@code scaled(P)} covers {@code scaled(Size)}.
+     */
+    private static boolean marked(Method method, List<Method> marks) {
+        for (Method mark : marks) {
+            if (!mark.getName().equals(method.getName()) || mark.getParameterCount() != method.getParameterCount()) {
+                continue;
+            }
+            if (!mark.getDeclaringClass().isAssignableFrom(method.getDeclaringClass())) continue;
+            boolean fits = true;
+            for (int i = 0; i < mark.getParameterCount(); i++) {
+                fits &= mark.getParameterTypes()[i].isAssignableFrom(method.getParameterTypes()[i]);
+            }
+            if (fits) return true;
+        }
+        return false;
+    }
+
+    /** The reader of a part named {@code name} taking a {@code part}: {@code name()}, or {@code isName()} for a boolean. */
+    private static <T> Read<T> reader(Class<T> type, String name, Class<?> part) {
+        Read<T> plain = method(type, name, part);
+        return plain != null || box(part) != Boolean.class ? plain : method(type, "is" + capital(name), part);
+    }
+
+    /**
+     * The public no-argument instance method {@code name} of {@code type} answering what {@code part} takes, as a
+     * reader — or {@code null} when there is none.
+     */
+    private static <T> Read<T> method(Class<T> type, String name, Class<?> part) {
+        Method method;
+        try {
+            method = type.getMethod(name);
+        } catch (NoSuchMethodException absent) {
+            return null;
+        }
+        if (Modifier.isStatic(method.getModifiers())) return null;
+        if (!box(part).isAssignableFrom(box(method.getReturnType()))) return null;
+        method.trySetAccessible();
+        return new Read<>(name, value -> {
+            try {
+                return method.invoke(value);
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new IllegalStateException(type.getName() + "." + name + "() failed", e);
+            }
+        });
+    }
+
+    private static String capital(String name) {
+        return name.isEmpty() ? name : Character.toUpperCase(name.charAt(0)) + name.substring(1);
     }
 
     /** A record written as its canonical constructor, taken apart by its accessors. */
@@ -77,8 +258,10 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
                 }
             });
         }
+        Set<String> read = new HashSet<>();
+        for (RecordComponent field : fields) read.add(field.getName());
         try {
-            return of(type, type.getConstructor(parameters), false, accessors);
+            return of(type, type.getConstructor(parameters), false, accessors, read);
         } catch (NoSuchMethodException e) {
             throw new IllegalArgumentException(type.getName() + " is not a public record", e);
         }
@@ -159,20 +342,27 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
     }
 
     /**
-     * This shape with {@code wither} chained after the ones it has. Refused on a varargs factory, whose parts
-     * are any number, so the wither's part would have no place; and for a method already chained, which a
-     * value would set twice.
+     * This shape with {@code wither} chained after the ones it has, or in the place of the link its method's
+     * {@link Link} mark gave. Refused on a varargs factory, whose parts are any number, so the wither's part
+     * would have no place; and for a method already declared, which a value would set twice.
      */
     CallShape<T> withWither(Wither<T> wither) {
         if (factory.isVarArgs()) {
             throw new IllegalArgumentException(name(factory) + " is varargs, so no wither can follow its parts");
         }
-        for (Wither<T> each : withers) {
-            if (each.method().equals(wither.method())) {
+        List<Wither<T>> more = new ArrayList<>(withers);
+        for (int i = 0; i < more.size(); i++) {
+            Method chained = more.get(i).method();
+            if (!chained.getName().equals(wither.method().getName())
+                    || !Arrays.equals(chained.getParameterTypes(), wither.method().getParameterTypes())) {
+                continue;
+            }
+            if (!more.get(i).inferred()) {
                 throw new IllegalArgumentException(wither.method().getName() + " is chained twice");
             }
+            more.set(i, wither);
+            return copy(build, constants, List.copyOf(more), writes);
         }
-        List<Wither<T>> more = new ArrayList<>(withers);
         more.add(wither);
         return copy(build, constants, List.copyOf(more), writes);
     }

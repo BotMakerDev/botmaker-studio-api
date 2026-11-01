@@ -14,7 +14,12 @@ type nobody draws), plus a `ComponentType<T>` when its Java is a call.
 - **A type no loaded plugin declares is a supported state, not an error path.** The value keeps the
   expression its author wrote, renders read-only and is never rewritten.
 - **`build(components(v))` equals `v` is the law**, and `botmaker plugin validate` checks it against
-  `fresh()`. The half nobody is forced to write is the half that rots.
+  `fresh()`. The half nobody is forced to write is the half that rots. The same law picks among a class's
+  factories (`ComponentType.writer`, 2026-11-01): the declaration that rebuilds a value equal writes it.
+- **A plugin's own type is read by name** (`@Link`, `writtenAs(Owner::factory)`, 2026-11-01): parts and
+  links pair with readers by name *and* type on the compiled class. That is more than a string match — the
+  types must fit — and it is checked once, when the plugin's tests build the declaration; a bot never sees a
+  mismatch. Types the plugin does not own keep explicit accessors, since nothing marks them.
 - **`ComponentType.factory()` is an `Executable`**: a constructor, a public static method, or an instance
   method on part 0 that the host reads and never writes (`Precision.TIGHT.minArea(400)`)
   (`../docs/refactor/35-typed-value-reader.md`).

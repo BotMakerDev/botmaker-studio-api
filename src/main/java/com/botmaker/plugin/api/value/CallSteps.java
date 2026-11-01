@@ -1,8 +1,11 @@
 package com.botmaker.plugin.api.value;
 
 import java.lang.reflect.Executable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -10,15 +13,25 @@ import java.util.function.Function;
  * into that factory's parts.
  *
  * <pre>{@code
+ * .writtenAs(Tree::of)                                    // the plugin's own type: each part read by its name
  * .writtenAs(LocalDate::of, LocalDate::getYear, LocalDate::getMonthValue, LocalDate::getDayOfMonth)
  * .writtenAsEach(Combo::of, Combo::keys)                  // a varargs factory, its parts one collection
  * .writtenAs(Precision::minArea, p -> p, Precision::minArea)   // an instance method: the receiver is part 0
  * .writtenAsRecord()                                      // a record: its canonical constructor
  * }</pre>
  *
+ * <p><b>Parts read by name.</b> For a type the plugin owns, the factory alone is enough: each parameter
+ * {@code p} of a static factory or constructor is read by the type's public no-argument method {@code p()}, or
+ * {@code isP()} for a {@code boolean}, answering what {@code p} takes. The names are the compiled class's
+ * ({@code -parameters}, which {@code botmaker-plugin-parent} turns on), and both name and type are checked when
+ * the declaration is built — by the plugin's own tests, never in a bot. Renaming a parameter or its reader
+ * without the other fails there. Give accessors instead for a JDK type, an instance-method factory, or a part
+ * read under another name.
+ *
  * <p>A part a reader could not tell from the next — a {@code boolean}, a third {@code int} — is better a named
- * link after the call than an argument in it: {@link DeclaredCall#with} and {@link DeclaredCall#flag} follow
- * any of these but {@code writtenAsEach} ({@link Wither}).
+ * link after the call than an argument in it. Every method of the type marked {@link Link} is chained after any
+ * of these but {@code writtenAsEach}, and {@link DeclaredCall#with} and {@link DeclaredCall#flag} declare one
+ * the mark cannot ({@link Wither}).
  *
  * <p><b>One accessor per part, in the factory's order</b>, and javac counts them: there is one
  * {@code writtenAs} per number of parts, and the accessors' types are what pick an overloaded factory
@@ -43,6 +56,54 @@ public abstract class CallSteps<T, D> {
     /** A call with no argument: {@code CaptureSource.desktop()}. */
     public final <R> D writtenAs(Ref.Of0<R> factory) {
         return call(factory, List.of());
+    }
+
+    /**
+     * A static factory or constructor of one part, read by name: {@code writtenAs(Tree::of)} for
+     * {@code Tree.of(List<Node> nodes)} reads the part with {@code Tree.nodes()}. See the class comment for the
+     * rule; the overloads up to {@link Ref.Of10} read the same way.
+     *
+     * @throws IllegalArgumentException for a part with no reader, or a factory compiled without
+     *                                  {@code -parameters}
+     */
+    public final <A, R> D writtenAs(Ref.Of1<A, R> factory) {
+        return inferred(factory);
+    }
+
+    public final <A, B, R> D writtenAs(Ref.Of2<A, B, R> factory) {
+        return inferred(factory);
+    }
+
+    public final <A, B, C, R> D writtenAs(Ref.Of3<A, B, C, R> factory) {
+        return inferred(factory);
+    }
+
+    public final <A, B, C, E, R> D writtenAs(Ref.Of4<A, B, C, E, R> factory) {
+        return inferred(factory);
+    }
+
+    public final <A, B, C, E, F, R> D writtenAs(Ref.Of5<A, B, C, E, F, R> factory) {
+        return inferred(factory);
+    }
+
+    public final <A, B, C, E, F, G, R> D writtenAs(Ref.Of6<A, B, C, E, F, G, R> factory) {
+        return inferred(factory);
+    }
+
+    public final <A, B, C, E, F, G, H, R> D writtenAs(Ref.Of7<A, B, C, E, F, G, H, R> factory) {
+        return inferred(factory);
+    }
+
+    public final <A, B, C, E, F, G, H, I, R> D writtenAs(Ref.Of8<A, B, C, E, F, G, H, I, R> factory) {
+        return inferred(factory);
+    }
+
+    public final <A, B, C, E, F, G, H, I, J, R> D writtenAs(Ref.Of9<A, B, C, E, F, G, H, I, J, R> factory) {
+        return inferred(factory);
+    }
+
+    public final <A, B, C, E, F, G, H, I, J, K, R> D writtenAs(Ref.Of10<A, B, C, E, F, G, H, I, J, K, R> factory) {
+        return inferred(factory);
     }
 
     public final <A, R> D writtenAs(Ref.Of1<A, R> factory, Function<? super T, ? extends A> a) {
@@ -176,5 +237,17 @@ public abstract class CallSteps<T, D> {
 
     private D call(Ref factory, List<Function<? super T, ?>> accessors) {
         return finish(CallShape.of(type, factory, false, accessors));
+    }
+
+    private D inferred(Ref factory) {
+        Executable executable = Ref.resolve(factory);
+        List<CallShape.Read<T>> readers = CallShape.accessorsOf(type, executable);
+        List<Function<? super T, ?>> accessors = new ArrayList<>(readers.size());
+        Set<String> read = new HashSet<>();
+        for (CallShape.Read<T> reader : readers) {
+            accessors.add(reader.get());
+            read.add(reader.name());
+        }
+        return finish(CallShape.of(type, executable, false, accessors, read));
     }
 }
