@@ -29,9 +29,9 @@ public final class ExamplePlugin extends DeclaredPlugin {
 
 public final class ExampleTypes implements TypeHolder {
     public static final DeclaredCallType<Greeting> GREETING = PluginType.value(Greeting.class)
-            .fresh(() -> new Greeting("world", 1))     // what a new one is
+            .fresh(() -> Greeting.to("world"))         // what a new one is
             .editor(() -> GreetingEditor::of)          // how a person edits one
-            .writtenAsRecord();                        // how the host writes its Java
+            .writtenAs(Greeting::to);                  // its Java: the factory, then each @Link
 
     @Override
     public List<PluginType<?>> types() {
