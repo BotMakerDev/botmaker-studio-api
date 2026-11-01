@@ -16,7 +16,8 @@ import java.lang.annotation.Target;
  * rewrites a bot's uses with it; nothing is copied into the bot. The next release removes the element and its rule
  * together. The host reads the sources jar of the version the bot moves <em>from</em>, so an upgrade from the
  * release carrying the rule still finds it; a bot that moves from an earlier version straight past that release
- * gets no rule from the plugin, only the host's default repair.
+ * gets no rule from the plugin, only the host's default repair. An element nothing replaces is marked
+ * {@link Dropped} instead of given a rule.
  *
  * <p><b>In a bot</b>, a rule the author writes wins over a plugin's for the same element; two plugin rules for one
  * element are both refused.
@@ -108,4 +109,29 @@ public @interface Migrate {
     @Retention(RetentionPolicy.SOURCE)
     @Target(ElementType.PARAMETER)
     @interface Self {}
+
+    /**
+     * On an element a plugin marks {@code @Deprecated(forRemoval = true)}: no rule replaces it, on purpose
+     * (2026-11-01). The next release removes it like any deprecated element, and the host repairs a bot's uses of it
+     * the way it repairs an element no rule names, showing {@link #value()} beside each so the bot's author knows
+     * nothing better was left out.
+     *
+     * <pre>{@code
+     * @Deprecated(forRemoval = true)
+     * @Migrate.Dropped("popups are handled by the run itself now")
+     * public Run popups(Runnable popups) { … }
+     * }</pre>
+     *
+     * <p>{@code botmaker plugin validate} warns, and never refuses, on an element deprecated for removal that has
+     * neither a rule nor this mark. {@link RetentionPolicy#RUNTIME}, unlike a rule: the validator reads it off the
+     * plugin's classes, and the host off the jar the bot moves from, with no sources jar.
+     */
+    @Documented
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.FIELD, ElementType.TYPE})
+    @interface Dropped {
+
+        /** Why nothing replaces it, for the bot's author: one sentence. */
+        String value();
+    }
 }

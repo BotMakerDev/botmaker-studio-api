@@ -29,7 +29,8 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   .writtenAs(…)` (`DeclaredCall`, with `.constants(VALUE)`, and `.components`/`.build` for the one hand-made
   part, the SDK's activity body). A plugin declares nothing about a type it
   retires: the bot's author writes the `@Migrate` rule that carries its values over (2026-10-16); the plugin
-  never converts them.
+  never converts them. An element it removes ships, in the release that deprecates it, a `@Migrate` rule beside it
+  or `@Migrate.Dropped("why")` on it when nothing replaces it (2026-11-01); `plugin validate` warns on neither.
 - **Factories are method references, never names.** `Ref.Of0`–`Of10` are serializable functional interfaces;
   `Ref.resolve` reads the `SerializedLambda` into the `Method` or `Constructor` once, when the declaration is
   built, and refuses a lambda. One typed `writtenAs` per arity, so the accessors' types pick an overloaded

@@ -30,6 +30,9 @@ is allowed to make. Additions arrive as `default` methods.
 - **`ComponentType.rebuilds(value)` and `ComponentType.writer(declarations, value)`**: a class written by
   several factories needs no `.when` — the host writes a value with the declaration that rebuilds it equal,
   else the first that writes it. Keep `.when` for a choice equality cannot make.
+- **`@Migrate.Dropped("why")`**: on an element you deprecate for removal that nothing replaces, in place of a
+  `@Migrate` rule. Studio shows the reason beside each use when a bot's upgrade breaks them, and
+  `botmaker plugin validate` warns (never refuses) on an element deprecated for removal with neither.
 
 ## [0.14.0] — 2026-11-01
 
