@@ -6,6 +6,7 @@ import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.RunChannel;
 import com.botmaker.plugin.api.run.ReportView;
+import com.botmaker.plugin.api.run.RunEntry;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
@@ -202,6 +203,16 @@ public sealed interface StudioPlugin permits DeclaredPlugin {
      * carry ({@link ReportView}). Called each time the reports are shown; no JavaFX is needed.
      */
     default List<ReportView> reportViews() {
+        return List.of();
+    }
+
+    /**
+     * The runs this plugin offers beside the bot's {@code main} ({@link RunEntry}), each with a title unique within
+     * the plugin, case and spacing aside. The host lists them in the plugin's toolbar tab and the assistant runs one
+     * by its title. Called each time the host lists them, so keep the entries in {@code static final} fields; no
+     * JavaFX is needed.
+     */
+    default List<RunEntry> runEntries() {
         return List.of();
     }
 

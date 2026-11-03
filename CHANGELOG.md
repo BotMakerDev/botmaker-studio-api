@@ -19,6 +19,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`run.RunEntry`, `RunEntryHolder` and the step `runs(MyRuns.class)`**: a plugin offers runs of its own beside
+  the bot's `main`. An entry is a title and a `main(String[])` named by method reference
+  (`RunEntry.of("Explore map", ExploreMap::main)`), checked when it is built. The host runs it as it runs the bot,
+  with the bot's value-holder class names as `args`. Two entries of one plugin with one title are refused.
+  `StudioPlugin.runEntries()` is a default. Compatible.
 - **`run.ReportView`, `ReportViewHolder` and the step `reportViews(MyReportViews.class)`**: a plugin offers charts
   in the host's reports of the bot's runs. A view has a title, a `Chart` (bars, bars by day, lines, heatmap, donut,
   table) and one of the plugin's own line-value keys (`TraceLine.values`), or two for a grid (`against`). It can

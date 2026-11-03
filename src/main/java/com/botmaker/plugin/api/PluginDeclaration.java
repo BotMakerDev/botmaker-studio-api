@@ -7,6 +7,7 @@ import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.RunChannel;
 import com.botmaker.plugin.api.run.ReportView;
+import com.botmaker.plugin.api.run.RunEntry;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
@@ -21,8 +22,10 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -80,6 +83,7 @@ public final class PluginDeclaration {
     private List<Class<? extends RunOverlayHolder>> runOverlayHolders = List.of();
     private List<Class<? extends AssistantHolder>> assistantHolders = List.of();
     private List<Class<? extends ReportViewHolder>> reportViewHolders = List.of();
+    private List<Class<? extends RunEntryHolder>> runEntryHolders = List.of();
     private Class<? extends OverlayHolder> overlayHolder;
     private Class<? extends CatalogHolder> catalogHolder;
     private String guide = "";
@@ -107,6 +111,7 @@ public final class PluginDeclaration {
         copy.runOverlayHolders = runOverlayHolders;
         copy.assistantHolders = assistantHolders;
         copy.reportViewHolders = reportViewHolders;
+        copy.runEntryHolders = runEntryHolders;
         copy.overlayHolder = overlayHolder;
         copy.catalogHolder = catalogHolder;
         copy.guide = guide;
@@ -187,6 +192,17 @@ public final class PluginDeclaration {
     public final PluginDeclaration reportViews(Class<? extends ReportViewHolder>... holders) {
         List<Class<? extends ReportViewHolder>> named = holders("reportViews", "MyReportViews", holders);
         return with(copy -> copy.reportViewHolders = added(reportViewHolders, named));
+    }
+
+    /**
+     * The classes giving the runs it offers beside the bot's {@code main} — {@link StudioPlugin#runEntries()}.
+     *
+     * @throws IllegalArgumentException when no holder is given, or one is {@code null}, abstract or an inner class
+     */
+    @SafeVarargs
+    public final PluginDeclaration runs(Class<? extends RunEntryHolder>... holders) {
+        List<Class<? extends RunEntryHolder>> named = holders("runs", "MyRuns", holders);
+        return with(copy -> copy.runEntryHolders = added(runEntryHolders, named));
     }
 
     /**
@@ -321,6 +337,21 @@ public final class PluginDeclaration {
 
     List<ReportView> reportViews() {
         return given(reportViewHolders, ReportViewHolder::reportViews);
+    }
+
+    /**
+     * The holders' entries, an equal one counted once. Two titled alike, case and spacing aside, cannot be told apart
+     * by the host or the assistant.
+     */
+    List<RunEntry> runEntries() {
+        List<RunEntry> entries = given(runEntryHolders, RunEntryHolder::runs).stream().distinct().toList();
+        Set<String> titles = new HashSet<>();
+        for (RunEntry entry : entries) {
+            if (!titles.add(entry.title().toLowerCase(Locale.ROOT).replaceAll("\\s+", " "))) {
+                throw new IllegalStateException("Two run entries are titled '" + entry.title() + "'");
+            }
+        }
+        return entries;
     }
 
     Optional<OverlayPart> overlay() {

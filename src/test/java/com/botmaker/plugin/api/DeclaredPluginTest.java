@@ -7,6 +7,7 @@ import com.botmaker.plugin.api.run.AskKind;
 import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.ReportView;
 import com.botmaker.plugin.api.run.RunChannel;
+import com.botmaker.plugin.api.run.RunEntry;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.source.ManagedValue;
 import com.botmaker.plugin.api.value.ComponentType;
@@ -100,6 +101,49 @@ class DeclaredPluginTest {
         assertEquals(Optional.of("millis"), time.weight());
         assertEquals(ReportView.Lines.EVERY_LINE, time.lines());
         assertThrows(IllegalArgumentException.class, () -> ReportView.of(" ", ReportView.Chart.BARS, "screen"));
+    }
+
+    public static final class Explore {
+        public static void main(String[] args) {
+        }
+    }
+
+    public static final class Check {
+        public static void main(String[] args) {
+        }
+    }
+
+    static final class Runs implements RunEntryHolder {
+        static final RunEntry EXPLORE = RunEntry.of("Explore map", Explore::main);
+        static final RunEntry CHECK = RunEntry.of("Check", Check::main);
+
+        @Override
+        public List<RunEntry> runs() {
+            return List.of(EXPLORE, CHECK);
+        }
+    }
+
+    static final class SameTitle implements RunEntryHolder {
+        @Override
+        public List<RunEntry> runs() {
+            return List.of(RunEntry.of("check", Explore::main));
+        }
+    }
+
+    @Test
+    void runsListsTheHoldersEntriesInOrder() {
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare().runs(Runs.class)) {};
+        assertEquals(List.of(Runs.EXPLORE, Runs.CHECK), plugin.runEntries());
+        assertTrue(EMPTY.runEntries().isEmpty());
+    }
+
+    @Test
+    void twoEntriesWithOneTitleAreRefused() {
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare().runs(Runs.class, SameTitle.class)) {};
+        IllegalStateException refused = assertThrows(IllegalStateException.class, plugin::runEntries);
+        assertTrue(refused.getMessage().contains("'check'"), refused.getMessage());
+        StudioPlugin twice = new DeclaredPlugin(StudioPlugin.declare().runs(Runs.class).runs(Runs.class)) {};
+        assertEquals(List.of(Runs.EXPLORE, Runs.CHECK), twice.runEntries(), "an equal entry counts once");
     }
 
     static final class Overlay implements OverlayHolder {

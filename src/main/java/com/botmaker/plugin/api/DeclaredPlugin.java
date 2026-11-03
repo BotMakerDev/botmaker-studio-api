@@ -6,6 +6,7 @@ import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.RunChannel;
 import com.botmaker.plugin.api.run.ReportView;
+import com.botmaker.plugin.api.run.RunEntry;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
@@ -97,6 +98,11 @@ public non-sealed class DeclaredPlugin implements StudioPlugin {
     @Override
     public final List<ReportView> reportViews() {
         return declaration.reportViews();
+    }
+
+    @Override
+    public final List<RunEntry> runEntries() {
+        return declaration.runEntries();
     }
 
     @Override
