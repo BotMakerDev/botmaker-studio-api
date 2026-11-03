@@ -19,6 +19,8 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`palette.@ReadsScreen`**: marks a method whose result was read off the game's screen. A host that traces
+  calls marks that result in the run's log and hides it in anything that leaves the machine. Compatible.
 - **`run.RunChannel`, and the step `onBotRun(Owner::started)`**: a bot's run hands each plugin a channel to its
   host before the bot's `main` runs. Through it the plugin's runtime writes its log lines (a `TraceLine`, with the
   cause), its run's details (an opaque map), its own encoded frames (read back by its own overlay through
