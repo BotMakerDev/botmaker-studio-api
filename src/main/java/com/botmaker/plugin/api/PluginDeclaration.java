@@ -5,6 +5,7 @@ import com.botmaker.plugin.api.assist.TrialEntry;
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.run.Readiness;
+import com.botmaker.plugin.api.run.RunChannel;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
@@ -84,6 +85,7 @@ public final class PluginDeclaration {
     private Readiness.Check readiness;
     private Consumer<StudioServices> opened;
     private Runnable closing;
+    private Consumer<RunChannel> botRun;
 
     private PluginDeclaration() {
     }
@@ -109,6 +111,7 @@ public final class PluginDeclaration {
         copy.readiness = readiness;
         copy.opened = opened;
         copy.closing = closing;
+        copy.botRun = botRun;
         set.accept(copy);
         return copy;
     }
@@ -260,6 +263,18 @@ public final class PluginDeclaration {
         return with(copy -> copy.closing = told);
     }
 
+    /**
+     * What the plugin's code inside a running bot is handed before the bot's {@code main} runs, by method reference:
+     * {@code .onBotRun(MyRun::started)}, a {@code static void started(RunChannel)} — {@link StudioPlugin#botRun}.
+     * The channel is where the plugin's lines, run facts, telemetry frames and questions go for this run; keep it in
+     * a static field the plugin's bot-side code reads, which starts as {@link RunChannel#console()} for a run
+     * no host started. Called in the bot's process, never in the host's window, so the holder names no JavaFX.
+     */
+    public PluginDeclaration onBotRun(Consumer<RunChannel> started) {
+        Consumer<RunChannel> told = Objects.requireNonNull(started, "onBotRun");
+        return with(copy -> copy.botRun = told);
+    }
+
     PaletteCatalog catalog() {
         PaletteCatalog given = catalogHolder == null ? null : built(catalogHolder).catalog();
         return given == null ? PaletteCatalog.empty() : given;
@@ -316,6 +331,10 @@ public final class PluginDeclaration {
 
     void closing() {
         if (closing != null) closing.run();
+    }
+
+    void botRun(RunChannel channel) {
+        if (botRun != null) botRun.accept(channel);
     }
 
     /**

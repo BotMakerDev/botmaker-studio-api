@@ -4,6 +4,7 @@ import com.botmaker.plugin.api.assist.AssistantTool;
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.run.Readiness;
+import com.botmaker.plugin.api.run.RunChannel;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
@@ -302,6 +303,20 @@ public sealed interface StudioPlugin permits DeclaredPlugin {
      * releasing on the plugin's behalf, so an exception thrown halfway through leaks whatever was left.
      */
     default void projectClosing() {
+    }
+
+    /**
+     * A bot is starting in this process, and this is the plugin's channel for the run: its lines, run facts,
+     * telemetry frames and questions go there ({@link RunChannel}). A plugin declares what to do with it by
+     * {@link PluginDeclaration#onBotRun}; {@link DeclaredPlugin} makes this method final.
+     *
+     * <p>Called by the host that runs in the <b>bot's</b> process, once, before the bot's {@code main}; never by the
+     * host's window. A run no host started is never told, and the plugin keeps
+     * {@link RunChannel#console()}.
+     *
+     * @param channel this plugin's own channel for the run; never {@code null}
+     */
+    default void botRun(RunChannel channel) {
     }
 
 }

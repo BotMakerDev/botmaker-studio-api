@@ -3,7 +3,9 @@ package com.botmaker.plugin.api;
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.managed.ManagedMarker;
 import com.botmaker.plugin.api.overlay.OverlayPart;
+import com.botmaker.plugin.api.run.AskKind;
 import com.botmaker.plugin.api.run.Readiness;
+import com.botmaker.plugin.api.run.RunChannel;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.source.ManagedValue;
 import com.botmaker.plugin.api.value.ComponentType;
@@ -22,6 +24,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -182,6 +185,35 @@ class DeclaredPluginTest {
                 DeclaredPlugin.class.getMethod("projectClosing"))) {
             assertTrue(Modifier.isFinal(method.getModifiers()), method + " must be final: declare it instead");
         }
+    }
+
+    static RunChannel given;
+
+    static void started(RunChannel channel) {
+        given = channel;
+    }
+
+    @Test
+    void aBotRunHandsThePluginItsChannel() throws NoSuchMethodException {
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare().onBotRun(DeclaredPluginTest::started)) {};
+        RunChannel channel = RunChannel.console();
+        plugin.botRun(channel);
+        assertSame(channel, given);
+        assertTrue(Modifier.isFinal(DeclaredPlugin.class.getMethod("botRun", RunChannel.class).getModifiers()));
+        // A plugin that declared nothing for a run is told and does nothing.
+        new DeclaredPlugin(StudioPlugin.declare()) {}.botRun(channel);
+    }
+
+    @Test
+    void theConsoleChannelHoldsItsOwnSwitchAndAsksNothing() {
+        RunChannel channel = RunChannel.console();
+        channel.debug(false);
+        assertFalse(channel.recorded());
+        channel.debug(true);
+        assertTrue(channel.recorded());
+        assertEquals(Optional.empty(), channel.ask(AskKind.TEXT, "Name?", List.of()));
+        assertEquals(AskKind.YES_NO, AskKind.fromId("YES-NO"));
+        assertEquals(AskKind.UNKNOWN, AskKind.fromId("colour"));
     }
 
     @Test

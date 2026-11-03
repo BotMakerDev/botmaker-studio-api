@@ -15,6 +15,18 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Added
+
+- **`run.RunChannel`, and the step `onBotRun(Owner::started)`**: a bot's run hands each plugin a channel to its
+  host before the bot's `main` runs. Through it the plugin's runtime writes its log lines (a `TraceLine`, with the
+  cause), its run's details (an opaque map), its own encoded frames (read back by its own overlay through
+  `Runs.onTelemetry`), reads and sets the run's debug switch, and asks the runner a question
+  (`ask(AskKind, prompt, choices)`, empty when the host cannot ask). Only the host implements it; every member is
+  `default`. `RunChannel.console()` is what a run with no host gets: lines on the console, the rest dropped. Compatible: nothing a built plugin uses changes.
+- **`run.AskKind`**: what a question asks for — text, a number, a whole number, yes/no, one of a list.
+
 ## [0.14.1] — 2026-11-01
 
 ### Added

@@ -22,6 +22,9 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
 - **The lifecycle**: `.onProjectOpened(Owner::open)` (a `Consumer<StudioServices>`) and
   `.onProjectClosing(Owner::close)`; `DeclaredPlugin.projectOpened`/`projectClosing` are `final` and call them,
   so a plugin class is its declaration and nothing else (`studio-services.md` says when a plugin needs either).
+  `.onBotRun(Owner::started)` (a `Consumer<RunChannel>`) is the run's side: inside a bot's process, before its
+  `main`, the host hands the plugin's runtime the channel it writes lines, details, frames and questions on
+  (2026-11-03, `DeclaredPlugin.botRun`).
 - **A type**: `PluginType.value(X.class)` → `fresh(…)` | `firstConstant()` →
   `editor(() -> E::draw)` → optional `preview(…)` → `writtenAs(Owner::factory, X::part, …)` |
   `writtenAsEach(…)` | `writtenAsRecord()` | `writtenAsConstant()` | `writtenAsLiteral()` | `writtenAsParts()`
