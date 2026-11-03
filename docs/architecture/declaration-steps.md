@@ -79,7 +79,12 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   plugin, through `.overlay(MyOverlay.class)` (an `OverlayHolder`); a part declaring nothing is no part.
 - **An assistant tool**: `AssistantTool.named("snake_name").describedAs(…)` → `.takes(Params.class)` (a
   record; its components are the schema, checked here) | `.takesNothing()` → `.handledBy(Owner::handle)`.
-  Listed by an `AssistantHolder`, through `.assistant(MyTools.class)`. **The trial entry**: `.trial(Bot::trial)`, a `TrialEntry`. It is
+  Listed by an `AssistantHolder`, through `.assistant(MyTools.class)`.
+- **A run beside the bot's** (2026-11-03): `RunEntry.of("Explore map", ExploreMap::main)`, a title and a public
+  static `main(String[])` by method reference, checked in `of`. Listed by a `RunEntryHolder`, through
+  `.runs(MyRuns.class)`. The host runs it as it runs the bot (same JVM options, classpath, log and end-of-run
+  dialog) with that class as the main class, its `args` the bot's value-holder binary names, as ▶ Try's are; two
+  entries with one title are refused when the host lists them. **The trial entry**: `.trial(Bot::trial)`, a `TrialEntry`. It is
   resolved and checked to be a public static `(Runnable, Class<?>...)` in the step itself, so a bad one fails
   the plugin's own construction.
 
