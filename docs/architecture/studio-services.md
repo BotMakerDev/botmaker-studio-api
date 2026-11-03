@@ -16,6 +16,11 @@ privilege. The files under `resourcesDir()` are ordinary files. Since 2026-10-30
 `plugins/<group>/<artifact>/` of the resources, the host telling the plugin by the class calling it: two plugins
 writing `images/` at the root wrote over each other's files, as their holders could before 2026-10-27.
 
+`stateDir()` (2026-11-03) passes for the same reason: only the host knows which of a bot's files are this
+machine's — kept out of git, publish, a `.bmk` and Versions, kept when a run copy moves to a newer tag. It is
+`PluginState.folder`, `<bot>/.botmaker/plugins/<group>/<artifact>/`, which a plugin's runtime names itself from
+its working folder; what is in it is the plugin's, and nothing here names its format.
+
 When a plugin's editor needs something the host has and the contract does not expose, ask *could any plugin
 have built this on shared plus its own files?* If yes, it builds it. If no, and only then, the contract grows
 — and it grows a **capability**, never a vocabulary: nothing here may name a concept that belongs to some

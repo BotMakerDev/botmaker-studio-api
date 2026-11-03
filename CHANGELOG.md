@@ -19,6 +19,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`PluginState` and `StudioServices.stateDir()`**: a plugin keeps what this machine learned about a bot in its
+  own folder of it, `<bot>/.botmaker/plugins/<group>/<artifact>/`. `PluginState.folder(botDir, groupId,
+  artifactId)` names it the same way for the host and for the plugin's runtime (a run's `user.dir` is the bot).
+  The host keeps it out of git, publish, `.bmk` and Versions, and keeps it when a run copy moves to a newer tag.
+  `stateDir()` is a default answering empty. Compatible.
 - **`run.RunEntry`, `RunEntryHolder` and the step `runs(MyRuns.class)`**: a plugin offers runs of its own beside
   the bot's `main`. An entry is a title and a `main(String[])` named by method reference
   (`RunEntry.of("Explore map", ExploreMap::main)`), checked when it is built. The host runs it as it runs the bot,

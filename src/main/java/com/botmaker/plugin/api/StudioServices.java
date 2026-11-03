@@ -3,6 +3,7 @@ package com.botmaker.plugin.api;
 import com.botmaker.plugin.api.source.PluginValues;
 
 import java.nio.file.Path;
+import java.util.Optional;
 
 /**
  * The host facilities a plugin may use, and deliberately no more than that.
@@ -37,6 +38,19 @@ public interface StudioServices {
      * {@code plugins/<group>/<artifact>/images/ore.png}, the same way on every machine.
      */
     Path resourcesDir();
+
+    /**
+     * This plugin's own state folder of the open bot, {@link PluginState#folder}: what this machine learned about
+     * the bot, kept for the next run — created on first ask. The host keeps it out of every commit, publish,
+     * {@code .bmk} and Versions snapshot, keeps it when a run copy moves to a newer tag, and deletes it with the
+     * bot; what is in it is the plugin's.
+     *
+     * <p>{@code default} for the reason {@link #runs()} is: a host with no bot open — the {@code botmaker} CLI's
+     * validator — answers empty.
+     */
+    default Optional<Path> stateDir() {
+        return Optional.empty();
+    }
 
     /** Applying the host's current look to a window, dialog or scene a plugin creates. */
     Theme theme();
