@@ -25,6 +25,8 @@ is allowed to make. Additions arrive as `default` methods.
   `Runs.onTelemetry`), reads and sets the run's debug switch, and asks the runner a question
   (`ask(AskKind, prompt, choices)`, empty when the host cannot ask). Only the host implements it; every member is
   `default`. `RunChannel.console()` is what a run with no host gets: lines on the console, the rest dropped. Compatible: nothing a built plugin uses changes.
+- **`RunChannel.folder()`**: the run's own folder, where the host keeps the run's log; a plugin keeps the files it
+  saves during the run beside it. Empty when no host keeps one. Compatible.
 - **`run.AskKind`**: what a question asks for — text, a number, a whole number, yes/no, one of a list.
 
 ## [0.14.1] — 2026-11-01

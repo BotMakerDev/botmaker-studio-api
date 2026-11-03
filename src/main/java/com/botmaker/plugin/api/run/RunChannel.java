@@ -4,6 +4,7 @@ import com.botmaker.plugin.api.PluginDeclaration;
 import com.botmaker.plugin.api.Runs;
 import com.botmaker.plugin.api.TraceLine;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -94,6 +95,15 @@ public interface RunChannel {
      * @throws CancellationException when the person cancelled, or the run stopped while asking
      */
     default Optional<String> ask(AskKind kind, String prompt, List<String> choices) {
+        return Optional.empty();
+    }
+
+    /**
+     * The run's own folder, where the host keeps the run's log: a plugin keeps the files it saves during the run
+     * (frames, captures) beside it, so one folder holds the whole run. Empty when no host keeps one, and the plugin
+     * picks its own place.
+     */
+    default Optional<Path> folder() {
         return Optional.empty();
     }
 }
