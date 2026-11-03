@@ -41,7 +41,8 @@ public interface RunChannel {
 
     /**
      * One line of the run. The plugin gives what it knows ({@code at}, level, source, text, count, writer class and
-     * method, the screen part); the host fills in the bot's own class and line when the plugin left them empty.
+     * method, the screen part, its own {@linkplain TraceLine#values() values}); the host fills in the bot's own class
+     * and line when the plugin left them empty, and keeps the values with the line.
      *
      * @param line  the line; a {@link TraceLine.Level#DEBUG} one is dropped unless {@link #recorded()}
      * @param cause what went wrong, printed after the line; {@code null} when nothing was thrown

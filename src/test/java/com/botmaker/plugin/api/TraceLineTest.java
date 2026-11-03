@@ -3,11 +3,15 @@ package com.botmaker.plugin.api;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * A trace line is read totally, whatever a runtime sent: an unknown level is {@code UNKNOWN}, a missing part is
@@ -41,6 +45,21 @@ class TraceLineTest {
         assertEquals("", line.writerMethod());
         assertEquals(OptionalInt.empty(), line.line());
         assertEquals(Optional.empty(), line.where());
+        assertEquals(Map.of(), line.values());
+    }
+
+    @Test
+    void valuesKeepTheirOrderAndDropNulls() {
+        Map<String, String> given = new LinkedHashMap<>();
+        given.put("screen", "Home");
+        given.put("from", null);
+        given.put(null, "x");
+        given.put("to", "Shop");
+        TraceLine line = new TraceLine(null, TraceLine.Level.WARN, null, "moved", 1, null, null, null, null, null,
+                given);
+
+        assertEquals(List.of("screen", "to"), List.copyOf(line.values().keySet()));
+        assertThrows(UnsupportedOperationException.class, () -> line.values().put("a", "b"));
     }
 
     @Test

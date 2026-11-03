@@ -30,6 +30,9 @@ is allowed to make. Additions arrive as `default` methods.
 - **`RunChannel.folder()`**: the run's own folder, where the host keeps the run's log; a plugin keeps the files it
   saves during the run beside it. Empty when no host keeps one. Compatible.
 - **`run.AskKind`**: what a question asks for — text, a number, a whole number, yes/no, one of a list.
+- **`TraceLine.values()`**: a line a plugin gives its `RunChannel` carries values by keys of its own
+  (`screen` → `Home`). The host keeps them in the run's log and offers each as `plugin.<key>` to group reports by;
+  it reads no key. The ten-part constructor stays and gives no values. Compatible.
 
 ## [0.14.1] — 2026-11-01
 

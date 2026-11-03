@@ -1,7 +1,10 @@
 package com.botmaker.plugin.api;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 
@@ -34,9 +37,15 @@ import java.util.OptionalInt;
  *               {@code ""} when the bot did not know — a line number alone names no file, and a bot is several
  * @param line   the 1-based line of the bot's source that wrote it, when the bot knew
  * @param where  the part of the screen it is about, in desktop pixels, when there is one
+ * @param values what the plugin that said it knows of the moment, by keys of its own ({@code screen} →
+ *               {@code Home}): kept with the line in the run's log, carried by a problem's report, and offered as
+ *               something to group reports by. The host reads no key; a key or value that is {@code null} is
+ *               dropped. Never {@code null}; empty when the plugin said nothing more. Text a run says, so scrubbed
+ *               like the line's own before it leaves the machine.
  */
 public record TraceLine(Instant at, Level level, String source, String text, int count, String writerClass,
-                        String writerMethod, String className, OptionalInt line, Optional<Region> where) {
+                        String writerMethod, String className, OptionalInt line, Optional<Region> where,
+                        Map<String, String> values) {
 
     public TraceLine {
         if (at == null) at = Instant.EPOCH;
@@ -49,6 +58,17 @@ public record TraceLine(Instant at, Level level, String source, String text, int
         if (className == null) className = "";
         if (line == null) line = OptionalInt.empty();
         if (where == null) where = Optional.empty();
+        Map<String, String> kept = new LinkedHashMap<>();
+        if (values != null) values.forEach((k, v) -> {
+            if (k != null && v != null) kept.put(k, v);
+        });
+        values = Collections.unmodifiableMap(kept);
+    }
+
+    /** A line with no {@link #values}: what a plugin built before lines carried them still calls. */
+    public TraceLine(Instant at, Level level, String source, String text, int count, String writerClass,
+                     String writerMethod, String className, OptionalInt line, Optional<Region> where) {
+        this(at, level, source, text, count, writerClass, writerMethod, className, line, where, Map.of());
     }
 
     /** How serious a line is. A closed set with stable ids, read totally: an unknown id is {@link #UNKNOWN}. */
