@@ -19,6 +19,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`run.ReportView`, `ReportViewHolder` and the step `reportViews(MyReportViews.class)`**: a plugin offers charts
+  in the host's reports of the bot's runs. A view has a title, a `Chart` (bars, bars by day, lines, heatmap, donut,
+  table) and one of the plugin's own line-value keys (`TraceLine.values`), or two for a grid (`against`). It can
+  also name one level (`only`), count every line carrying the key (`counting(Lines.EVERY_LINE)`) and add up a
+  number instead of counting (`weighedBy("millis")`). `StudioPlugin.reportViews()` is a default. Compatible.
 - **`palette.@ReadsScreen`**: marks a method whose result was read off the game's screen. A host that traces
   calls marks that result in the run's log and hides it in anything that leaves the machine. Compatible.
 - **`run.RunChannel`, and the step `onBotRun(Owner::started)`**: a bot's run hands each plugin a channel to its

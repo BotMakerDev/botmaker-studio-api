@@ -5,6 +5,7 @@ import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.RunChannel;
+import com.botmaker.plugin.api.run.ReportView;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
@@ -193,6 +194,14 @@ public sealed interface StudioPlugin permits DeclaredPlugin {
      * overlay opens. A part's id is unique within the plugin.
      */
     default List<RunOverlayPart> runOverlayParts() {
+        return List.of();
+    }
+
+    /**
+     * The charts this plugin offers in the host's reports of the bot's runs, each grouping by values its own lines
+     * carry ({@link ReportView}). Called each time the reports are shown; no JavaFX is needed.
+     */
+    default List<ReportView> reportViews() {
         return List.of();
     }
 

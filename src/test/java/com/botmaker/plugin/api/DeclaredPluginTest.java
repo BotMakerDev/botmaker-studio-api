@@ -5,6 +5,7 @@ import com.botmaker.plugin.api.managed.ManagedMarker;
 import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.run.AskKind;
 import com.botmaker.plugin.api.run.Readiness;
+import com.botmaker.plugin.api.run.ReportView;
 import com.botmaker.plugin.api.run.RunChannel;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.source.ManagedValue;
@@ -71,6 +72,34 @@ class DeclaredPluginTest {
     void runOverlayPartsAreDeclaredLikeTheToolbar() {
         StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare().runOverlay(RunOverlay.class)) {};
         assertEquals(List.of(RunOverlay.PART), plugin.runOverlayParts());
+    }
+
+    static final class Views implements ReportViewHolder {
+        static final ReportView MOVES = ReportView.of("Failed moves", ReportView.Chart.HEATMAP, "from")
+                .against("to").only(TraceLine.Level.ERROR);
+
+        @Override
+        public List<ReportView> reportViews() {
+            return List.of(MOVES);
+        }
+    }
+
+    @Test
+    void reportViewsAreDeclaredByHolderAndEachStepAnswersACopy() {
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare().reportViews(Views.class)) {};
+        assertEquals(List.of(Views.MOVES), plugin.reportViews());
+        assertTrue(EMPTY.reportViews().isEmpty());
+
+        ReportView v = Views.MOVES;
+        assertEquals("from", v.dimension());
+        assertEquals(Optional.of("to"), v.against());
+        assertEquals(Optional.of(TraceLine.Level.ERROR), v.level());
+        assertEquals(ReportView.Lines.PROBLEMS, v.lines());
+        ReportView time = v.counting(ReportView.Lines.EVERY_LINE).weighedBy("millis");
+        assertEquals(Optional.empty(), v.weight(), "a step leaves the view it came from alone");
+        assertEquals(Optional.of("millis"), time.weight());
+        assertEquals(ReportView.Lines.EVERY_LINE, time.lines());
+        assertThrows(IllegalArgumentException.class, () -> ReportView.of(" ", ReportView.Chart.BARS, "screen"));
     }
 
     static final class Overlay implements OverlayHolder {

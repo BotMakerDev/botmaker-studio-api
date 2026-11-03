@@ -6,6 +6,7 @@ import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.RunChannel;
+import com.botmaker.plugin.api.run.ReportView;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.slot.SlotEditor;
 import com.botmaker.plugin.api.source.ManagedValue;
@@ -78,6 +79,7 @@ public final class PluginDeclaration {
     private List<Class<? extends ToolbarHolder>> toolbarHolders = List.of();
     private List<Class<? extends RunOverlayHolder>> runOverlayHolders = List.of();
     private List<Class<? extends AssistantHolder>> assistantHolders = List.of();
+    private List<Class<? extends ReportViewHolder>> reportViewHolders = List.of();
     private Class<? extends OverlayHolder> overlayHolder;
     private Class<? extends CatalogHolder> catalogHolder;
     private String guide = "";
@@ -104,6 +106,7 @@ public final class PluginDeclaration {
         copy.toolbarHolders = toolbarHolders;
         copy.runOverlayHolders = runOverlayHolders;
         copy.assistantHolders = assistantHolders;
+        copy.reportViewHolders = reportViewHolders;
         copy.overlayHolder = overlayHolder;
         copy.catalogHolder = catalogHolder;
         copy.guide = guide;
@@ -172,6 +175,18 @@ public final class PluginDeclaration {
     public final PluginDeclaration runOverlay(Class<? extends RunOverlayHolder>... holders) {
         List<Class<? extends RunOverlayHolder>> named = holders("runOverlay", "MyRunOverlay", holders);
         return with(copy -> copy.runOverlayHolders = added(runOverlayHolders, named));
+    }
+
+    /**
+     * The classes giving the charts it offers in the host's reports of the bot's runs —
+     * {@link StudioPlugin#reportViews()}.
+     *
+     * @throws IllegalArgumentException when no holder is given, or one is {@code null}, abstract or an inner class
+     */
+    @SafeVarargs
+    public final PluginDeclaration reportViews(Class<? extends ReportViewHolder>... holders) {
+        List<Class<? extends ReportViewHolder>> named = holders("reportViews", "MyReportViews", holders);
+        return with(copy -> copy.reportViewHolders = added(reportViewHolders, named));
     }
 
     /**
@@ -302,6 +317,10 @@ public final class PluginDeclaration {
 
     List<RunOverlayPart> runOverlay() {
         return given(runOverlayHolders, RunOverlayHolder::runOverlay);
+    }
+
+    List<ReportView> reportViews() {
+        return given(reportViewHolders, ReportViewHolder::reportViews);
     }
 
     Optional<OverlayPart> overlay() {
