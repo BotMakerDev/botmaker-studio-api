@@ -17,8 +17,17 @@ import java.util.function.Function;
  * .writtenAs(LocalDate::of, LocalDate::getYear, LocalDate::getMonthValue, LocalDate::getDayOfMonth)
  * .writtenAsEach(Combo::of, Combo::keys)                  // a varargs factory, its parts one collection
  * .writtenAs(Precision::minArea, p -> p, Precision::minArea)   // an instance method: the receiver is part 0
+ * .writtenAs(When::atLeast, Test::when, Test::limit)      // another class's instance method: a typed chain
  * .writtenAsRecord()                                      // a record: its canonical constructor
  * }</pre>
+ *
+ * <p><b>A chain through another class.</b> An instance-method factory whose receiver is another class finishes a
+ * chain that class starts: {@code Params.when(Progress::gold).atLeast(5)}, where {@code Params.when} is declared
+ * as the call that writes a {@code When} and {@code When::atLeast} as one that writes a {@code Test}. The host
+ * writes part 0, the receiver, by its own class's declaration and the link after it, and reads the chain back the
+ * same way. A receiver nothing declares makes the call one the host neither writes nor reads. An instance method
+ * of the value's own class is a chain of that class instead, which the host writes only where the class's other
+ * factories would lose part of a value.
  *
  * <p><b>Parts read by name.</b> For a type the plugin owns, the factory alone is enough: each parameter
  * {@code p} of a static factory or constructor is read by the type's public no-argument method {@code p()}, or

@@ -17,6 +17,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
+### Documented
+
+- `CallSteps` says how a chain through another class is declared (2026-11-04): `writtenAs(When::atLeast,
+  Test::when, Test::limit)`, the receiver written by its own class's declaration. No signature changed.
+
 ### Changed (breaking)
 
 - **A holder is a constant of the marker's `Holder` enum** (2026-11-04). The marker's id enum names it, `enum Id
