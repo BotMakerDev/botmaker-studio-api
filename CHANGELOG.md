@@ -19,6 +19,12 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`@Param` on an interface: a schema** (2026-11-04). Each `default` method of an interface marked `@Param` is one
+  machine-scope parameter, its body the author's value; this machine's values are a class implementing it in the
+  bot's `values` package, never committed. `@Param.Shown` (on a method) gives its category, description and
+  visibility, else the interface's own. `@Param` on a field still works and is deprecated for removal: Studio's
+  upgrade will turn such fields into a schema.
+
 - **`PluginState` and `StudioServices.stateDir()`**: a plugin keeps what this machine learned about a bot in its
   own folder of it, `<bot>/.botmaker/plugins/<group>/<artifact>/`. `PluginState.folder(botDir, groupId,
   artifactId)` names it the same way for the host and for the plugin's runtime (a run's `user.dir` is the bot).

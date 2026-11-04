@@ -7,7 +7,32 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * A field the person running this bot may change — <b>the declaration itself, in the bot's own Java</b>.
+ * What the person running this bot may change — <b>the declaration itself, in the bot's own Java</b>.
+ *
+ * <h2>On an interface: a schema (2026-11-04)</h2>
+ *
+ * <p>An interface marked {@code @Param} is a <b>machine-scope schema</b>: each {@code default} method is one
+ * parameter, its body the author's value. The interface is committed; this machine's values are a class
+ * implementing it in the bot's {@code values} package, {@code values/<Schema>Values.java}, which is never committed,
+ * versioned or published, and which overrides only the methods this machine has a value for.
+ *
+ * <pre>{@code
+ * @Param
+ * public interface RunChoices {
+ *     @Param.Shown(description = "How long to rest between attempts", visibility = Param.PUBLIC)
+ *     default Duration restBetween() { return Duration.ofMinutes(1); }
+ * }
+ * }</pre>
+ *
+ * <p>The members on the interface are each method's own when its {@link Shown} names none. In the Parameters window
+ * an {@link #EDITOR} parameter is the author's, so a change rewrites the {@code default} body; a {@link #PUBLIC} one
+ * is the runner's, so a change writes the values class.
+ *
+ * <h2>On a field: the form before schemas</h2>
+ *
+ * <p><b>Deprecated for removal</b> (2026-11-04): a field's value is Java in the bot, so the runner's choices reach the
+ * bot's remote with its code. Studio's upgrade turns a bot's {@code @Param} fields into a schema; the field form is
+ * removed in the next release. The rest of this page describes it.
  *
  * <pre>{@code
  * public final class Parameters {
@@ -65,8 +90,30 @@ import java.lang.annotation.Target;
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
+@Target({ElementType.TYPE, ElementType.FIELD})
 public @interface Param {
+
+    /**
+     * How one method of a {@code @Param} schema is shown: its rail heading, its line, who sees it. Each member left
+     * at its default takes the schema's own ({@code @Param(category = "Limits")} on the interface).
+     *
+     * <p>A second annotation rather than {@code @Param} on the method: {@code @Param} on a type says what the type
+     * <em>is</em>, and a method of it is a parameter by being there, marked or not.
+     */
+    @Documented
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.METHOD)
+    @interface Shown {
+
+        /** As {@link Param#category()}; {@code ""} takes the schema's. */
+        String category() default "";
+
+        /** As {@link Param#description()}; {@code ""} says nothing. */
+        String description() default "";
+
+        /** As {@link Param#visibility()}; {@code ""} takes the schema's. */
+        String visibility() default "";
+    }
 
     /**
      * The Parameters window only. The default, and what anything unrecognised is read as.
