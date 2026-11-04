@@ -484,6 +484,39 @@ public interface PluginValues {
         }
     }
 
+    // ── a during-a-run parameter ────────────────────────────────────────────────────────────────────────
+    //
+    // What a run keeps between runs is a method of a group in the bot's params/ folder, value included. Only the host
+    // can add one, as only it writes params/ and its starting copy; only it can read one back and set it to its
+    // starting value. A parameter changed outside a run never crosses here.
+
+    /**
+     * The bot's during-a-run parameters with their values and their age; none on a host with no project.
+     */
+    default List<RunParameter> runParameters() {
+        return List.of();
+    }
+
+    /**
+     * Adds the during-a-run parameter {@code write} to its group, in {@code params/} and the starting copy, creating
+     * the group when the bot has none of that name.
+     *
+     * @return empty on success, else the sentence to show: the name is taken, the group is a plugin's, or nothing
+     *         could be written
+     */
+    default Optional<String> addRunParameter(ParameterWrite write) {
+        return Optional.of(NO_SOURCE_TREE);
+    }
+
+    /**
+     * Sets the during-a-run parameter {@code name} of {@code group} back to its starting value, its time gone.
+     *
+     * @return empty on success, else the sentence to show: there is no such parameter, or no starting copy
+     */
+    default Optional<String> forgetRunParameter(String group, String name) {
+        return Optional.of(NO_SOURCE_TREE);
+    }
+
     /** What every write answers on a host with no project behind it. */
     String NO_SOURCE_TREE = "This host keeps no source tree.";
 

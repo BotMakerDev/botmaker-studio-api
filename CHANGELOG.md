@@ -21,6 +21,9 @@ is allowed to make. Additions arrive as `default` methods.
 
 - `@Param.Kept(at)` (2026-11-04), compatible: when a run last wrote a during-a-run parameter's value, on its method in
   `params`. A host's fit keeps it with the value; it never reaches a starting copy.
+- `PluginValues.runParameters`, `addRunParameter` and `forgetRunParameter`, with `RunParameter` and `ParameterWrite`
+  (2026-11-04), compatible: a plugin lists the values a run keeps with their age, adds such a parameter with its own
+  annotations on it, and sets one back to its starting value. A parameter changed outside a run never crosses.
 
 ### Changed
 
