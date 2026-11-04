@@ -583,10 +583,21 @@ class ManagedValuesTest {
         assertEquals(Param.Visibility.EDITOR, Param.Visibility.fromId(null));
     }
 
-    /** A parameter is never claimed either: the bot reads it as a field, and {@code claim} takes a method value. */
+    @ManagedMarker
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.FIELD)
+    @interface FieldsOnly {
+
+        Id value();
+
+        enum Id { FLOW }
+    }
+
+    /** A parameter is a method of its group (2026-11-04), so its marker must be one a method may carry. */
     @Test
-    void aParameterNeedsAMarkerFieldsMayCarry() {
-        assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(TestValue.Id.FLOW));
+    void aParameterNeedsAMarkerMethodsMayCarry() {
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(FieldsOnly.Id.FLOW));
+        ManagedValue.param(TestValue.Id.FLOW);
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(Fields.Id.SKIP).in("Sdk")
                 .startsAs(() -> java.util.Set.<Class<? extends Number>>of()));
     }

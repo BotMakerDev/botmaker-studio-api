@@ -85,21 +85,24 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
      * <pre>{@code
      * public static final ManagedParam<Boolean> DO_SETUP = ManagedValue.param(SdkValue.Id.DO_SETUP)
      *         .in("Sdk")
-     *         .startsAs(SdkParams::doSetup)           // its type, and the value a written field starts as
+     *         .startsAs(SdkParams::doSetup)           // its type, and the value a written parameter starts as
      *         .shown("Run", "Set the game up first", Param.Visibility.PUBLIC)
      *         .because("The SDK reads this parameter. Change its value in the Runner or Project ▸ Parameters.");
      * }</pre>
      *
-     * <p>The field is named after the id, camel-cased — {@code DO_SETUP} is {@code doSetup} — and marked with it,
-     * {@code @SdkValue(SdkValue.Id.DO_SETUP) @Param(…) public static boolean doSetup = true;}. The host appends it
-     * to the holder whenever the holder lacks a field carrying the id, and never lets the Parameters window
-     * rename, retype, re-describe or remove it: the bot's own code names the field.
+     * <p>The parameter is a method of the plugin's group (2026-11-04): the {@code @Param} class named
+     * {@code in(…)}, which the host writes in the bot's {@code params/<groupId>/<artifactId>/} folder, private to
+     * each computer, with its committed starting copy under {@code starting-params/}. The method is named after
+     * the id, camel-cased — {@code DO_SETUP} is {@code doSetup} — and marked with it,
+     * {@code @SdkValue(SdkValue.Id.DO_SETUP) @Param.Shown(…) public boolean doSetup() { return true; }}. The host
+     * appends it to the group whenever the group lacks a method carrying the id, and never lets the Parameters
+     * window rename, retype or remove it: only what it returns is the user's.
      *
      * @throws IllegalArgumentException when the enum is not nested in such an annotation, or its {@code @Target}
-     *                                  leaves out fields
+     *                                  leaves out methods
      */
     public static ManagedParam.Steps param(Enum<?> id) {
-        return new ManagedParam.Steps(Key.of(id, ElementType.FIELD));
+        return new ManagedParam.Steps(Key.of(id, ElementType.METHOD));
     }
 
     /**

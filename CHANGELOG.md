@@ -17,6 +17,12 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
+### Changed
+
+- **`ManagedValue.param` needs a marker methods may carry** (2026-11-04): a plugin's parameter is a method of its
+  group in the bot's `params/` folder, never a holder's field. A marker whose `@Target` leaves out `METHOD` is
+  refused when the plugin declares a parameter; one with `METHOD` and without `FIELD` is accepted now.
+
 ### Added
 
 - **`@Param` on a class: a parameter group** (2026-11-04). Each no-argument instance method of a class marked
