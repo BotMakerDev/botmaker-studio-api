@@ -17,6 +17,15 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
+### Changed (breaking)
+
+- **A holder is a constant of the marker's `Holder` enum** (2026-11-04). The marker's id enum names it, `enum Id
+  implements ManagedId<Holder>`, and `ManagedValue.method`, `param` and `openSet` return steps whose `.in` takes
+  only that `Holder`: `in(String)` is gone, and `.in(Other.X)` does not compile. A constant is UPPER_SNAKE and
+  names the class `FLOW_LAYOUT` → `FlowLayout`; another spelling, or two constants whose class names differ only
+  by case, is refused at declaration. `ManagedValue.holder()` still answers the simple name. To move a plugin:
+  add `enum Holder { … }` beside `Id`, one constant per class your values sit in, and write `.in(Holder.X)`.
+
 ### Added
 
 - `@Param.Kept(at)` (2026-11-04), compatible: when a run last wrote a during-a-run parameter's value, on its method in

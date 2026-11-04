@@ -83,8 +83,10 @@
              Supplier overloads and parts(…) went), lifecycle is declared (onProjectOpened/onProjectClosing) and
              DeclaredPlugin's projectOpened/projectClosing are final; StudioServices.log() was added.
              Pinned ahead to v0.14.0 (2026-10-29): @Param's min/max/options, slot.Bounds and
-             ValueContext.bounds() went. -->
-        <botmaker.japicmp.baseline>v0.14.0</botmaker.japicmp.baseline>
+             ValueContext.bounds() went.
+             Pinned ahead to v0.15.0 (2026-11-04): a holder is a constant of the marker's Holder enum, named by
+             the id enum (ManagedId); in(String) went for in(H) on every managed-value step. -->
+        <botmaker.japicmp.baseline>v0.15.0</botmaker.japicmp.baseline>
         <botmaker.japicmp.skip>false</botmaker.japicmp.skip>
     </properties>
 

@@ -1,6 +1,7 @@
 package com.botmaker.plugin.api.slot;
 
 import com.botmaker.plugin.api.StudioServices;
+import com.botmaker.plugin.api.managed.ManagedId;
 import com.botmaker.plugin.api.managed.ManagedMarker;
 import com.botmaker.plugin.api.source.ManagedValue;
 import com.botmaker.plugin.api.source.PluginValues;
@@ -37,7 +38,9 @@ class ContextDefaultsTest {
 
         Id value();
 
-        enum Id { FLOWS }
+        enum Id implements ManagedId<Holder> { FLOWS }
+
+        enum Holder { FLOWS }
     }
 
     /** A Parameters row, or a managed value: a value with no call site anywhere. */
@@ -139,7 +142,7 @@ class ContextDefaultsTest {
             @Override public StudioServices services() { return null; }
         };
 
-        ManagedValue<String> flows = ManagedValue.openSet(Mark.Id.FLOWS).of(String.class).in("Flows")
+        ManagedValue<String> flows = ManagedValue.openSet(Mark.Id.FLOWS).of(String.class).in(Mark.Holder.FLOWS)
                 .because("Mine.");
         assertTrue(older.member(flows).isEmpty());
         assertTrue(older.writeMember(flows, PluginValues.Member.of("DAILY")).isPresent());

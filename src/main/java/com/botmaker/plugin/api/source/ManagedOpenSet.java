@@ -160,8 +160,12 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
         }
     }
 
-    /** After {@link ManagedValue#openSet}: what each member is. */
-    public static final class Steps {
+    /**
+     * After {@link ManagedValue#openSet}: what each member is.
+     *
+     * @param <H> the holder enum the id enum names
+     */
+    public static final class Steps<H extends Enum<H>> {
 
         private final Key key;
 
@@ -173,7 +177,7 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
          * Constants of the class {@code element} — what {@link PluginValues#add} accepts for this set, and what
          * a constant's initialiser reads as.
          */
-        public <E> ReferableStep<E, OfConstants<E>> of(Class<E> element) {
+        public <E> ReferableStep<E, OfConstants<E>, H> of(Class<E> element) {
             requireType(key, element, "element type");
             if (element.isPrimitive()) {
                 throw new IllegalArgumentException(key.id() + ": a constant is an object; use the boxed class of "
@@ -199,7 +203,7 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
          * @throws IllegalArgumentException when {@code element} is no interface, or {@code byName} is no method
          *                                  reference
          */
-        public <E> HolderStep<OneEnum<E>> ofEnum(Class<E> element, Ref.Of1<String, ? extends E> byName) {
+        public <E> HolderStep<OneEnum<E>, H> ofEnum(Class<E> element, Ref.Of1<String, ? extends E> byName) {
             requireInterface(element);
             Ref.resolve(byName);
             return new HolderStep<>(key, holder -> reason -> new OneEnum<>(key, holder, element, byName, reason));
@@ -228,7 +232,7 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
          * @throws IllegalArgumentException when {@code element} is no interface, or {@code byName} is no method
          *                                  reference
          */
-        public <E> GroupStep<E> ofEnumGroups(Class<E> element, Ref.Of2<String, String, ? extends E> byName) {
+        public <E> GroupStep<E, H> ofEnumGroups(Class<E> element, Ref.Of2<String, String, ? extends E> byName) {
             requireInterface(element);
             Ref.resolve(byName);
             return new GroupStep<>(key, element, byName);
@@ -266,7 +270,7 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
          * @throws IllegalArgumentException when {@code element} is missing, an interface, final, primitive or an
          *                                  array
          */
-        public <E> ManagedClasses.FieldsStep<E> ofClasses(Class<E> element) {
+        public <E> ManagedClasses.FieldsStep<E, H> ofClasses(Class<E> element) {
             requireType(key, element, "element type");
             if (element.isInterface() || element.isPrimitive() || element.isArray()
                     || Modifier.isFinal(element.getModifiers())) {
@@ -285,8 +289,13 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
         }
     }
 
-    /** After {@link Steps#ofEnumGroups}: what a whole nested enum reads as. */
-    public static final class GroupStep<E> {
+    /**
+     * After {@link Steps#ofEnumGroups}: what a whole nested enum reads as.
+     *
+     * @param <E> the interface each constant implements
+     * @param <H> the holder enum the id enum names
+     */
+    public static final class GroupStep<E, H extends Enum<H>> {
 
         private final Key key;
         private final Class<E> element;
@@ -308,7 +317,7 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
          * @param byGroup a method reference from an enum's simple name to that value — {@code BotConstants::activity}
          * @throws IllegalArgumentException when {@code group} is missing or {@code byGroup} is no method reference
          */
-        public <G> HolderStep<EnumGroups<E>> groupedAs(Class<G> group, Ref.Of1<String, ? extends G> byGroup) {
+        public <G> HolderStep<EnumGroups<E>, H> groupedAs(Class<G> group, Ref.Of1<String, ? extends G> byGroup) {
             if (group == null) throw new IllegalArgumentException(key.id() + ": no group type given");
             Ref.resolve(byGroup);
             return new HolderStep<>(key, holder -> reason ->
@@ -322,8 +331,9 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
      *
      * @param <E> the class of each member
      * @param <V> the value the declaration ends in
+     * @param <H> the holder enum the id enum names
      */
-    public static final class ReferableStep<E, V> {
+    public static final class ReferableStep<E, V, H extends Enum<H>> {
 
         /** What the declaration builds, given its holder and how a reference reads (null: by its initialiser). */
         interface Build<E, V> {
@@ -354,19 +364,21 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
          *                    {@code BotConstants::flow}
          * @throws IllegalArgumentException when {@code byReference} is no method reference
          */
-        public HolderStep<V> referredToAs(Ref.Of1<String, ? extends E> byReference) {
+        public HolderStep<V, H> referredToAs(Ref.Of1<String, ? extends E> byReference) {
             if (byReference == null) throw new IllegalArgumentException(key.id() + ": no reference given");
             Ref.resolve(byReference);
             return new HolderStep<>(key, holder -> build.with(holder, byReference));
         }
 
         /**
-         * The class {@code holder} — {@code "Pictures"} — created empty when a project has none.
+         * The class {@code holder} stands for — {@code SdkValue.Holder.PICTURES}, the class {@code Pictures} —
+         * created empty when a project has none.
          *
-         * @throws IllegalArgumentException when {@code holder} is not a class's simple name
+         * @throws IllegalArgumentException when a constant of {@code holder}'s enum is not UPPER_SNAKE, or two name
+         *                                  classes that differ only by case
          */
-        public Reason<V> in(String holder) {
-            return new Reason<>(build.with(requireHolder(key, holder), null));
+        public Reason<V> in(H holder) {
+            return new Reason<>(build.with(holderName(key, holder), null));
         }
     }
 
@@ -374,8 +386,9 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
      * After the steps that say what a set's member is: the class that is the set.
      *
      * @param <V> the value the declaration ends in
+     * @param <H> the holder enum the id enum names
      */
-    public static final class HolderStep<V> {
+    public static final class HolderStep<V, H extends Enum<H>> {
 
         private final Key key;
         private final Function<String, Function<String, V>> build;
@@ -386,12 +399,14 @@ public abstract sealed class ManagedOpenSet<T> extends ManagedValue<T>
         }
 
         /**
-         * The class {@code holder} — {@code "Pictures"} — created empty when a project has none.
+         * The class {@code holder} stands for — {@code SdkValue.Holder.PICTURES}, the class {@code Pictures} —
+         * created empty when a project has none.
          *
-         * @throws IllegalArgumentException when {@code holder} is not a class's simple name
+         * @throws IllegalArgumentException when a constant of {@code holder}'s enum is not UPPER_SNAKE, or two name
+         *                                  classes that differ only by case
          */
-        public Reason<V> in(String holder) {
-            return new Reason<>(build.apply(requireHolder(key, holder)));
+        public Reason<V> in(H holder) {
+            return new Reason<>(build.apply(holderName(key, holder)));
         }
     }
 }

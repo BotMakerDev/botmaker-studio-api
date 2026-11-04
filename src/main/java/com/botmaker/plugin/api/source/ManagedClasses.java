@@ -61,8 +61,13 @@ public final class ManagedClasses<T> extends ManagedOpenSet<T> {
         return setup;
     }
 
-    /** After {@link ManagedOpenSet.Steps#ofClasses}: what a nested class's fields are. */
-    public static final class FieldsStep<E> {
+    /**
+     * After {@link ManagedOpenSet.Steps#ofClasses}: what a nested class's fields are.
+     *
+     * @param <E> the class every nested one extends
+     * @param <H> the holder enum the id enum names
+     */
+    public static final class FieldsStep<E, H extends Enum<H>> {
 
         private final Key key;
         private final Class<E> element;
@@ -84,15 +89,20 @@ public final class ManagedClasses<T> extends ManagedOpenSet<T> {
          *                    that field — {@code BotConstants::input}; it must equal itself by those names alone
          * @throws IllegalArgumentException when {@code field} is missing or {@code byReference} is no method reference
          */
-        public <F> SetupStep<E> fields(Class<F> field, Ref.Of2<String, String, ? extends F> byReference) {
+        public <F> SetupStep<E, H> fields(Class<F> field, Ref.Of2<String, String, ? extends F> byReference) {
             if (field == null) throw new IllegalArgumentException(key.id() + ": no field type given");
             Ref.resolve(byReference);
             return new SetupStep<>(key, element, field, byReference);
         }
     }
 
-    /** After {@link FieldsStep#fields}: the method each nested class overrides. */
-    public static final class SetupStep<E> {
+    /**
+     * After {@link FieldsStep#fields}: the method each nested class overrides.
+     *
+     * @param <E> the class every nested one extends
+     * @param <H> the holder enum the id enum names
+     */
+    public static final class SetupStep<E, H extends Enum<H>> {
 
         private final Key key;
         private final Class<E> element;
@@ -118,7 +128,7 @@ public final class ManagedClasses<T> extends ManagedOpenSet<T> {
          *               takes nothing and returns the value — {@code Screen::setup}
          * @throws IllegalArgumentException when {@code method} is no such reference
          */
-        public ReferableStep<E, ManagedClasses<E>> setup(Ref.Of1<? super E, ?> method) {
+        public ReferableStep<E, ManagedClasses<E>, H> setup(Ref.Of1<? super E, ?> method) {
             if (!(Ref.resolve(method) instanceof Method setup) || setup.getParameterCount() != 0
                     || setup.getReturnType() == void.class
                     || Modifier.isStatic(setup.getModifiers())

@@ -60,8 +60,8 @@ no back door. If the SDK needs something this module does not expose, the contra
 - **The catalog degrades, never throws** (`catalog.md`). **No Jackson here.**
 - **A plugin is one jar, named by its pom** (2026-10-27): the `botmaker.plugin` property names its
   `DeclaredPlugin` subclass, the coordinate is its id. `StudioPlugin` is sealed to `DeclaredPlugin`.
-- **japicmp fails on any incompatible change, with no ignore list**; the baseline is pinned ahead to `v0.14.0`
-  (`@Param`'s value rules and `Bounds` removed, 2026-10-29), so the next release is `--studio-api 0.14.0` (`japicmp.md`).
+- **japicmp fails on any incompatible change, with no ignore list**; the baseline is pinned ahead to `v0.15.0`
+  (holders by enum, `in(String)` removed, 2026-11-04), so the next release is `--studio-api 0.15.0` (`japicmp.md`).
 
 ## Style
 

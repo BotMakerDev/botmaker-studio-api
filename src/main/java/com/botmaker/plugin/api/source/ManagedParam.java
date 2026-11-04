@@ -79,8 +79,12 @@ public final class ManagedParam<T> extends ManagedValue<T> {
         }
     }
 
-    /** After {@link ManagedValue#param}: the class the field is in. */
-    public static final class Steps {
+    /**
+     * After {@link ManagedValue#param}: the group the parameter is in.
+     *
+     * @param <H> the holder enum the id enum names
+     */
+    public static final class Steps<H extends Enum<H>> {
 
         private final Key key;
 
@@ -89,12 +93,14 @@ public final class ManagedParam<T> extends ManagedValue<T> {
         }
 
         /**
-         * In the class {@code holder} — {@code "Sdk"} — which the host writes the field into, or creates.
+         * In the group {@code holder} stands for — {@code SdkValue.Holder.SDK}, the class {@code Sdk} — which the host
+         * writes the parameter into, or creates.
          *
-         * @throws IllegalArgumentException when {@code holder} is not a class's simple name
+         * @throws IllegalArgumentException when a constant of {@code holder}'s enum is not UPPER_SNAKE, or two name
+         *                                  classes that differ only by case
          */
-        public TypeStep in(String holder) {
-            return new TypeStep(key, requireHolder(key, holder));
+        public TypeStep in(H holder) {
+            return new TypeStep(key, holderName(key, holder));
         }
     }
 

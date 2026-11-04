@@ -1,5 +1,6 @@
 package com.botmaker.plugin.api.source;
 
+import com.botmaker.plugin.api.managed.ManagedId;
 import com.botmaker.plugin.api.managed.ManagedMarker;
 
 import java.lang.annotation.ElementType;
@@ -7,7 +8,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 /**
  * A value your plugin keeps in the bot's own Java: Studio writes it into a class of the bot's, finds it again by
@@ -41,8 +46,10 @@ import java.util.function.Function;
  * ({@link com.botmaker.plugin.api.managed.ManagedValues#claim}), and its window opens it
  * ({@link PluginValues}). {@link #type()} lets each of them read a {@code T} without a cast.
  *
- * <p><b>Where it goes.</b> {@code .in("Sdk")} names the bot's class that holds it, by its simple name, because the
- * class is the bot's and your plugin never compiles against it. A bot without one gets it under
+ * <p><b>Where it goes.</b> {@code .in(SdkValue.Holder.SDK)} names the bot's class that holds it by a constant of the
+ * holder enum your id enum names ({@link ManagedId}), so javac refuses another plugin's holder. The class is the
+ * bot's and your plugin never compiles against it, so an UPPER_SNAKE constant stands for it: {@code SDK} for
+ * {@code Sdk}, {@code FLOW_LAYOUT} for {@code FlowLayout}. A bot without one gets it under
  * {@code plugins/<a folder the host names after your plugin's artifactId>/}.
  *
  * <p>Plain data, like every other contribution: a host reads the id as text and matches it itself, so no plugin
@@ -84,7 +91,7 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
      *
      * <pre>{@code
      * public static final ManagedParam<Boolean> DO_SETUP = ManagedValue.param(SdkValue.Id.DO_SETUP)
-     *         .in("Sdk")
+     *         .in(SdkValue.Holder.SDK)
      *         .startsAs(SdkParams::doSetup)           // its type, and the value a written parameter starts as
      *         .shown("Run", "Set the game up first", Param.Visibility.PUBLIC)
      *         .because("The SDK reads this parameter. Change its value in the Runner or Project ▸ Parameters.");
@@ -101,8 +108,8 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
      * @throws IllegalArgumentException when the enum is not nested in such an annotation, or its {@code @Target}
      *                                  leaves out methods
      */
-    public static ManagedParam.Steps param(Enum<?> id) {
-        return new ManagedParam.Steps(Key.of(id, ElementType.METHOD));
+    public static <H extends Enum<H>, I extends Enum<I> & ManagedId<H>> ManagedParam.Steps<H> param(I id) {
+        return new ManagedParam.Steps<>(Key.of(id, ElementType.METHOD));
     }
 
     /**
@@ -111,15 +118,15 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
      *
      * <pre>{@code
      * public static final ManagedMethod<FlowLayout> FLOW_LAYOUT = ManagedValue.method(SdkValue.Id.FLOW_LAYOUT)
-     *         .in("Sdk")                              // the class that holds it | .openedOnly()
+     *         .in(SdkValue.Holder.SDK)                // the class that holds it | .openedOnly()
      *         .holds(FlowLayout.class, FlowLayout.NONE) // what it returns, and what a created one starts as
      *         .because("These are where the Activity Flow's cards sit. Drag them in 🔀 Activity Flow.");
      * }</pre>
      *
      * @throws IllegalArgumentException when the enum is not nested in such an annotation
      */
-    public static ManagedMethod.Steps method(Enum<?> id) {
-        return new ManagedMethod.Steps(Key.of(id, ElementType.METHOD));
+    public static <H extends Enum<H>, I extends Enum<I> & ManagedId<H>> ManagedMethod.Steps<H> method(I id) {
+        return new ManagedMethod.Steps<>(Key.of(id, ElementType.METHOD));
     }
 
     /**
@@ -130,13 +137,13 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
      * <pre>{@code
      * public static final ManagedOpenSet.OfConstants<ImageTemplate> PICTURES = ManagedValue.openSet(SdkValue.Id.PICTURES)
      *         .of(ImageTemplate.class)                // the class of each constant
-     *         .in("Pictures")
+     *         .in(SdkValue.Holder.PICTURES)
      *         .because("Picture constants are managed in 🖼 Manage Pictures.");
      *
      * public static final ManagedOpenSet.EnumGroups<Outcome> ACTIVITIES = ManagedValue.openSet(SdkValue.Id.ACTIVITIES)
      *         .ofEnumGroups(Outcome.class, BotConstants::outcome)  // enums nested in the holder: enum Collect { NEXT }
      *         .groupedAs(Activity.class, BotConstants::activity)
-     *         .in("Activities")
+     *         .in(SdkValue.Holder.ACTIVITIES)
      *         .because("Activities are managed in 🔀 Activity Flow.");
      *
      * public static final ManagedClasses<Screen> SCREEN_MAP = ManagedValue.openSet(SdkValue.Id.SCREEN_MAP)
@@ -144,14 +151,14 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
      *         .fields(Input.class, BotConstants::input)     // their fields: Screens.MARKET.beerBuy
      *         .setup(Screen::setup)                         // the method each overrides with one return
      *         .referredToAs(BotConstants::screen)
-     *         .in("Screens")
+     *         .in(SdkValue.Holder.SCREENS)
      *         .because("The screen map is managed in 🗺 Screens.");
      * }</pre>
      *
      * @throws IllegalArgumentException when the enum is not nested in a {@link ManagedMarker} annotation
      */
-    public static ManagedOpenSet.Steps openSet(Enum<?> id) {
-        return new ManagedOpenSet.Steps(Key.of(id, ElementType.TYPE));
+    public static <H extends Enum<H>, I extends Enum<I> & ManagedId<H>> ManagedOpenSet.Steps<H> openSet(I id) {
+        return new ManagedOpenSet.Steps<>(Key.of(id, ElementType.TYPE));
     }
 
     /** The id: {@link #idOf} its constant — {@code "com.botmaker.sdk.api.bot.SdkValue$Id.FLOW"}. */
@@ -271,19 +278,37 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
         return text;
     }
 
+    /** An UPPER_SNAKE constant, so each holder is one class name and one file. */
+    private static final Pattern UPPER_SNAKE = Pattern.compile("[A-Z][A-Z0-9]*(_[A-Z0-9]+)*");
+
     /**
-     * {@code holder} when it is a class's simple name, {@code Sdk}: never qualified, because the host places the
-     * class itself, and never a name javac would refuse, because the host writes it.
+     * The simple name of the class {@code holder} stands for: each {@code _} part keeps its first character and
+     * lowers the rest, so {@code FLOW_LAYOUT} is {@code FlowLayout}. Refused unless every constant of its enum is
+     * UPPER_SNAKE and no two name classes that differ only by case, because the host writes one file per class.
      */
-    static String requireHolder(Key key, String holder) {
-        requireText(holder, "holder");
-        boolean simple = Character.isJavaIdentifierStart(holder.charAt(0))
-                && holder.chars().skip(1).allMatch(Character::isJavaIdentifierPart);
-        if (!simple) {
-            throw new IllegalArgumentException(key.id() + ": the holder is a class's simple name, not \"" + holder
-                    + "\"");
+    static String holderName(Key key, Enum<?> holder) {
+        if (holder == null) throw new IllegalArgumentException(key.id() + ": no holder given");
+        Map<String, String> seen = new HashMap<>();
+        for (Enum<?> each : holder.getDeclaringClass().getEnumConstants()) {
+            String other = seen.put(className(key, each).toLowerCase(Locale.ROOT), each.name());
+            if (other != null) {
+                throw new IllegalArgumentException(key.id() + ": the holders " + other + " and " + each.name()
+                        + " name classes that differ only by case");
+            }
         }
-        return holder;
+        return className(key, holder);
+    }
+
+    private static String className(Key key, Enum<?> holder) {
+        if (!UPPER_SNAKE.matcher(holder.name()).matches()) {
+            throw new IllegalArgumentException(key.id() + ": the holder " + holder.getDeclaringClass().getName()
+                    + "." + holder.name() + " is not UPPER_SNAKE, as FLOW_LAYOUT is");
+        }
+        StringBuilder name = new StringBuilder();
+        for (String part : holder.name().split("_")) {
+            name.append(part.charAt(0)).append(part.substring(1).toLowerCase(Locale.ROOT));
+        }
+        return name.toString();
     }
 
     /** Refuses a missing {@code type}; {@code what} names it: {@code "element type"}. */

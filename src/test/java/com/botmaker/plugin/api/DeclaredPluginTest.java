@@ -1,6 +1,7 @@
 package com.botmaker.plugin.api;
 
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
+import com.botmaker.plugin.api.managed.ManagedId;
 import com.botmaker.plugin.api.managed.ManagedMarker;
 import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.run.AskKind;
@@ -39,10 +40,12 @@ class DeclaredPluginTest {
 
         Id value();
 
-        enum Id { NOTE }
+        enum Id implements ManagedId<Holder> { NOTE }
+
+        enum Holder { NOTES }
     }
 
-    static final ManagedValue<String> NOTE = ManagedValue.method(NoteValue.Id.NOTE).in("Notes")
+    static final ManagedValue<String> NOTE = ManagedValue.method(NoteValue.Id.NOTE).in(NoteValue.Holder.NOTES)
             .holds(String.class, "").because("Mine.");
 
     static final StudioPlugin EMPTY = new DeclaredPlugin(StudioPlugin.declare()) {};

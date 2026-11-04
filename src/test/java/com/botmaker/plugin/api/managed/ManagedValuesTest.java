@@ -40,14 +40,17 @@ class ManagedValuesTest {
 
         Id value();
 
-        enum Id {
+        enum Id implements ManagedId<Holder> {
             FLOW, CAPTURE, WRONG_TYPE, NOBODY_READS_THIS, NOT_PUBLIC, NOT_STATIC, TAKES_ARGUMENTS, PICTURES, OPENED,
             INTS, SET, ENUM_SET, THROWS, SURVIVES, GREETING, FAREWELL
         }
+
+        /** The classes these tests' values live in; every marker here names it. */
+        enum Holder { VALUES, SDK, SET, LABELS, ACTIVITIES, SHEETS, FLOW_LAYOUT }
     }
 
     private static ManagedMethod<String> text(TestValue.Id id) {
-        return ManagedValue.method(id).in("Values").holds(String.class, "").because("Mine.");
+        return ManagedValue.method(id).in(TestValue.Holder.VALUES).holds(String.class, "").because("Mine.");
     }
 
     static final class Values {
@@ -188,7 +191,7 @@ class ManagedValuesTest {
 
     @Test
     void anOpenSetKnowsWhatEachConstantIs() {
-        ManagedOpenSet.OfConstants<String> set = ManagedValue.openSet(TestValue.Id.SET).of(String.class).in("Set")
+        ManagedOpenSet.OfConstants<String> set = ManagedValue.openSet(TestValue.Id.SET).of(String.class).in(TestValue.Holder.SET)
                 .because("Mine.");
 
         assertFalse(set.isReferredByName());
@@ -212,7 +215,7 @@ class ManagedValuesTest {
     @Test
     void anEnumSetReadsEachConstantByItsName() {
         ManagedOpenSet.OneEnum<Label> set = ManagedValue.openSet(TestValue.Id.ENUM_SET)
-                .ofEnum(Label.class, ManagedValuesTest::named).in("Labels").because("Mine.");
+                .ofEnum(Label.class, ManagedValuesTest::named).in(TestValue.Holder.LABELS).because("Mine.");
 
         assertEquals(new Named("WON"), set.byName("WON"));
         assertNull(set.byName(" "), "a name the plugin refuses reads as nothing");
@@ -228,12 +231,12 @@ class ManagedValuesTest {
     @Test
     void aSetReferredToByNameReadsAReferenceAsTheName() {
         ManagedOpenSet.OfConstants<String> set = ManagedValue.openSet(TestValue.Id.SET).of(String.class)
-                .referredToAs(ManagedValuesTest::referenced).in("Set").because("Mine.");
+                .referredToAs(ManagedValuesTest::referenced).in(TestValue.Holder.SET).because("Mine.");
 
         assertTrue(set.isReferredByName());
         assertEquals("→DAILY", set.byReference("DAILY"));
         assertNull(set.byReference(" "), "a name the plugin refuses reads as nothing");
-        assertFalse(ManagedValue.openSet(TestValue.Id.SET).of(String.class).in("Set").because("Mine.")
+        assertFalse(ManagedValue.openSet(TestValue.Id.SET).of(String.class).in(TestValue.Holder.SET).because("Mine.")
                 .isReferredByName());
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.openSet(TestValue.Id.SET).of(String.class)
                 .referredToAs(name -> "→" + name), "a lambda is refused");
@@ -243,17 +246,17 @@ class ManagedValuesTest {
     @Test
     void eachShapeIsItsOwnType() {
         ManagedMethod<String> method = text(TestValue.Id.GREETING);
-        ManagedParam<Boolean> param = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
+        ManagedParam<Boolean> param = ManagedValue.param(Fields.Id.DO_SETUP).in(TestValue.Holder.SDK)
                 .startsAs(ManagedValuesTest::doSetup).shown("", "", Param.Visibility.EDITOR).because("Mine.");
         ManagedOpenSet.OfConstants<String> constants = ManagedValue.openSet(TestValue.Id.SET).of(String.class)
-                .in("Set").because("Mine.");
+                .in(TestValue.Holder.SET).because("Mine.");
         ManagedOpenSet.OneEnum<Label> anEnum = ManagedValue.openSet(TestValue.Id.ENUM_SET)
-                .ofEnum(Label.class, ManagedValuesTest::named).in("Labels").because("Mine.");
+                .ofEnum(Label.class, ManagedValuesTest::named).in(TestValue.Holder.LABELS).because("Mine.");
         ManagedOpenSet.EnumGroups<Label> enums = ManagedValue.openSet(TestValue.Id.ENUM_SET)
                 .ofEnumGroups(Label.class, ManagedValuesTest::inGroup).groupedAs(Group.class, ManagedValuesTest::group)
-                .in("Activities").because("Mine.");
+                .in(TestValue.Holder.ACTIVITIES).because("Mine.");
         ManagedClasses<Sheet> classes = ManagedValue.openSet(TestValue.Id.ENUM_SET).ofClasses(Sheet.class)
-                .fields(Cell.class, ManagedValuesTest::cell).setup(Sheet::setup).in("Sheets").because("Mine.");
+                .fields(Cell.class, ManagedValuesTest::cell).setup(Sheet::setup).in(TestValue.Holder.SHEETS).because("Mine.");
 
         assertEquals(List.of("method", "param", "constants", "enum", "enums", "classes"),
                 java.util.stream.Stream.of(method, param, constants, anEnum, enums, classes)
@@ -300,7 +303,7 @@ class ManagedValuesTest {
         ManagedOpenSet.EnumGroups<Label> set = ManagedValue.openSet(TestValue.Id.ENUM_SET)
                 .ofEnumGroups(Label.class, ManagedValuesTest::inGroup)
                 .groupedAs(Group.class, ManagedValuesTest::group)
-                .in("Activities").because("Mine.");
+                .in(TestValue.Holder.ACTIVITIES).because("Mine.");
 
         assertEquals(new Named("Collect.WON"), set.byName("Collect", "WON"));
         assertNull(set.byName("Collect", " "), "a name the plugin refuses reads as nothing");
@@ -361,7 +364,7 @@ class ManagedValuesTest {
                 .fields(Cell.class, ManagedValuesTest::cell)
                 .setup(Sheet::setup)
                 .referredToAs(ManagedValuesTest::sheet)
-                .in("Sheets").because("Mine.");
+                .in(TestValue.Holder.SHEETS).because("Mine.");
 
         assertEquals(Cell.class, set.fieldType());
         assertEquals(new Cell("MARKET", "beerBuy"), set.byField("MARKET", "beerBuy"));
@@ -425,7 +428,7 @@ class ManagedValuesTest {
     @Test
     void anIdIsTheEnumsBinaryNameAndTheConstant() {
         ManagedValue<String> greeting = text(TestValue.Id.GREETING);
-        ManagedValue<String> set = ManagedValue.openSet(TestValue.Id.SET).of(String.class).in("Set")
+        ManagedValue<String> set = ManagedValue.openSet(TestValue.Id.SET).of(String.class).in(TestValue.Holder.SET)
                 .because("Mine.");
 
         String ids = TestValue.Id.class.getName();
@@ -447,14 +450,14 @@ class ManagedValuesTest {
         assertEquals(List.of("greeting=hello"), taken);
     }
 
-    enum Loose { FLOW }
+    enum Loose implements ManagedId<TestValue.Holder> { FLOW }
 
     @Retention(RetentionPolicy.RUNTIME)
     @interface Unmarked {
 
         Id value();
 
-        enum Id { FLOW }
+        enum Id implements ManagedId<TestValue.Holder> { FLOW }
     }
 
     @ManagedMarker
@@ -463,7 +466,7 @@ class ManagedValuesTest {
 
         String value();
 
-        enum Id { FLOW }
+        enum Id implements ManagedId<TestValue.Holder> { FLOW }
     }
 
     /** Class retention, the default: declared fine, and a bot's runtime would never see it. */
@@ -472,7 +475,7 @@ class ManagedValuesTest {
 
         Id value();
 
-        enum Id { FLOW }
+        enum Id implements ManagedId<TestValue.Holder> { FLOW }
     }
 
     @ManagedMarker
@@ -482,7 +485,7 @@ class ManagedValuesTest {
 
         Id value();
 
-        enum Id { PICTURES }
+        enum Id implements ManagedId<TestValue.Holder> { PICTURES }
     }
 
     @Test
@@ -503,7 +506,7 @@ class ManagedValuesTest {
 
         Id value();
 
-        enum Id { SKIP, DO_SETUP }
+        enum Id implements ManagedId<TestValue.Holder> { SKIP, DO_SETUP }
     }
 
     public static java.util.Set<Class<? extends Number>> skip() {
@@ -516,7 +519,7 @@ class ManagedValuesTest {
 
     @Test
     void aParameterIsTypedByItsMethodAndStartsAsWhatItReturns() {
-        ManagedParam<java.util.Set<Class<? extends Number>>> skip = ManagedValue.param(Fields.Id.SKIP).in("Sdk")
+        ManagedParam<java.util.Set<Class<? extends Number>>> skip = ManagedValue.param(Fields.Id.SKIP).in(TestValue.Holder.SDK)
                 .startsAs(ManagedValuesTest::skip).shown("Run", "What to skip", (Param.Visibility) null)
                 .because("Mine.");
         assertEquals(java.util.Set.class, skip.type());
@@ -526,7 +529,7 @@ class ManagedValuesTest {
         assertEquals("What to skip", skip.description());
         assertEquals(Param.Visibility.EDITOR, skip.visibility());
 
-        ManagedParam<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
+        ManagedParam<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in(TestValue.Holder.SDK)
                 .startsAs(ManagedValuesTest::doSetup).shown(null, null, Param.Visibility.PUBLIC)
                 .because("Mine.");
         assertEquals(Boolean.class, doSetup.type());
@@ -535,22 +538,48 @@ class ManagedValuesTest {
         assertEquals("", doSetup.category());
     }
 
-    /** The host places the holder and writes its name, so a qualified or unwritable one is refused at once. */
+    /** A holder constant names its class by its parts, and one class is one file, so any other spelling is refused. */
     @Test
-    void aHolderIsASimpleClassName() {
-        assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(Fields.Id.DO_SETUP).in("com.bot.Sdk"));
-        assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(Fields.Id.DO_SETUP).in("My Sdk"));
-        assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(Fields.Id.DO_SETUP).in("1Sdk"));
-        assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(Fields.Id.DO_SETUP).in(" "));
-        ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk_2");
+    void aHolderIsAnUpperSnakeConstantNamingOneClass() {
+        assertEquals("FlowLayout", ManagedValue.method(TestValue.Id.FLOW).in(TestValue.Holder.FLOW_LAYOUT)
+                .holds(String.class, "").because("Mine.").holder());
+        assertEquals("Sdk", ManagedValue.method(TestValue.Id.FLOW).in(TestValue.Holder.SDK)
+                .holds(String.class, "").because("Mine.").holder());
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.method(Spelled.Id.FLOW)
+                .in(Spelled.Holder.SDK), "the whole enum is checked, so FlowLayout refuses SDK too");
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.method(Clashing.Id.FLOW)
+                .in(Clashing.Holder.FLOW_LAYOUT), "FlowLayout and Flowlayout differ only by case");
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.method(TestValue.Id.FLOW).in(null));
+    }
+
+    @ManagedMarker
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface Spelled {
+
+        Id value();
+
+        enum Id implements ManagedId<Holder> { FLOW }
+
+        enum Holder { SDK, FlowLayout }
+    }
+
+    @ManagedMarker
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface Clashing {
+
+        Id value();
+
+        enum Id implements ManagedId<Holder> { FLOW }
+
+        enum Holder { FLOW_LAYOUT, FLOWLAYOUT }
     }
 
     /** A parameter declared only while the bot's other value says so, read through the host's scope. */
     @Test
     void aConditionalParameterAppliesOnlyWhileItsConditionHolds() {
-        ManagedParam<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
+        ManagedParam<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in(TestValue.Holder.SDK)
                 .startsAs(ManagedValuesTest::doSetup).shown("", "", Param.Visibility.EDITOR).because("Mine.");
-        ManagedParam<java.util.Set<Class<? extends Number>>> skip = ManagedValue.param(Fields.Id.SKIP).in("Sdk")
+        ManagedParam<java.util.Set<Class<? extends Number>>> skip = ManagedValue.param(Fields.Id.SKIP).in(TestValue.Holder.SDK)
                 .startsAs(ManagedValuesTest::skip).shown("Run", "What to skip", Param.Visibility.EDITOR)
                 .when(scope -> scope.value(doSetup).orElse(false))
                 .because("Mine.");
@@ -567,7 +596,7 @@ class ManagedValuesTest {
         assertFalse(skip.appliesIn(null), "no scope reads as an empty one");
         assertTrue(doSetup.appliesIn(ParamScope.NONE), "an unconditional parameter always applies");
 
-        ManagedParam<Boolean> throwing = ManagedValue.param(Fields.Id.DO_SETUP).in("Sdk")
+        ManagedParam<Boolean> throwing = ManagedValue.param(Fields.Id.DO_SETUP).in(TestValue.Holder.SDK)
                 .startsAs(ManagedValuesTest::doSetup).shown("", "", Param.Visibility.EDITOR)
                 .when(scope -> { throw new IllegalStateException("broken"); }).because("Mine.");
         assertTrue(throwing.appliesIn(ParamScope.NONE), "a condition that throws holds");
@@ -590,7 +619,7 @@ class ManagedValuesTest {
 
         Id value();
 
-        enum Id { FLOW }
+        enum Id implements ManagedId<TestValue.Holder> { FLOW }
     }
 
     /** A parameter is a method of its group (2026-11-04), so its marker must be one a method may carry. */
@@ -598,7 +627,7 @@ class ManagedValuesTest {
     void aParameterNeedsAMarkerMethodsMayCarry() {
         assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(FieldsOnly.Id.FLOW));
         ManagedValue.param(TestValue.Id.FLOW);
-        assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(Fields.Id.SKIP).in("Sdk")
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.param(Fields.Id.SKIP).in(TestValue.Holder.SDK)
                 .startsAs(() -> java.util.Set.<Class<? extends Number>>of()));
     }
 

@@ -1,6 +1,7 @@
 package com.botmaker.plugin.api.source;
 
 import com.botmaker.plugin.api.StudioServices;
+import com.botmaker.plugin.api.managed.ManagedId;
 import com.botmaker.plugin.api.managed.ManagedMarker;
 import com.botmaker.plugin.api.slot.TypeRef;
 import com.botmaker.plugin.api.slot.ValueContext;
@@ -33,11 +34,13 @@ class PluginValuesTest {
 
         Id value();
 
-        enum Id { NAMES }
+        enum Id implements ManagedId<Holder> { NAMES }
+
+        enum Holder { NAMES }
     }
 
     private static final ManagedValue<String> NAMES =
-            ManagedValue.openSet(Mark.Id.NAMES).of(String.class).in("Names").because("Mine.");
+            ManagedValue.openSet(Mark.Id.NAMES).of(String.class).in(Mark.Holder.NAMES).because("Mine.");
 
     @Test
     void aMemberIsSpelledAsItsEnumAndNameAndParsedBack() {

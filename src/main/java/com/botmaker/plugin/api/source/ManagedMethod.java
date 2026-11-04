@@ -29,8 +29,12 @@ public final class ManagedMethod<T> extends ManagedValue<T> {
         return initial;
     }
 
-    /** After {@link ManagedValue#method}: where the value lives. */
-    public static final class Steps {
+    /**
+     * After {@link ManagedValue#method}: where the value lives.
+     *
+     * @param <H> the holder enum the id enum names
+     */
+    public static final class Steps<H extends Enum<H>> {
 
         private final Key key;
 
@@ -39,12 +43,14 @@ public final class ManagedMethod<T> extends ManagedValue<T> {
         }
 
         /**
-         * In the class {@code holder} — {@code "Sdk"} — which the host writes when a project has none.
+         * In the class {@code holder} stands for — {@code SdkValue.Holder.SDK}, the class {@code Sdk} — which the host
+         * writes when a project has none.
          *
-         * @throws IllegalArgumentException when {@code holder} is not a class's simple name
+         * @throws IllegalArgumentException when a constant of {@code holder}'s enum is not UPPER_SNAKE, or two name
+         *                                  classes that differ only by case
          */
-        public TypeStep in(String holder) {
-            return new TypeStep(key, requireHolder(key, holder));
+        public TypeStep in(H holder) {
+            return new TypeStep(key, holderName(key, holder));
         }
 
         /** Somewhere the host may open and never create: {@code .openedOnly().holds(T.class)}. */
