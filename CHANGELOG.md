@@ -17,6 +17,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
+### Added
+
+- `@Param.Kept(at)` (2026-11-04), compatible: when a run last wrote a during-a-run parameter's value, on its method in
+  `params`. A host's fit keeps it with the value; it never reaches a starting copy.
+
 ### Changed
 
 - **`ManagedValue.param` needs a marker methods may carry** (2026-11-04): a plugin's parameter is a method of its

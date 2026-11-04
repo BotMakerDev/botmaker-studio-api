@@ -127,6 +127,21 @@ public @interface Param {
     }
 
     /**
+     * When a run last wrote this during-a-run parameter's value (2026-11-04): only a run writes it, on the method in
+     * the bot's {@code params} package, never by hand and never in the starting copy. It belongs to the value, so a
+     * host's fit keeps it with the value and setting the value back to its starting one takes it away. A plugin reads
+     * it to tell how old a value is.
+     */
+    @Documented
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.METHOD)
+    @interface Kept {
+
+        /** The time, as {@link java.time.Instant#toString()} spells it. */
+        String at();
+    }
+
+    /**
      * When a parameter changes (2026-11-04): it is never "set by the user or by the code", but edited outside a run
      * or written during one.
      *
@@ -140,7 +155,7 @@ public @interface Param {
         /** Edited outside a run, in the Parameters window; the bot only reads it. */
         OUTSIDE_RUN("outside-run", "Outside a run"),
 
-        /** Written by the bot during a run (a game fact, the account last read); read-only in the window. */
+        /** Written by the bot during a run (a game fact); read-only in the window. */
         DURING_RUN("during-run", "During a run");
 
         private final String id;
