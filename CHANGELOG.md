@@ -19,11 +19,14 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
-- **`@Param` on an interface: a schema** (2026-11-04). Each `default` method of an interface marked `@Param` is one
-  machine-scope parameter, its body the author's value; this machine's values are a class implementing it in the
-  bot's `values` package, never committed. `@Param.Shown` (on a method) gives its category, description and
-  visibility, else the interface's own. `@Param` on a field still works and is deprecated for removal: Studio's
-  upgrade will turn such fields into a schema.
+- **`@Param` on a class: a parameter group** (2026-11-04). Each no-argument instance method of a class marked
+  `@Param` in the bot's `params` package is one parameter, whole — name, type, and this computer's value as its
+  body; the package is never committed, and `starting-params/` holds the author's starting values. `@Param.Shown`
+  (on a method) gives its category and description, else the class's own, and `changes()`: `Param.Changes`
+  `OUTSIDE_RUN` (the Parameters window edits it, the default) or `DURING_RUN` (the bot writes it).
+  `Param.Visibility`, `Param.EDITOR`/`PUBLIC` and both `visibility()` members are deprecated for removal: a value
+  only the author sets is the bot's data, not a parameter. `@Param` on a field still works and is deprecated for
+  removal: Studio's upgrade will turn such fields into a group.
 
 - **`PluginState` and `StudioServices.stateDir()`**: a plugin keeps what this machine learned about a bot in its
   own folder of it, `<bot>/.botmaker/plugins/<group>/<artifact>/`. `PluginState.folder(botDir, groupId,
