@@ -56,8 +56,8 @@ public interface StudioServices {
      * Whether a user interface is attached to this host now, so a window or dialog a plugin opens is seen by
      * someone.
      *
-     * <p>False in a host with no screen: a core serving a bot to the terminal or to an assistant, with no Studio
-     * attached. There {@link #dialogs()} answers {@link Dialogs#NONE} (every chooser cancelled, no dialog shown) and
+     * <p>False in a host with no screen: the core, which hosts a project's plugins beside Studio's copy of them and
+     * shows nothing itself, or serves a bot to the terminal or to an assistant. There {@link #dialogs()} answers {@link Dialogs#NONE} (every chooser cancelled, no dialog shown) and
      * {@link #theme()} {@link Theme#PLAIN}, rather than throwing, so a plugin that asks for a chooser without checking
      * gets the cancel case it already handles. A window the plugin builds itself still needs JavaFX running, which
      * such a host may not have. A plugin with something to show checks this first and says it in its

@@ -23,6 +23,8 @@ is allowed to make. Additions arrive as `default` methods.
   the core serving a bot with no Studio. There `dialogs()` is the new `Dialogs.NONE` (every chooser cancelled, no
   dialog shown) and `theme()` the new `Theme.PLAIN` (nothing applied), so a window request is answered, never thrown.
   Compatible.
+- The javadoc of `PluginDeclaration.onProjectOpened` and `StudioServices.hasUi()` says that an open step runs once in
+  each host process (Studio and the headless core). A step that asks the user something checks `hasUi()` first.
 
 ### Documented
 

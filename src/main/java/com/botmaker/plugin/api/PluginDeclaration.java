@@ -279,6 +279,10 @@ public final class PluginDeclaration {
      * What to do when a project is bound to this plugin, by method reference:
      * {@code .onProjectOpened(MySession::open)}, a {@code static void open(StudioServices)} —
      * {@link StudioPlugin#projectOpened}. Do nothing expensive there; the user is waiting on the project.
+     *
+     * <p>It runs once in each host process that loads the plugin for the project: Studio and the headless core both
+     * do, so a step that asks the user something, or starts something on the user's machine, checks
+     * {@link StudioServices#hasUi()} first and does it only where that is true.
      */
     public PluginDeclaration onProjectOpened(Consumer<StudioServices> opened) {
         Consumer<StudioServices> told = Objects.requireNonNull(opened, "onProjectOpened");
