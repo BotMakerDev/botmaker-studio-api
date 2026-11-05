@@ -17,6 +17,13 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
+### Added
+
+- **`StudioServices.hasUi()`** (2026-11-05), `default` true: false in a host with no user interface attached, such as
+  the core serving a bot with no Studio. There `dialogs()` is the new `Dialogs.NONE` (every chooser cancelled, no
+  dialog shown) and `theme()` the new `Theme.PLAIN` (nothing applied), so a window request is answered, never thrown.
+  Compatible.
+
 ### Documented
 
 - `CallSteps` says how a chain through another class is declared (2026-11-04): `writtenAs(When::atLeast,

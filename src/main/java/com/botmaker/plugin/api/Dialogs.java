@@ -17,6 +17,35 @@ import java.util.Optional;
 public interface Dialogs {
 
     /**
+     * The choosers of a host with no user interface ({@link StudioServices#hasUi()} false): no owner window, and
+     * every chooser cancelled with no dialog shown, which is the cancel case a plugin already handles. Its
+     * {@link Choice#nativeDialogShown()} is false because no dialog of any kind appeared, not because a JavaFX fallback
+     * did: a plugin that would open a chooser of its own on false checks {@link StudioServices#hasUi()} first. Added
+     * after 0.14.0, compatibly.
+     */
+    Dialogs NONE = new Dialogs() {
+        @Override
+        public Optional<Window> ownerWindow() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Choice chooseProgram(Path initialDir) {
+            return Choice.cancelled(false);
+        }
+
+        @Override
+        public Choice chooseFile(String title, Path initialDir, String... extensions) {
+            return Choice.cancelled(false);
+        }
+
+        @Override
+        public Choice chooseDirectory(String title, Path initialDir) {
+            return Choice.cancelled(false);
+        }
+    };
+
+    /**
      * What a chooser returned.
      *
      * @param nativeDialogShown whether the platform's own dialog was used, rather than the JavaFX fallback

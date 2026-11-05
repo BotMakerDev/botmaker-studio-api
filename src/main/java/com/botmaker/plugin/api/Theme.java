@@ -18,6 +18,36 @@ import javafx.stage.Stage;
  */
 public interface Theme {
 
+    /**
+     * The look of a host with no user interface ({@link StudioServices#hasUi()} false): nothing is applied, and a
+     * scene or alert asked for is JavaFX's own, unstyled. Nobody would see a style there; a plugin checks
+     * {@code hasUi()} before it builds a window at all, since building one needs JavaFX running, which a host without
+     * a UI may not have (an {@code Alert} then fails as JavaFX fails). Added after 0.14.0, compatibly.
+     */
+    Theme PLAIN = new Theme() {
+        @Override public void apply(Scene scene) { }
+
+        @Override public void apply(Stage stage) { }
+
+        @Override public void apply(Dialog<?> dialog) { }
+
+        @Override public void apply(DialogPane pane) { }
+
+        @Override public Scene scene(Parent root) { return new Scene(root); }
+
+        @Override public Scene scene(Parent root, double width, double height) {
+            return new Scene(root, width, height);
+        }
+
+        @Override public Alert alert(Alert.AlertType type) { return new Alert(type); }
+
+        @Override public Alert alert(Alert.AlertType type, String message, ButtonType... buttons) {
+            return new Alert(type, message, buttons);
+        }
+
+        @Override public void applyThemeClass(Parent root) { }
+    };
+
     /** Applies the current look to a scene. */
     void apply(Scene scene);
 

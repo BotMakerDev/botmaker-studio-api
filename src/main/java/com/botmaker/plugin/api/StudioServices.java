@@ -52,10 +52,31 @@ public interface StudioServices {
         return Optional.empty();
     }
 
-    /** Applying the host's current look to a window, dialog or scene a plugin creates. */
+    /**
+     * Whether a user interface is attached to this host now, so a window or dialog a plugin opens is seen by
+     * someone.
+     *
+     * <p>False in a host with no screen: a core serving a bot to the terminal or to an assistant, with no Studio
+     * attached. There {@link #dialogs()} answers {@link Dialogs#NONE} (every chooser cancelled, no dialog shown) and
+     * {@link #theme()} {@link Theme#PLAIN}, rather than throwing, so a plugin that asks for a chooser without checking
+     * gets the cancel case it already handles. A window the plugin builds itself still needs JavaFX running, which
+     * such a host may not have. A plugin with something to show checks this first and says it in its
+     * {@link #log()} or {@link #status} instead.
+     *
+     * <p>{@code default} true, added after 0.14.0 so the contract stays compatible: every host before it had a user
+     * interface.
+     */
+    default boolean hasUi() {
+        return true;
+    }
+
+    /** Applying the host's current look to a window, dialog or scene a plugin creates; {@link Theme#PLAIN} without a UI. */
     Theme theme();
 
-    /** Native file and directory choosers, and the window a plugin's own dialog should be owned by. */
+    /**
+     * Native file and directory choosers, and the window a plugin's own dialog should be owned by; {@link Dialogs#NONE}
+     * without a UI ({@link #hasUi()}).
+     */
     Dialogs dialogs();
 
     /**

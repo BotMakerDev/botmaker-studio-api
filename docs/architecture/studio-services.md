@@ -61,3 +61,8 @@ plugin says which constant. `PluginValues.Use` is host-constructed only.
 methods returning a grouped set's nested enum, or `void` when both are null, as `Class::method`, and write a
 new one — the host is the only one that reads a method's return type off the bot. The SDK's *Runs* and *Home*
 pickers in the Activity Flow are built on them.
+
+**`hasUi()`** (2026-11-05) says whether a user interface is attached, so a window a plugin opens is seen. A core
+serving a bot with no Studio answers false, and there `dialogs()` is `Dialogs.NONE` and `theme()` `Theme.PLAIN`: a
+window request is answered as the cancel case, never thrown. Only the host knows whether a screen is attached, so it is
+a capability. It is `default` true, since every host before it had one.
