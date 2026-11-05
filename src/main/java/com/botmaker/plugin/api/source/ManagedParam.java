@@ -21,18 +21,15 @@ public final class ManagedParam<T> extends ManagedValue<T> {
 
     private final Type form;
     private final T initial;
-    private final String category;
     private final String description;
     private final Param.Visibility visibility;
     private final Predicate<? super ParamScope> applies;
 
-    private ManagedParam(Key key, String holder, Class<T> type, Type form, T initial, String category,
-                         String description, Param.Visibility visibility, Predicate<? super ParamScope> applies,
-                         String reason) {
+    private ManagedParam(Key key, String holder, Class<T> type, Type form, T initial, String description,
+                         Param.Visibility visibility, Predicate<? super ParamScope> applies, String reason) {
         super(key, holder, type, reason);
         this.form = form;
         this.initial = initial;
-        this.category = category;
         this.description = description;
         this.visibility = visibility;
         this.applies = applies;
@@ -49,11 +46,6 @@ public final class ManagedParam<T> extends ManagedValue<T> {
     /** What the field is first set to; null is written as {@code null}. */
     public T initial() {
         return initial;
-    }
-
-    /** Its {@code @Param(category)}: the heading the Parameters window lists it under. */
-    public String category() {
-        return category;
     }
 
     /** Its {@code @Param(description)}: the line beside it. */
@@ -151,13 +143,15 @@ public final class ManagedParam<T> extends ManagedValue<T> {
         }
 
         /**
-         * The heading it is listed under, the line beside it, and who sees it — {@link Param.Visibility#PUBLIC} for
-         * the Runner too, {@link Param.Visibility#EDITOR} for the Parameters window only; {@code null} reads as the
-         * latter.
+         * The line beside it, and who sees it — {@link Param.Visibility#PUBLIC} for the Runner too,
+         * {@link Param.Visibility#EDITOR} for the Parameters window only; {@code null} reads as the latter.
+         *
+         * <p>No heading (2026-11-05): the Parameters window lists the parameter under its group, the class
+         * {@link Steps#in} names, so a plugin that wants two headings declares two holders.
          */
-        public ConditionStep<T> shown(String category, String description, Param.Visibility visibility) {
+        public ConditionStep<T> shown(String description, Param.Visibility visibility) {
             return new ConditionStep<>(new ManagedParam<>(key, holder, type, form, initial,
-                    category == null ? "" : category, description == null ? "" : description,
+                    description == null ? "" : description,
                     visibility == null ? Param.Visibility.EDITOR : visibility, null, null));
         }
     }
@@ -199,7 +193,6 @@ public final class ManagedParam<T> extends ManagedValue<T> {
     }
 
     private ManagedParam<T> with(Predicate<? super ParamScope> applies, String reason) {
-        return new ManagedParam<>(key(), holder(), type(), form, initial, category, description, visibility,
-                applies, reason);
+        return new ManagedParam<>(key(), holder(), type(), form, initial, description, visibility, applies, reason);
     }
 }

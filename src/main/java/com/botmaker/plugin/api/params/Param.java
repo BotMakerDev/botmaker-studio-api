@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
  * computer's value. The bot reads a parameter by calling its method.
  *
  * <pre>{@code
- * @Param(category = "Run choices")
+ * @Param
  * public class RunChoices {
  *     @Param.Shown(description = "How long to rest between attempts")
  *     public Duration restBetween() { return Duration.ofMinutes(1); }
@@ -30,6 +30,10 @@ import java.lang.annotation.Target;
  * starting values are the same files under the bot's {@code starting-params/} folder, which is committed; a host fits
  * {@code params} to it (a parameter the starting copy lacks is dropped, one it retyped is reset, one it adds is
  * added), so a fresh copy of a bot runs at once and a stale value never stops a build.
+ *
+ * <p><b>The group is the category</b> (2026-11-05): the Parameters window lists a parameter under the class that
+ * holds it, {@code RunChoices} above, and there is no other heading. A free-text {@code category} member was removed;
+ * Studio's upgrade strips it from a bot.
  *
  * <p>Each parameter changes either outside a run (the Parameters window edits it, the bot only reads it) or during
  * a run (the bot writes it, the window shows it read-only): {@link Shown#changes()}.
@@ -94,7 +98,7 @@ public @interface Param {
 
     /**
      * How one method of a {@code @Param} group is shown, and when it changes. Each text member left at its default
-     * takes the group's own ({@code @Param(category = "Limits")} on the class).
+     * takes the group's own ({@code @Param(description = "…")} on the class).
      *
      * <p>A second annotation rather than {@code @Param} on the method: {@code @Param} on a type says what the type
      * <em>is</em>, and a method of it is a parameter by being there, marked or not.
@@ -103,9 +107,6 @@ public @interface Param {
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.METHOD)
     @interface Shown {
-
-        /** As {@link Param#category()}; {@code ""} takes the group's. */
-        String category() default "";
 
         /** As {@link Param#description()}; {@code ""} says nothing. */
         String description() default "";
@@ -243,14 +244,6 @@ public @interface Param {
             return PUBLIC.id.equals(id) ? PUBLIC : EDITOR;
         }
     }
-
-    /**
-     * The rail heading this parameter appears under, free text, {@code ""} for the section's default group.
-     *
-     * <p>Free text and not an enumeration: the contract grows capabilities, never vocabularies. The window lists the
-     * distinct strings it finds.
-     */
-    String category() default "";
 
     /** One line under the parameter's name in the window. Its javadoc is not read; say it here. */
     String description() default "";

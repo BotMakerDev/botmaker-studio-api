@@ -33,6 +33,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Changed (breaking)
 
+- **A parameter's category is its group class** (2026-11-05). `Param.category()` and `Param.Shown.category()` are
+  removed, and `ManagedParam`'s `shown` step takes only the line under the parameter and its visibility:
+  `.shown("Who the bot greets first", Param.Visibility.PUBLIC)`. The Parameters window lists a parameter under the
+  class that holds it, the class `.in(…)` names, so a plugin that wants two headings declares two holders. Studio's
+  upgrade strips `category = …` from a bot.
 - **A holder is a constant of the marker's `Holder` enum** (2026-11-04). The marker's id enum names it, `enum Id
   implements ManagedId<Holder>`, and `ManagedValue.method`, `param` and `openSet` return steps whose `.in` takes
   only that `Holder`: `in(String)` is gone, and `.in(Other.X)` does not compile. A constant is UPPER_SNAKE and

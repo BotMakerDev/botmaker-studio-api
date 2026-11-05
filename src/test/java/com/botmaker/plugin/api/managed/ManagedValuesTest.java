@@ -247,7 +247,7 @@ class ManagedValuesTest {
     void eachShapeIsItsOwnType() {
         ManagedMethod<String> method = text(TestValue.Id.GREETING);
         ManagedParam<Boolean> param = ManagedValue.param(Fields.Id.DO_SETUP).in(TestValue.Holder.SDK)
-                .startsAs(ManagedValuesTest::doSetup).shown("", "", Param.Visibility.EDITOR).because("Mine.");
+                .startsAs(ManagedValuesTest::doSetup).shown("",Param.Visibility.EDITOR).because("Mine.");
         ManagedOpenSet.OfConstants<String> constants = ManagedValue.openSet(TestValue.Id.SET).of(String.class)
                 .in(TestValue.Holder.SET).because("Mine.");
         ManagedOpenSet.OneEnum<Label> anEnum = ManagedValue.openSet(TestValue.Id.ENUM_SET)
@@ -520,22 +520,21 @@ class ManagedValuesTest {
     @Test
     void aParameterIsTypedByItsMethodAndStartsAsWhatItReturns() {
         ManagedParam<java.util.Set<Class<? extends Number>>> skip = ManagedValue.param(Fields.Id.SKIP).in(TestValue.Holder.SDK)
-                .startsAs(ManagedValuesTest::skip).shown("Run", "What to skip", (Param.Visibility) null)
+                .startsAs(ManagedValuesTest::skip).shown("What to skip",(Param.Visibility) null)
                 .because("Mine.");
         assertEquals(java.util.Set.class, skip.type());
         assertEquals("java.util.Set<java.lang.Class<? extends java.lang.Number>>", skip.form().getTypeName());
         assertEquals(java.util.Set.of(Integer.class), skip.initial());
-        assertEquals("Run", skip.category());
         assertEquals("What to skip", skip.description());
         assertEquals(Param.Visibility.EDITOR, skip.visibility());
 
         ManagedParam<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in(TestValue.Holder.SDK)
-                .startsAs(ManagedValuesTest::doSetup).shown(null, null, Param.Visibility.PUBLIC)
+                .startsAs(ManagedValuesTest::doSetup).shown(null, Param.Visibility.PUBLIC)
                 .because("Mine.");
         assertEquals(Boolean.class, doSetup.type());
         assertEquals(boolean.class, doSetup.form());
         assertEquals(Param.Visibility.PUBLIC, doSetup.visibility());
-        assertEquals("", doSetup.category());
+        assertEquals("", doSetup.description(), "no line reads as none");
     }
 
     /** A holder constant names its class by its parts, and one class is one file, so any other spelling is refused. */
@@ -578,9 +577,9 @@ class ManagedValuesTest {
     @Test
     void aConditionalParameterAppliesOnlyWhileItsConditionHolds() {
         ManagedParam<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in(TestValue.Holder.SDK)
-                .startsAs(ManagedValuesTest::doSetup).shown("", "", Param.Visibility.EDITOR).because("Mine.");
+                .startsAs(ManagedValuesTest::doSetup).shown("",Param.Visibility.EDITOR).because("Mine.");
         ManagedParam<java.util.Set<Class<? extends Number>>> skip = ManagedValue.param(Fields.Id.SKIP).in(TestValue.Holder.SDK)
-                .startsAs(ManagedValuesTest::skip).shown("Run", "What to skip", Param.Visibility.EDITOR)
+                .startsAs(ManagedValuesTest::skip).shown("What to skip",Param.Visibility.EDITOR)
                 .when(scope -> scope.value(doSetup).orElse(false))
                 .because("Mine.");
         ParamScope settingUp = new ParamScope() {
@@ -597,7 +596,7 @@ class ManagedValuesTest {
         assertTrue(doSetup.appliesIn(ParamScope.NONE), "an unconditional parameter always applies");
 
         ManagedParam<Boolean> throwing = ManagedValue.param(Fields.Id.DO_SETUP).in(TestValue.Holder.SDK)
-                .startsAs(ManagedValuesTest::doSetup).shown("", "", Param.Visibility.EDITOR)
+                .startsAs(ManagedValuesTest::doSetup).shown("",Param.Visibility.EDITOR)
                 .when(scope -> { throw new IllegalStateException("broken"); }).because("Mine.");
         assertTrue(throwing.appliesIn(ParamScope.NONE), "a condition that throws holds");
         // Only a parameter has a condition: a method value's steps offer no when.
