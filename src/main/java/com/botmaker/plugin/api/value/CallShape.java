@@ -18,6 +18,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -150,12 +151,16 @@ record CallShape<T>(Class<T> type, Executable factory, List<Class<?>> parts,
                         + type.getSimpleName() + ", so a bot's chain keeps its type");
             }
             boolean flag = method.getParameterCount() == 0;
+            // A varargs link, .serves(Goal...), is read by a list of its elements, or by the array it takes.
             Read<T> reader = flag ? reader(type, "is" + capital(method.getName()), boolean.class)
+                    : method.isVarArgs() ? Optional.ofNullable(method(type, method.getName(), List.class))
+                    .orElseGet(() -> method(type, method.getName(), method.getParameterTypes()[0]))
                     : reader(type, method.getName(), method.getParameterTypes()[0]);
             if (reader == null) {
                 throw new IllegalArgumentException(what + " is marked @Link but " + type.getName() + " has no public "
                         + (flag ? "boolean is" + capital(method.getName()) + "()"
-                        : method.getName() + "() answering a " + method.getParameterTypes()[0].getName())
+                        : method.getName() + "() answering a " + (method.isVarArgs() ? "List or "
+                        + method.getParameterTypes()[0].getName() : method.getParameterTypes()[0].getName()))
                         + " to read its part by: rename the reader, or declare the link with .with/.flag");
             }
             if (readByFactory.contains(reader.name())) continue;

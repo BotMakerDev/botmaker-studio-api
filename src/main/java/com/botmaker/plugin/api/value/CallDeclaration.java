@@ -59,6 +59,22 @@ abstract sealed class CallDeclaration<T, S extends CallDeclaration<T, S>> implem
     }
 
     /**
+     * {@link #with(Ref.Of2, Function)} for a varargs link, {@code .needs(Goal...)}: its part is the list {@code part}
+     * reads, written with an argument per element and not at all when empty ({@link Wither#spread()}). For a link
+     * whose reader is named otherwise than the method, as an overload's must be: {@code
+     * .withEach(Do::needs, Do::goalNeeds)}.
+     *
+     * @param wither an instance method of the type taking a varargs tail and answering the changed value
+     * @param part   the elements a value holds for it
+     * @throws IllegalArgumentException as for {@link #with(Ref.Of2, Function)}, and for a method that is not varargs
+     */
+    public <A> S withEach(Ref.Of2<T, A[], T> wither, Function<? super T, ? extends List<A>> part) {
+        Wither<T> each = Wither.with(shape.type(), wither, part);
+        if (!each.spread()) throw new IllegalArgumentException(each + " is not varargs: declare it with .with");
+        return next(shape.withWither(each));
+    }
+
+    /**
      * {@link #with(Ref.Of2, Function)} for a link whose part the host holds as something nothing turns into its
      * parameter, so the value is set by {@code apply} rather than by calling the method: a class literal of a
      * managed enum, which crosses as the plugin's value of that enum ({@code .whenOff(Collect.class)}). The host

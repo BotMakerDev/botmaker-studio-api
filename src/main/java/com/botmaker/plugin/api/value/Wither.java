@@ -1,9 +1,12 @@
 package com.botmaker.plugin.api.value;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Executable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -30,6 +33,10 @@ import java.util.function.Predicate;
  *       on and the factory's value has it off, so <b>a setting that is on by default gets a negative name</b>
  *       ({@code .off()}, {@code .staysPut()}): a flag cannot be written to turn something off.</li>
  * </ul>
+ *
+ * <p><b>A varargs with is one list part</b> ({@link #spread()}, 2026-11-06): {@code .serves(Goals.GOLD, Goals.XP)}
+ * sets a {@code List} of its {@link #elementType()}, read by an accessor answering that list (or the array), and is
+ * written with each element an argument of its own. An empty list is written as no link.
  *
  * <p><b>Its part is one of the call's components.</b> A declaration with withers takes a value apart into the
  * factory's parts followed by one part per wither, in declaration order — a flag's is a {@code Boolean} — and
@@ -123,7 +130,7 @@ public final class Wither<T> {
             throw new IllegalArgumentException(name + " returns " + method.getReturnType().getName() + ", not a "
                     + type.getName() + "; a wither answers the changed value");
         }
-        if (method.getParameterCount() != arguments || method.isVarArgs()) {
+        if (method.getParameterCount() != arguments) {
             throw new IllegalArgumentException(name + " takes " + method.getParameterCount() + " arguments, where "
                     + (arguments == 0 ? "a flag takes none" : "a wither takes the one part it sets"));
         }
@@ -140,14 +147,32 @@ public final class Wither<T> {
         return flag;
     }
 
-    /** The class of the part this link sets: its parameter's, or {@code boolean} for a flag. */
+    /** The class of the part this link sets: its parameter's, {@code boolean} for a flag, {@code List} when spread. */
     public Class<?> partType() {
-        return flag ? boolean.class : method.getParameterTypes()[0];
+        if (flag) return boolean.class;
+        return spread() ? List.class : method.getParameterTypes()[0];
     }
 
-    /** The part {@code value} holds for this link; a flag's is a {@code Boolean}. */
+    /**
+     * Whether this link takes a varargs tail, {@code .serves(Goal...)}: its part is a {@code List} of
+     * {@link #elementType()}, written as one argument per element.
+     */
+    public boolean spread() {
+        return !flag && method.isVarArgs();
+    }
+
+    /** The class of each element of a {@link #spread()} link's part; {@code null} for any other link. */
+    public Class<?> elementType() {
+        return spread() ? method.getParameterTypes()[0].getComponentType() : null;
+    }
+
+    /** The part {@code value} holds for this link; a flag's is a {@code Boolean}, a spread one's a {@code List}. */
     public Object part(T value) {
-        return Held.taken(part, value);
+        Object taken = Held.taken(part, value);
+        if (!spread() || taken == null || !taken.getClass().isArray()) return taken;
+        List<Object> out = new ArrayList<>();
+        for (int i = 0; i < Array.getLength(taken); i++) out.add(Array.get(taken, i));
+        return List.copyOf(out);
     }
 
     /**
@@ -165,6 +190,16 @@ public final class Wither<T> {
                 changed = method.invoke(value);
             } else if (setter != null) {
                 changed = setter.apply(value, part);
+            } else if (spread()) {
+                Object handed = Held.handed(this.part, part);
+                if (!(handed instanceof List<?> elements)) return null;
+                Object array = Array.newInstance(elementType(), elements.size());
+                for (int i = 0; i < elements.size(); i++) {
+                    Object element = CallShape.coerce(elements.get(i), elementType());
+                    if (element == CallShape.REFUSED) return null;
+                    Array.set(array, i, element);
+                }
+                changed = method.invoke(value, array);
             } else {
                 Object handed = Held.handed(this.part, part);
                 if (handed == CallShape.REFUSED) return null;

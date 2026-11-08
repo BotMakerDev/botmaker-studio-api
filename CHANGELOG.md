@@ -19,6 +19,10 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **A varargs `@Link` is one list part** (2026-11-06): `.serves(A, B)` reads and writes as one part holding every
+  argument, its wither taking the array and its accessor giving a `List` or an array. `CallDeclaration.withEach` declares
+  one for a JDK type or an odd name, as `.with` does for a single value; it refuses a wither that is not varargs.
+
 - **`StudioServices.hasUi()`** (2026-11-05), `default` true: false in a host with no user interface attached, such as
   the core serving a bot with no Studio. There `dialogs()` is the new `Dialogs.NONE` (every chooser cancelled, no
   dialog shown) and `theme()` the new `Theme.PLAIN` (nothing applied), so a window request is answered, never thrown.

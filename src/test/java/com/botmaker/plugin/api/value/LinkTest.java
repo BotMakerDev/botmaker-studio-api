@@ -2,6 +2,7 @@ package com.botmaker.plugin.api.value;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,6 +57,34 @@ class LinkTest {
     }
 
     private static final DeclaredCall<Pad> PAD = ComponentType.part(Pad.class).writtenAs(Pad::of);
+
+    /** A varargs link, read by the list it adds to. */
+    public record Chore(String name, List<String> tags) {
+        public static Chore of(String name) {
+            return new Chore(name, List.of());
+        }
+
+        @Link
+        public Chore tags(String... more) {
+            List<String> all = new ArrayList<>(tags);
+            all.addAll(List.of(more));
+            return new Chore(name, all);
+        }
+    }
+
+    @Test
+    void aVarargsLinkIsOneListPart() {
+        DeclaredCall<Chore> chore = ComponentType.part(Chore.class).writtenAs(Chore::of);
+        Wither<Chore> tags = chore.withers().getFirst();
+        assertTrue(tags.spread());
+        assertEquals(String.class, tags.elementType());
+        assertEquals(List.of(String.class, List.class), chore.componentTypes());
+        Chore tagged = Chore.of("dishes").tags("home", "daily");
+        assertEquals(List.of("dishes", List.of("home", "daily")), chore.components(tagged));
+        assertEquals(tagged, chore.build(List.of("dishes", List.of("home", "daily"))));
+        assertEquals(Chore.of("dishes"), chore.build(List.of("dishes", List.of())));
+        assertEquals(null, tags.apply(Chore.of("dishes"), List.of(3)), "an element of the wrong kind refuses");
+    }
 
     @Test
     void theFactorysPartIsReadByItsName() {
