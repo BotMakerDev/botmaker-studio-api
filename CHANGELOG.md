@@ -15,6 +15,105 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+No source changes since v0.16.0; re-released for updated upstream pins.
+
+### Added
+
+- **`RunEntry.offBar()`, `RunEntry.onBar()` and `Runs.start(RunEntry)`** (2026-11-09, compatible): declare a run
+  `RunEntry.of("Keep exploring", KeepExploring::main).offBar()` and the host puts no toolbar button for it; your
+  plugin's own window starts it with `services.runs().start(entry)`, run exactly as its button would be. The entry stays
+  declared, equal to its on-bar copy, and the assistant still lists and runs it. `start(RunEntry)` is asynchronous and
+  advisory: refused while a run goes or when no loaded plugin declares the entry; `Runs.NONE` ignores it.
+- **`@Param.WrittenByRun`** (2026-11-09, compatible): put it on a plugin's own group annotation to say only a run
+  writes the values of a group it marks. A host then locks such a group on the canvas whole; the SDK's `@Facts` carries
+  it.
+- **A varargs `@Link` is one list part** (2026-11-06): `.serves(A, B)` reads and writes as one part holding every
+  argument, its wither taking the array and its accessor giving a `List` or an array. `CallDeclaration.withEach` declares
+  one for a JDK type or an odd name, as `.with` does for a single value; it refuses a wither that is not varargs.
+
+- **`StudioServices.hasUi()`** (2026-11-05), `default` true: false in a host with no user interface attached, such as
+  the core serving a bot with no Studio. There `dialogs()` is the new `Dialogs.NONE` (every chooser cancelled, no
+  dialog shown) and `theme()` the new `Theme.PLAIN` (nothing applied), so a window request is answered, never thrown.
+  Compatible.
+- The javadoc of `PluginDeclaration.onProjectOpened` and `StudioServices.hasUi()` says that an open step runs once in
+  each host process (Studio and the headless core). A step that asks the user something checks `hasUi()` first.
+
+### Documented
+
+- `CallSteps` says how a chain through another class is declared (2026-11-04): `writtenAs(When::atLeast,
+  Test::when, Test::limit)`, the receiver written by its own class's declaration. No signature changed.
+
+### Changed (breaking)
+
+- **A parameter's category is its group class** (2026-11-05). `Param.category()` and `Param.Shown.category()` are
+  removed, and `ManagedParam`'s `shown` step takes only the line under the parameter and its visibility:
+  `.shown("Who the bot greets first", Param.Visibility.PUBLIC)`. The Parameters window lists a parameter under the
+  class that holds it, the class `.in(…)` names, so a plugin that wants two headings declares two holders. Studio's
+  upgrade strips `category = …` from a bot.
+- **A holder is a constant of the marker's `Holder` enum** (2026-11-04). The marker's id enum names it, `enum Id
+  implements ManagedId<Holder>`, and `ManagedValue.method`, `param` and `openSet` return steps whose `.in` takes
+  only that `Holder`: `in(String)` is gone, and `.in(Other.X)` does not compile. A constant is UPPER_SNAKE and
+  names the class `FLOW_LAYOUT` → `FlowLayout`; another spelling, or two constants whose class names differ only
+  by case, is refused at declaration. `ManagedValue.holder()` still answers the simple name. To move a plugin:
+  add `enum Holder { … }` beside `Id`, one constant per class your values sit in, and write `.in(Holder.X)`.
+
+### Added
+
+- `@Param.Kept(at)` (2026-11-04), compatible: when a run last wrote a during-a-run parameter's value, on its method in
+  `params`. A host's fit keeps it with the value; it never reaches a starting copy.
+- `PluginValues.runParameters`, `addRunParameter` and `forgetRunParameter`, with `RunParameter` and `ParameterWrite`
+  (2026-11-04), compatible: a plugin lists the values a run keeps with their age, adds such a parameter with its own
+  annotations on it, and sets one back to its starting value. A parameter changed outside a run never crosses.
+
+### Changed
+
+- **`ManagedValue.param` needs a marker methods may carry** (2026-11-04): a plugin's parameter is a method of its
+  group in the bot's `params/` folder, never a holder's field. A marker whose `@Target` leaves out `METHOD` is
+  refused when the plugin declares a parameter; one with `METHOD` and without `FIELD` is accepted now.
+
+### Added
+
+- **`@Param` on a class: a parameter group** (2026-11-04). Each no-argument instance method of a class marked
+  `@Param` in the bot's `params` package is one parameter, whole — name, type, and this computer's value as its
+  body; the package is never committed, and `starting-params/` holds the author's starting values. `@Param.Shown`
+  (on a method) gives its category and description, else the class's own, and `changes()`: `Param.Changes`
+  `OUTSIDE_RUN` (the Parameters window edits it, the default) or `DURING_RUN` (the bot writes it).
+  `Param.Visibility`, `Param.EDITOR`/`PUBLIC` and both `visibility()` members are deprecated for removal: a value
+  only the author sets is the bot's data, not a parameter. `@Param` on a field still works and is deprecated for
+  removal: Studio's upgrade will turn such fields into a group.
+
+- **`PluginState` and `StudioServices.stateDir()`**: a plugin keeps what this machine learned about a bot in its
+  own folder of it, `<bot>/.botmaker/plugins/<group>/<artifact>/`. `PluginState.folder(botDir, groupId,
+  artifactId)` names it the same way for the host and for the plugin's runtime (a run's `user.dir` is the bot).
+  The host keeps it out of git, publish, `.bmk` and Versions, and keeps it when a run copy moves to a newer tag.
+  `stateDir()` is a default answering empty. Compatible.
+- **`run.RunEntry`, `RunEntryHolder` and the step `runs(MyRuns.class)`**: a plugin offers runs of its own beside
+  the bot's `main`. An entry is a title and a `main(String[])` named by method reference
+  (`RunEntry.of("Explore map", ExploreMap::main)`), checked when it is built. The host runs it as it runs the bot,
+  with the bot's value-holder class names as `args`. Two entries of one plugin with one title are refused.
+  `StudioPlugin.runEntries()` is a default. Compatible.
+- **`run.ReportView`, `ReportViewHolder` and the step `reportViews(MyReportViews.class)`**: a plugin offers charts
+  in the host's reports of the bot's runs. A view has a title, a `Chart` (bars, bars by day, lines, heatmap, donut,
+  table) and one of the plugin's own line-value keys (`TraceLine.values`), or two for a grid (`against`). It can
+  also name one level (`only`), count every line carrying the key (`counting(Lines.EVERY_LINE)`) and add up a
+  number instead of counting (`weighedBy("millis")`). `StudioPlugin.reportViews()` is a default. Compatible.
+- **`palette.@ReadsScreen`**: marks a method whose result was read off the game's screen. A host that traces
+  calls marks that result in the run's log and hides it in anything that leaves the machine. Compatible.
+- **`run.RunChannel`, and the step `onBotRun(Owner::started)`**: a bot's run hands each plugin a channel to its
+  host before the bot's `main` runs. Through it the plugin's runtime writes its log lines (a `TraceLine`, with the
+  cause), its run's details (an opaque map), its own encoded frames (read back by its own overlay through
+  `Runs.onTelemetry`), reads and sets the run's debug switch, and asks the runner a question
+  (`ask(AskKind, prompt, choices)`, empty when the host cannot ask). Only the host implements it; every member is
+  `default`. `RunChannel.console()` is what a run with no host gets: lines on the console, the rest dropped. Compatible: nothing a built plugin uses changes.
+- **`RunChannel.folder()`**: the run's own folder, where the host keeps the run's log; a plugin keeps the files it
+  saves during the run beside it. Empty when no host keeps one. Compatible.
+- **`run.AskKind`**: what a question asks for — text, a number, a whole number, yes/no, one of a list.
+- **`TraceLine.values()`**: a line a plugin gives its `RunChannel` carries values by keys of its own
+  (`screen` → `Home`). The host keeps them in the run's log and offers each as `plugin.<key>` to group reports by;
+  it reads no key. The ten-part constructor stays and gives no values. Compatible.
+
 ## [0.15.0] — 2026-11-10
 
 ### Added
