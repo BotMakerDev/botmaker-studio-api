@@ -3,7 +3,9 @@ package com.botmaker.plugin.api.run;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RunEntryTest {
 
@@ -21,6 +23,18 @@ class RunEntryTest {
         assertEquals("Explore map", entry.title());
         assertEquals(Sample.class.getName(), entry.mainClass());
         assertEquals(entry, RunEntry.of("Explore map", Sample::main));
+    }
+
+    @Test
+    void offBarKeepsIdentity() {
+        RunEntry entry = RunEntry.of("Explore map", Sample::main);
+        assertTrue(entry.onBar());
+        RunEntry off = entry.offBar();
+        assertFalse(off.onBar());
+        assertEquals(entry, off);
+        assertEquals(entry.hashCode(), off.hashCode());
+        assertEquals("Explore map", off.title());
+        assertEquals(Sample.class.getName(), off.mainClass());
     }
 
     static final class Hidden {

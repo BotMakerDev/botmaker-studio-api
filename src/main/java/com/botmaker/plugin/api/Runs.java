@@ -1,5 +1,6 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.run.RunEntry;
 import com.botmaker.plugin.api.run.RunProperty;
 
 import java.util.Optional;
@@ -42,6 +43,17 @@ public interface Runs {
      * {@link #onStateChanged}.
      */
     void start();
+
+    /**
+     * Requests a run of {@code entry}, a run a loaded plugin declares, exactly as its toolbar button would — the same
+     * compile, classpath, JVM options, run log and end-of-run dialog, the bot's value holders as its {@code args}.
+     * What a plugin's own window calls to start an entry it declared {@link RunEntry#offBar() off the bar}.
+     *
+     * <p>Asynchronous and advisory like {@link #start()}: refused while a run goes, or when no loaded plugin declares
+     * {@code entry}. A host that runs no bots ignores it, which is what this default does.
+     */
+    default void start(RunEntry entry) {
+    }
 
     /** Requests that a running bot stop. Advisory and asynchronous, exactly like {@link #start()}. */
     void stop();

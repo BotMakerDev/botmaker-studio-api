@@ -19,6 +19,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`RunEntry.offBar()`, `RunEntry.onBar()` and `Runs.start(RunEntry)`** (2026-11-09, compatible): declare a run
+  `RunEntry.of("Keep exploring", KeepExploring::main).offBar()` and the host puts no toolbar button for it; your
+  plugin's own window starts it with `services.runs().start(entry)`, run exactly as its button would be. The entry stays
+  declared, equal to its on-bar copy, and the assistant still lists and runs it. `start(RunEntry)` is asynchronous and
+  advisory: refused while a run goes or when no loaded plugin declares the entry; `Runs.NONE` ignores it.
 - **`@Param.WrittenByRun`** (2026-11-09, compatible): put it on a plugin's own group annotation to say only a run
   writes the values of a group it marks. A host then locks such a group on the canvas whole; the SDK's `@Facts` carries
   it.
