@@ -19,6 +19,9 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`@Param.WrittenByRun`** (2026-11-09, compatible): put it on a plugin's own group annotation to say only a run
+  writes the values of a group it marks. A host then locks such a group on the canvas whole; the SDK's `@Facts` carries
+  it.
 - **A varargs `@Link` is one list part** (2026-11-06): `.serves(A, B)` reads and writes as one part holding every
   argument, its wither taking the array and its accessor giving a `List` or an array. `CallDeclaration.withEach` declares
   one for a JDK type or an odd name, as `.with` does for a single value; it refuses a wither that is not varargs.

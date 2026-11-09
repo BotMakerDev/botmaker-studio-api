@@ -143,6 +143,17 @@ public @interface Param {
     }
 
     /**
+     * Put on a plugin's own group annotation to say that only a run writes the values of a group it marks
+     * (2026-11-09): the SDK's {@code @Facts}, what a bot read of the game. A host locks such a group's code whole,
+     * as it locks a plugin's file, so nobody types a value the run will overwrite; the Parameters window shows the
+     * values, read-only. A plugin needs nothing else: the host finds the mark on the annotation the bot wrote.
+     */
+    @Documented
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.ANNOTATION_TYPE)
+    @interface WrittenByRun {}
+
+    /**
      * When a parameter changes (2026-11-04): it is never "set by the user or by the code", but edited outside a run
      * or written during one.
      *
