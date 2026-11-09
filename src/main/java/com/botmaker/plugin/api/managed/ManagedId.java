@@ -9,14 +9,14 @@ package com.botmaker.plugin.api.managed;
  * public @interface SdkValue {
  *     Id value();
  *
- *     enum Id implements ManagedId<Holder> { FLOW, PICTURES }
+ *     enum Id implements ManagedId<Holder> { SETTINGS, PICTURES }
  *
  *     enum Holder { SDK, PICTURES }
  * }
  * }</pre>
  *
  * <p>A holder constant is UPPER_SNAKE and names the class by its parts, each keeping its first letter:
- * {@code FLOW_LAYOUT} is the class {@code FlowLayout}, {@code SDK} is {@code Sdk}. A declaration refuses a constant of
+ * {@code LAUNCH_TARGETS} is the class {@code LaunchTargets}, {@code SDK} is {@code Sdk}. A declaration refuses a constant of
  * any other spelling, and an enum two of whose constants name classes that differ only by case.
  *
  * @param <H> the holder enum

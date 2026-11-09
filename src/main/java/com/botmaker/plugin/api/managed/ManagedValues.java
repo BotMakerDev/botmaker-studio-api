@@ -50,7 +50,7 @@ public final class ManagedValues {
 
     /**
      * Says that {@code sink} takes the value of every method a bot marks with {@code value}'s id —
-     * {@code @SdkValue(SdkValue.Id.FLOW)}.
+     * {@code @SdkValue(SdkValue.Id.SETTINGS)}.
      *
      * <p>Typed by the declaration: a value that is not a {@code T} never reaches the sink and is reported by
      * {@link #install} instead. Only a method value has one: an open set is a class of the bot's, and a parameter

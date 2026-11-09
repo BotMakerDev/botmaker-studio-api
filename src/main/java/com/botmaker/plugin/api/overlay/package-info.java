@@ -7,7 +7,7 @@
  *
  * <ul>
  *   <li><b>targets</b> — where blocks go: the bot methods worth editing from the overlay, such as a game
- *       bot's activities. The plugin names a functional interface of its own, and the host offers every bot
+ *       bot's chores. The plugin names a functional interface of its own, and the host offers every bot
  *       method passed by reference where that interface is expected
  *       ({@link com.botmaker.plugin.api.overlay.OverlayPart#targets(Class, String)}). No method name crosses
  *       as text.</li>

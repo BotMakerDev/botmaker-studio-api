@@ -14,7 +14,7 @@ import java.util.Optional;
  *
  * <pre>{@code
  * static final OverlayPart PART = OverlayPart.of()
- *         .targets(ActivityBody.class, "Activities")
+ *         .targets(Chore.class, "Chores")
  *         .watched(SdkOverlay::watched).changeWatched(() -> SdkOverlay::changeWatched)
  *         .frames(SdkOverlay::frames)
  *         .tool(SdkTools.PICTURE).tool(SdkTools.POINT)
@@ -29,10 +29,11 @@ import java.util.Optional;
  * {@link FrameSource} the second answers is what grabs, off the FX thread.
  *
  * <p><b>Targets are found by type, not named.</b> {@link #targets(Class, String)} names a functional interface
- * of the plugin's — the SDK's {@code ActivityBody} — and the host offers, in source order, every method of the
- * bot that its Java passes by method reference where that type is expected: {@code Flow.activity(COLLECT,
- * Collect::body, …)} makes {@code Collect.body()} a chip labelled {@code Collect}. The host reads it off the
- * compiler's bindings, so no method name crosses as text and the plugin parses nothing.
+ * of the plugin's — say a {@code Chore} — and the host offers, in source order, every method of the bot that its
+ * Java passes by method reference where that type is expected: {@code Farm.daily(Crops::water)} makes
+ * {@code Crops.water()} a chip labelled {@code Crops}. The host reads it off the compiler's bindings, so no method
+ * name crosses as text and the plugin parses nothing. (The SDK declares no targets since 2026-11-09, when its
+ * activities went.)
  *
  * <p><b>A probe is keyed by the call it probes</b>, named by method reference plus the class of each of its
  * parameters (a receiver counts as the first). The classes are what pick an overloaded call: a bare
@@ -46,8 +47,8 @@ public final class OverlayPart {
      * One kind of target: the bot methods passed where {@code typeName}'s interface is expected, gathered under
      * the heading {@code group}.
      *
-     * @param typeName the functional interface's binary name: {@code com.botmaker.sdk.api.flow.ActivityBody}
-     * @param group    the heading its chips sit under: {@code "Activities"}
+     * @param typeName the functional interface's binary name: {@code com.example.farm.api.Chore}
+     * @param group    the heading its chips sit under: {@code "Chores"}
      */
     public record TargetType(String typeName, String group) {
     }

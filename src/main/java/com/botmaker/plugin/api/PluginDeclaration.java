@@ -39,7 +39,7 @@ import java.util.function.Function;
  * public final class SdkPlugin extends DeclaredPlugin {
  *     public SdkPlugin() {
  *         super(StudioPlugin.declare()
- *                 .types(SdkTypes.class, FlowTypes.class, CaptureTypes.class)
+ *                 .types(SdkTypes.class, RunTypes.class, CaptureTypes.class)
  *                 .values(SdkValues.class)
  *                 .editors(SdkEditors.class)
  *                 .toolbar(SdkToolbarItems.class)

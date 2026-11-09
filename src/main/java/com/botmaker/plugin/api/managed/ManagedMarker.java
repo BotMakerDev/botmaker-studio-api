@@ -19,20 +19,20 @@ import java.lang.annotation.Target;
  * public @interface SdkValue {
  *     Id value();
  *
- *     enum Id implements ManagedId<Holder> { FLOW_LAYOUT, CAPTURE, ACTIVITIES }
+ *     enum Id implements ManagedId<Holder> { SETTINGS, CAPTURE, PLANS }
  *
- *     enum Holder { SDK, ACTIVITIES }
+ *     enum Holder { SDK, PLANS }
  * }
  *
- * public static final ManagedValue<FlowLayout> FLOW_LAYOUT = ManagedValue.method(SdkValue.Id.FLOW_LAYOUT)
+ * public static final ManagedValue<BotSettings> SETTINGS = ManagedValue.method(SdkValue.Id.SETTINGS)
  *         .in(SdkValue.Holder.SDK)…;
  *
  * // the bot
  * public final class Sdk {
  *
- *     @SdkValue(SdkValue.Id.FLOW_LAYOUT)
- *     public static FlowLayout flowLayout() {
- *         return FlowLayout.of(…);
+ *     @SdkValue(SdkValue.Id.SETTINGS)
+ *     public static BotSettings settings() {
+ *         return BotSettings.DEFAULTS;
  *     }
  * }
  * }</pre>
@@ -88,7 +88,7 @@ import java.lang.annotation.Target;
  * plugin (2026-10-22). That is the shape for a set the user grows — one constant per
  * captured picture — where a method is the shape for a fixed value the plugin shipped a declaration for. The
  * difference is whether the rest of the bot names the parts: {@code Pictures.COLLECT} is written at its use
- * sites, and a flow's activities are not.
+ * sites, and the parts of one settings value are not.
  *
  * <h2>On a field: a parameter of the plugin's</h2>
  *

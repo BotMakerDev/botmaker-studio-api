@@ -1,8 +1,8 @@
 package com.botmaker.plugin.api.source;
 
 /**
- * One value a window of your plugin edits, kept as a method in the bot: {@code @SdkValue(SdkValue.Id.FLOW_LAYOUT)
- * public static FlowLayout flowLayout() { return …; }}. The host rewrites only the expression the method returns, and never adds or
+ * One value a window of your plugin edits, kept as a method in the bot: {@code @SdkValue(SdkValue.Id.SETTINGS)
+ * public static BotSettings settings() { return …; }}. The host rewrites only the expression the method returns, and never adds or
  * removes a method but to write it into a project that lacks it ({@link PluginValues#create}). Declared with
  * {@link ManagedValue#method}.
  *

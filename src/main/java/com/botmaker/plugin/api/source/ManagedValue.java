@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
  *   <tr><td>the person running the bot, in the Runner or the Parameters window</td><td>{@link #param}</td>
  *       <td>{@link ManagedParam}</td><td>{@code @Param public static boolean doSetup = true;}</td></tr>
  *   <tr><td>a window of your plugin, one value</td><td>{@link #method}</td><td>{@link ManagedMethod}</td>
- *       <td>{@code public static Flow flow() { return …; }}</td></tr>
+ *       <td>{@code public static BotSettings settings() { return …; }}</td></tr>
  *   <tr><td>a window of your plugin, a set the user grows</td><td>{@link #openSet}</td>
  *       <td>{@link ManagedOpenSet}</td><td>a class of constants, an enum, a class of enums or of classes</td></tr>
  * </table>
@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
  * Parameters window edits it with your type's editor.
  *
  * <p><b>The mark.</b> Every managed value is named by a constant of an enum nested in an annotation of your
- * plugin's, meta-annotated {@link ManagedMarker} — {@code @SdkValue(SdkValue.Id.FLOW)} — so javac checks the id.
+ * plugin's, meta-annotated {@link ManagedMarker} — {@code @SdkValue(SdkValue.Id.SETTINGS)} — so javac checks the id.
  * The bot carries the annotation, so it reaches the bot through your plugin at {@code compile}. The declaration
  * refuses a mark without {@code RUNTIME} retention, whose {@code @Target} leaves out where the shape puts it, or
  * whose {@code value()} is not that enum.
@@ -49,7 +49,7 @@ import java.util.regex.Pattern;
  * <p><b>Where it goes.</b> {@code .in(SdkValue.Holder.SDK)} names the bot's class that holds it by a constant of the
  * holder enum your id enum names ({@link ManagedId}), so javac refuses another plugin's holder. The class is the
  * bot's and your plugin never compiles against it, so an UPPER_SNAKE constant stands for it: {@code SDK} for
- * {@code Sdk}, {@code FLOW_LAYOUT} for {@code FlowLayout}. A bot without one gets it under
+ * {@code Sdk}, {@code LAUNCH_TARGETS} for {@code LaunchTargets}. A bot without one gets it under
  * {@code plugins/<a folder the host names after your plugin's artifactId>/}.
  *
  * <p>Plain data, like every other contribution: a host reads the id as text and matches it itself, so no plugin
@@ -87,7 +87,7 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
 
     /**
      * <b>A parameter of your plugin's</b>: a {@code @Param} field in the bot that the person running it sets, and
-     * your plugin's runtime reads by its mark — {@code Bot.runFlow(Sdk.class)} reads {@code Sdk.flow}:
+     * your plugin's runtime reads by its mark — {@code Bot.run(Sdk.class)} reads {@code Running.doSetup()}:
      *
      * <pre>{@code
      * public static final ManagedParam<Boolean> DO_SETUP = ManagedValue.param(SdkValue.Id.DO_SETUP)
@@ -114,13 +114,13 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
 
     /**
      * <b>One value a window of your plugin edits</b>: a method in the bot marked with the id, whose one
-     * {@code return} the host rewrites — {@code @SdkValue(SdkValue.Id.FLOW_LAYOUT)}:
+     * {@code return} the host rewrites — {@code @SdkValue(SdkValue.Id.SETTINGS)}:
      *
      * <pre>{@code
-     * public static final ManagedMethod<FlowLayout> FLOW_LAYOUT = ManagedValue.method(SdkValue.Id.FLOW_LAYOUT)
+     * public static final ManagedMethod<BotSettings> SETTINGS = ManagedValue.method(SdkValue.Id.SETTINGS)
      *         .in(SdkValue.Holder.SDK)                // the class that holds it | .openedOnly()
-     *         .holds(FlowLayout.class, FlowLayout.NONE) // what it returns, and what a created one starts as
-     *         .because("These are where the Activity Flow's cards sit. Drag them in 🔀 Activity Flow.");
+     *         .holds(BotSettings.class, BotSettings.DEFAULTS) // what it returns, and what a created one starts as
+     *         .because("These are the bot's settings. Change them in ⚙ Bot Settings.");
      * }</pre>
      *
      * @throws IllegalArgumentException when the enum is not nested in such an annotation
@@ -140,11 +140,11 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
      *         .in(SdkValue.Holder.PICTURES)
      *         .because("Picture constants are managed in 🖼 Manage Pictures.");
      *
-     * public static final ManagedOpenSet.EnumGroups<Outcome> ACTIVITIES = ManagedValue.openSet(SdkValue.Id.ACTIVITIES)
-     *         .ofEnumGroups(Outcome.class, BotConstants::outcome)  // enums nested in the holder: enum Collect { NEXT }
-     *         .groupedAs(Activity.class, BotConstants::activity)
-     *         .in(SdkValue.Holder.ACTIVITIES)
-     *         .because("Activities are managed in 🔀 Activity Flow.");
+     * public static final ManagedOpenSet.EnumGroups<Stage> STAGES = ManagedValue.openSet(FarmValue.Id.STAGES)
+     *         .ofEnumGroups(Stage.class, FarmConstants::stage)  // enums nested in the holder: enum Forest { ENTRY }
+     *         .groupedAs(Area.class, FarmConstants::area)
+     *         .in(FarmValue.Holder.STAGES)
+     *         .because("Stages are managed in 🧭 Stages.");
      *
      * public static final ManagedClasses<Screen> SCREEN_MAP = ManagedValue.openSet(SdkValue.Id.SCREEN_MAP)
      *         .ofClasses(Screen.class)                      // classes nested in the holder: class Market extends Screen
@@ -161,7 +161,7 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
         return new ManagedOpenSet.Steps<>(Key.of(id, ElementType.TYPE));
     }
 
-    /** The id: {@link #idOf} its constant — {@code "com.botmaker.sdk.api.bot.SdkValue$Id.FLOW"}. */
+    /** The id: {@link #idOf} its constant — {@code "com.botmaker.sdk.api.bot.SdkValue$Id.SETTINGS"}. */
     public String id() {
         return key.id();
     }
@@ -176,7 +176,7 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
 
     /**
      * The id of a typed value: the binary name of {@code constant}'s enum, a dot, and the constant's name —
-     * {@code "com.botmaker.sdk.api.bot.SdkValue$Id.FLOW"}. The enum's name is the <b>binary</b> one, with
+     * {@code "com.botmaker.sdk.api.bot.SdkValue$Id.SETTINGS"}. The enum's name is the <b>binary</b> one, with
      * {@code $} before a nested class: a host reading a bot's annotation off JDT takes the constant's
      * declaring type's {@code getBinaryName()}, never its {@code getQualifiedName()}, and the runtime reads the
      * same through reflection.
@@ -283,7 +283,7 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
 
     /**
      * The simple name of the class {@code holder} stands for: each {@code _} part keeps its first character and
-     * lowers the rest, so {@code FLOW_LAYOUT} is {@code FlowLayout}. Refused unless every constant of its enum is
+     * lowers the rest, so {@code LAUNCH_TARGETS} is {@code LaunchTargets}. Refused unless every constant of its enum is
      * UPPER_SNAKE and no two name classes that differ only by case, because the host writes one file per class.
      */
     static String holderName(Key key, Enum<?> holder) {
@@ -302,7 +302,7 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
     private static String className(Key key, Enum<?> holder) {
         if (!UPPER_SNAKE.matcher(holder.name()).matches()) {
             throw new IllegalArgumentException(key.id() + ": the holder " + holder.getDeclaringClass().getName()
-                    + "." + holder.name() + " is not UPPER_SNAKE, as FLOW_LAYOUT is");
+                    + "." + holder.name() + " is not UPPER_SNAKE, as LAUNCH_TARGETS is");
         }
         StringBuilder name = new StringBuilder();
         for (String part : holder.name().split("_")) {

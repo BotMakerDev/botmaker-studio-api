@@ -30,7 +30,7 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   `writtenAsEach(…)` | `writtenAsRecord()` | `writtenAsConstant()` | `writtenAsLiteral()` | `writtenAsParts()`
   (`TypeSteps`, `CallSteps`, results `DeclaredType`/`DeclaredCallType`). **A part**: `ComponentType.part(X.class)
   .writtenAs(…)` (`DeclaredCall`, with `.constants(VALUE)`, and `.components`/`.build` for the one hand-made
-  part, the SDK's activity body). A plugin declares nothing about a type it
+  part, the SDK's activity body until flows were deleted on 2026-11-09). A plugin declares nothing about a type it
   retires: the bot's author writes the `@Migrate` rule that carries its values over (2026-10-16); the plugin
   never converts them. An element it removes ships, in the release that deprecates it, a `@Migrate` rule beside it
   or `@Migrate.Dropped("why")` on it when nothing replaces it (2026-11-01); `plugin validate` warns on neither.
@@ -57,7 +57,7 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   `ManagedValue.openSet(id).of(E.class).in(holder).because(reason)`, `E` being the class of each constant;
   `.ofEnum(E.class, Owner::byName)` instead of `of` makes the holder an enum implementing the interface `E`,
   whose constants the host reads as `byName(name)`. `id` is a constant of the enum nested in the plugin's
-  `@ManagedMarker` annotation (`SdkValue.Id.FLOW_LAYOUT`). It
+  `@ManagedMarker` annotation (`SdkValue.Id.SETTINGS`). It
   is typed and declared once: a plugin keeps one constant per value and lists it in its `ValueHolder`, uses it
   in `ManagedValues.claim`, and through the toolkit's `ManagedHandle` or, for an open set, `ManagedSet`.
 - **A slot editor**: `SlotEditor.onParameter(Annotation.class)` | `forType(X.class)` | `when(predicate)` →

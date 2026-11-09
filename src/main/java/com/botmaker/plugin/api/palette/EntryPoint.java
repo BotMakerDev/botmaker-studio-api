@@ -10,8 +10,9 @@ import java.lang.annotation.Target;
  * Offer this only where a program starts: as a statement inside {@code public static void main(String[])}, and
  * nowhere else.
  *
- * <p>For the call that <em>is</em> a bot — the SDK's {@code Bot.runFlow(Sdk.class)} — which belongs in
- * {@code main} and is wrong anywhere else: inside an activity it would start a second run within the first.
+ * <p>For the call that <em>is</em> a bot — the SDK's {@code Bot.run(Sdk.class)} — which belongs in
+ * {@code main} and is wrong anywhere else: inside a method the run calls it would start a second run within the
+ * first.
  * {@link Hidden} kept such a call out of every menu, so a new project had no statement that launched it; this
  * keeps it in the one menu where it belongs.
  *
