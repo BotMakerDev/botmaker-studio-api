@@ -110,6 +110,29 @@ public interface StudioServices {
     }
 
     /**
+     * This plugin's values of this PC, every bot's — the values whose holder enum is a
+     * {@link com.botmaker.plugin.api.managed.HostHolder} — read and written as {@link #pluginValues()} reads and writes
+     * a bot's: the same calls, the same {@link com.botmaker.plugin.api.source.ManagedValue} constants, and the same
+     * {@code ValueContext} from {@code open}, so your editors and pickers work on them unchanged.
+     *
+     * <p>Host-only because the folder is: the host keeps one class per host holder in the plugin's folder of this
+     * PC, writes it through its own grammar, checks each write compiles against your plugin, and keeps the folder
+     * out of every bot. It is served with or without a bot open. A value that is not {@code onHost()} is refused
+     * here, as a host value is by {@link #pluginValues()}. No bot run reads these values.
+     *
+     * <p><b>One version serves them: the newest of your plugin on this PC.</b> A bot that pins an older version
+     * still gets them, through that newest version's code, so the folder only ever moves forward, the way your
+     * {@code @Migrate} rules and the two-release rule keep safe. A value your older window cannot hold is shown to
+     * it read-only.
+     *
+     * <p>{@code default} for the reason {@link #runs()} is: a host that keeps no such folder answers
+     * {@link PluginValues#NONE}.
+     */
+    default PluginValues hostValues() {
+        return PluginValues.NONE;
+    }
+
+    /**
      * The open project's undo history, the one the host's ↶/↷ walk — see {@link History}.
      *
      * <p>{@code default} for the reason {@link #runs()} is: a host with no editor answers {@link History#NONE},

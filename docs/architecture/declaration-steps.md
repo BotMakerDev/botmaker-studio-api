@@ -60,6 +60,8 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   `@ManagedMarker` annotation (`SdkValue.Id.SETTINGS`). It
   is typed and declared once: a plugin keeps one constant per value and lists it in its `ValueHolder`, uses it
   in `ManagedValues.claim`, and through the toolkit's `ManagedHandle` or, for an open set, `ManagedSet`.
+  A holder enum that implements `HostHolder` (2026-11-12) makes the value this PC's (`onHost()`): declared by the
+  same steps, under a marker annotation of its own, served by `StudioServices.hostValues()`; `param` refuses it.
 - **A slot editor**: `SlotEditor.onParameter(Annotation.class)` | `forType(X.class)` | `when(predicate)` →
   `.draw(() -> E::draw[, () -> E::preview])` (`EditorSteps`). A value the type cannot tell apart is told apart
   by a `RUNTIME` annotation on the parameter it is passed to (`outcome(@OutcomeName String)`), matched by

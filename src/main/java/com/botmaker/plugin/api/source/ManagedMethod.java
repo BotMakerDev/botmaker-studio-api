@@ -53,8 +53,17 @@ public final class ManagedMethod<T> extends ManagedValue<T> {
             return new TypeStep(key, holderName(key, holder));
         }
 
-        /** Somewhere the host may open and never create: {@code .openedOnly().holds(T.class)}. */
+        /**
+         * Somewhere the host may open and never create: {@code .openedOnly().holds(T.class)}.
+         *
+         * @throws IllegalArgumentException for a value of this PC ({@link com.botmaker.plugin.api.managed.HostHolder}):
+         *                                  each lives in its holder's one class, which the host creates
+         */
         public OpenedStep openedOnly() {
+            if (key.host()) {
+                throw new IllegalArgumentException(key.id() + ": a value of this PC lives in its holder's class; "
+                        + "name it with in(…)");
+            }
             return new OpenedStep(key);
         }
     }

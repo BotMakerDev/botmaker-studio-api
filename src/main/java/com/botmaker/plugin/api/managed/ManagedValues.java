@@ -60,6 +60,11 @@ public final class ManagedValues {
         if (value == null || sink == null) {
             return;
         }
+        if (value.onHost()) {
+            System.err.println("[values] " + value.id() + " is a value of this PC, which no bot run reads: claim a "
+                    + "bot's value, or pass the run what it needs as a parameter");
+            return;
+        }
         SINKS.put(value.id(), held -> {
             T typed = value.cast(held);
             if (typed == null) {

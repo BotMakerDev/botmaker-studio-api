@@ -1,5 +1,6 @@
 package com.botmaker.plugin.api.source;
 
+import com.botmaker.plugin.api.managed.HostHolder;
 import com.botmaker.plugin.api.managed.ManagedId;
 import com.botmaker.plugin.api.managed.ManagedMarker;
 
@@ -7,6 +8,8 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
@@ -60,12 +63,34 @@ import java.util.regex.Pattern;
  */
 public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam, ManagedOpenSet {
 
-    /** The id and the binary name of the plugin's marker annotation. */
-    record Key(String id, String marker) {
+    /**
+     * The id, the binary name of the plugin's marker annotation, and whether the id enum's holder enum is a
+     * {@link HostHolder}.
+     */
+    record Key(String id, String marker, boolean host) {
 
         static Key of(Enum<?> constant, ElementType on) {
             if (constant == null) throw new IllegalArgumentException("A managed value needs an id");
-            return new Key(idOf(constant), markerOf(constant, on));
+            return new Key(idOf(constant), markerOf(constant, on), onHost(constant.getDeclaringClass()));
+        }
+
+        /**
+         * Whether {@code type} reaches {@code ManagedId<H>}, directly or through interfaces of its own, with an
+         * {@code H} that is a {@link HostHolder}. An {@code H} left a type variable reads as false;
+         * {@link #holderName} then refuses the host holder given to {@code in}, so a value is never misfiled.
+         */
+        private static boolean onHost(Class<?> type) {
+            for (Type each : type.getGenericInterfaces()) {
+                if (each instanceof ParameterizedType named && named.getRawType() == ManagedId.class) {
+                    return named.getActualTypeArguments()[0] instanceof Class<?> holders
+                            && HostHolder.class.isAssignableFrom(holders);
+                }
+                Type raw = each instanceof ParameterizedType named ? named.getRawType() : each;
+                if (raw instanceof Class<?> parent && ManagedId.class.isAssignableFrom(parent) && onHost(parent)) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 
@@ -105,11 +130,17 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
      * appends it to the group whenever the group lacks a method carrying the id, and never lets the Parameters
      * window rename, retype or remove it: only what it returns is the user's.
      *
-     * @throws IllegalArgumentException when the enum is not nested in such an annotation, or its {@code @Target}
-     *                                  leaves out methods
+     * @throws IllegalArgumentException when the enum is not nested in such an annotation, its {@code @Target}
+     *                                  leaves out methods, or its holder enum is a {@link HostHolder}: a parameter is
+     *                                  a bot's user's, never this PC's
      */
     public static <H extends Enum<H>, I extends Enum<I> & ManagedId<H>> ManagedParam.Steps<H> param(I id) {
-        return new ManagedParam.Steps<>(Key.of(id, ElementType.METHOD));
+        Key key = Key.of(id, ElementType.METHOD);
+        if (key.host()) {
+            throw new IllegalArgumentException(key.id() + ": a parameter is the bot's user's, so its holder cannot be "
+                    + "a HostHolder; declare this PC's value with method or openSet");
+        }
+        return new ManagedParam.Steps<>(key);
     }
 
     /**
@@ -220,6 +251,16 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
         return marker.getName();
     }
 
+    /**
+     * Whether this is a value of this PC, not of a bot: its id enum names a holder enum that implements
+     * {@link HostHolder}. The host keeps it in the plugin's folder of this PC and opens it through
+     * {@link com.botmaker.plugin.api.StudioServices#hostValues()} only; {@code pluginValues()} refuses it, and
+     * {@code hostValues()} refuses a value for which this is false.
+     */
+    public boolean onHost() {
+        return key.host();
+    }
+
     /** The sentence the host shows when it refuses an edit: what owns this and where to go instead. */
     public String reason() {
         return reason;
@@ -288,6 +329,11 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
      */
     static String holderName(Key key, Enum<?> holder) {
         if (holder == null) throw new IllegalArgumentException(key.id() + ": no holder given");
+        if (holder instanceof HostHolder != key.host()) {
+            throw new IllegalArgumentException(key.id() + ": its id enum must implement ManagedId<"
+                    + holder.getDeclaringClass().getSimpleName() + "> naming the holder enum itself, so the host "
+                    + "can tell this PC's values from a bot's");
+        }
         Map<String, String> seen = new HashMap<>();
         for (Enum<?> each : holder.getDeclaringClass().getEnumConstants()) {
             String other = seen.put(className(key, each).toLowerCase(Locale.ROOT), each.name());

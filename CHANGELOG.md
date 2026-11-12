@@ -15,6 +15,17 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Added
+
+- **`managed.HostHolder`, `ManagedValue.onHost()` and `StudioServices.hostValues()`** (2026-11-12, compatible): a
+  holder enum that implements `HostHolder` holds your plugin's values of this PC, every bot's (its emulators, their
+  instances), under a `@ManagedMarker` annotation of their own. Declare them with `ManagedValue.method`/`openSet` as a
+  bot's, and read and write them through `services.hostValues()`, the same `PluginValues` with the same editors.
+  No bot run reads them and no secret is one. `ManagedValue.param` refuses a host holder. `hostValues()` is a
+  `default` answering `PluginValues.NONE` until a host keeps the folder.
+
 ## [0.17.0] — 2026-11-10
 
 No source changes since v0.16.0; re-released for updated upstream pins.

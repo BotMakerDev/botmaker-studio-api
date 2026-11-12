@@ -21,6 +21,15 @@ machine's — kept out of git, publish, a `.bmk` and Versions, kept when a run c
 `PluginState.folder`, `<bot>/.botmaker/plugins/<group>/<artifact>/`, which a plugin's runtime names itself from
 its working folder; what is in it is the plugin's, and nothing here names its format.
 
+`hostValues()` (2026-11-12, spec `../docs/superpowers/specs/2026-11-12-plugin-host-data-design.md`) passes too: a
+plugin's values of **this PC**, every bot's, whose holder enum implements `managed.HostHolder` (a marker annotation
+of their own, since a marker's `value()` is one enum: `@SdkHostValue(SdkHostValue.Id.EMULATORS)`). Only the host
+owns the folder (`plugins/<group>/<artifact>/` of BotMaker's configuration folder, one class per host holder), its
+grammar, the compile check against the plugin and the version guard, so a plugin's JSON store gives way to its own
+values, editors and pickers. It is the same `PluginValues` as `pluginValues()`, each refusing the other's values
+(`ManagedValue.onHost()`); no bot run reads it, nothing exports it, and `ManagedValue.param` refuses a host holder,
+a parameter being the bot's user's.
+
 When a plugin's editor needs something the host has and the contract does not expose, ask *could any plugin
 have built this on shared plus its own files?* If yes, it builds it. If no, and only then, the contract grows
 — and it grows a **capability**, never a vocabulary: nothing here may name a concept that belongs to some
