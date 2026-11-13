@@ -143,6 +143,21 @@ public interface StudioServices {
     }
 
     /**
+     * The undo of your values of this PC, {@link #hostValues()}: the steps your window's own ↶/↷ take back and do
+     * again, one per write, a {@link History#batch} one too.
+     *
+     * <p>Not {@link #history()}: those values are in no bot, so the editor's ↶ never takes one back, and this one
+     * never takes back the bot's code. It is served with or without a bot open, and answers for the calling plugin's
+     * values alone. Every host keeps it the way it keeps the values; nothing here says how.
+     *
+     * <p>{@code default} for the reason {@link #runs()} is: a host that keeps no such folder answers
+     * {@link History#NONE}.
+     */
+    default History hostHistory() {
+        return History.NONE;
+    }
+
+    /**
      * Says one line in the host's own status area, where it says what it is doing.
      *
      * <p>For the running commentary a long action owes its user — <em>Starting…</em>, <em>Listening on

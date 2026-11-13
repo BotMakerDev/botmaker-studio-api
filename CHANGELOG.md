@@ -19,6 +19,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **`StudioServices.hostHistory()`** (2026-11-13, compatible): the undo of your values of this PC, a `History` like
+  `history()`'s, for your window's own ↶/↷. One step per `hostValues()` write, a `batch` one too; it never takes back
+  the bot's code, and the editor's ↶ never takes back these values. Served with or without a bot open; a host that
+  keeps no such folder answers `History.NONE`.
+
 - **`managed.HostHolder`, `ManagedValue.onHost()` and `StudioServices.hostValues()`** (2026-11-12, compatible): a
   holder enum that implements `HostHolder` holds your plugin's values of this PC, every bot's (its emulators, their
   instances), under a `@ManagedMarker` annotation of their own. Declare them with `ManagedValue.method`/`openSet` as a
