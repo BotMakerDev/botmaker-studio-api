@@ -13,7 +13,7 @@
     -->
     <groupId>com.github.BotMakerDev</groupId>
     <artifactId>botmaker-studio-api</artifactId>
-    <version>0.17.1</version>
+    <version>0.17.2-SNAPSHOT</version>
 
     <name>BotMaker Studio Plugin API</name>
     <description>
@@ -86,7 +86,7 @@
              ValueContext.bounds() went.
              Pinned ahead to v0.15.0 (2026-11-04): a holder is a constant of the marker's Holder enum, named by
              the id enum (ManagedId); in(String) went for in(H) on every managed-value step. -->
-        <botmaker.japicmp.baseline>v0.16.0</botmaker.japicmp.baseline>
+        <botmaker.japicmp.baseline>v0.17.1</botmaker.japicmp.baseline>
         <botmaker.japicmp.skip>false</botmaker.japicmp.skip>
     </properties>
 
