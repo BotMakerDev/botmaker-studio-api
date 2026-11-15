@@ -36,7 +36,10 @@ a host, references no Studio type, and depends on one artifact (`javafx-controls
 **One runtime class: `managed.ManagedValues`**, the bot-side half of a managed value
 (`claim(ManagedValue<T>, Consumer<? super T>)`, `install(Class<?>...)`). It runs inside a bot, which already
 has this jar through any plugin whose own annotation (meta-annotated `@ManagedMarker`) sits there. Add nothing else of the kind: the test is *does
-every plugin with a bot-side half need it, and does it name nothing but this module and the JDK*.
+every plugin with a bot-side half need it, and does it name nothing but this module and the JDK*. The bot's own
+`params` package passes it too (2026-11-15, spec `2026-11-15-run-claims-design.md`): `params.Pool`, a value the host
+reads by its grammar and the run's agent fills, and `params.Claims`, served by the run's agent and granting every
+claim without one.
 
 Studio is the host; `botmaker-sdk` is the first plugin — a *privileged default* plugin, but a plugin, with
 no back door. If the SDK needs something this module does not expose, the contract is wrong, not the SDK.

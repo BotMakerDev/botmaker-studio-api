@@ -19,6 +19,13 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **Pools: several runs of a bot at once** (2026-11-15, compatible; `params.Pools`, `params.Pool`): a `@Pools` class of
+  the bot's `params` package holds pools, each filling one parameter by method reference
+  (`Pool.of(a, b).fills(Farm::account)`, `Pool.all(Hero.class).take(3).fills(Farm::team)`, `.each(n)`, `.rotate()`).
+  The parameter itself is unchanged; the host deals each run its elements. A lambda given to `fills` is refused.
+- **`params.Claims`** (2026-11-15, compatible): `claim(key)` holds a value only a running bot knows so no other live
+  run takes it, `release(key)` frees it early. Served by the run's agent; without one every claim is granted.
+
 - **`StudioServices.sideRuns()`** (2026-11-15, compatible; `run.SideRuns`, `run.SideRun`): run a bot that is not the
   open one, beside it, with or without a bot open. `start(folder, properties, environment)` compiles a project folder
   or an unpacked `.bmk` when its sources changed and starts it in its own process; the properties are its `-D`s, and
