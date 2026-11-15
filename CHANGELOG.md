@@ -15,6 +15,15 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Added
+
+- **`StudioServices.sideRuns()`** (2026-11-15, compatible; `run.SideRuns`, `run.SideRun`): run a bot that is not the
+  open one, beside it, with or without a bot open. `start(folder, properties, environment)` compiles a project folder
+  or an unpacked `.bmk` when its sources changed and starts it in its own process; the properties are its `-D`s, and
+  the environment reaches only the process, never its command line. The default is `SideRuns.NONE`, which refuses.
+
 ## [0.17.1] — 2026-11-13
 
 ### Added

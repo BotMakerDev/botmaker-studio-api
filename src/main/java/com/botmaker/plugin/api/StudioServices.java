@@ -1,5 +1,6 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.run.SideRuns;
 import com.botmaker.plugin.api.source.PluginValues;
 
 import java.nio.file.Path;
@@ -91,6 +92,16 @@ public interface StudioServices {
      */
     default Runs runs() {
         return Runs.NONE;
+    }
+
+    /**
+     * Running a bot that is not the open project's, beside it or with none open — see {@link SideRuns}.
+     *
+     * <p>{@code default} for the reason {@link #runs()} is: a host that runs no bot answers {@link SideRuns#NONE},
+     * whose every start refuses with words saying so.
+     */
+    default SideRuns sideRuns() {
+        return SideRuns.NONE;
     }
 
     /**
