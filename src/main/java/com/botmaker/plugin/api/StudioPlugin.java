@@ -3,6 +3,7 @@ package com.botmaker.plugin.api;
 import com.botmaker.plugin.api.assist.AssistantTool;
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.overlay.OverlayPart;
+import com.botmaker.plugin.api.run.PluginPool;
 import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.RunChannel;
 import com.botmaker.plugin.api.run.ReportView;
@@ -213,6 +214,15 @@ public sealed interface StudioPlugin permits DeclaredPlugin {
      * JavaFX is needed.
      */
     default List<RunEntry> runEntries() {
+        return List.of();
+    }
+
+    /**
+     * The pools several runs at once are dealt from, each for one of this plugin's own parameters
+     * ({@link PluginPool}), in the order a row is dealt them; a parameter has one pool. Called each time the host
+     * deals, with or without a bot open, so keep the pools in {@code static final} fields; no JavaFX is needed.
+     */
+    default List<PluginPool<?>> pools() {
         return List.of();
     }
 

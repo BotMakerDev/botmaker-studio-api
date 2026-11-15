@@ -4,6 +4,7 @@ import com.botmaker.plugin.api.assist.AssistantTool;
 import com.botmaker.plugin.api.assist.TrialEntry;
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.overlay.OverlayPart;
+import com.botmaker.plugin.api.run.PluginPool;
 import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.RunChannel;
 import com.botmaker.plugin.api.run.ReportView;
@@ -84,6 +85,7 @@ public final class PluginDeclaration {
     private List<Class<? extends AssistantHolder>> assistantHolders = List.of();
     private List<Class<? extends ReportViewHolder>> reportViewHolders = List.of();
     private List<Class<? extends RunEntryHolder>> runEntryHolders = List.of();
+    private List<Class<? extends PoolHolder>> poolHolders = List.of();
     private Class<? extends OverlayHolder> overlayHolder;
     private Class<? extends CatalogHolder> catalogHolder;
     private String guide = "";
@@ -112,6 +114,7 @@ public final class PluginDeclaration {
         copy.assistantHolders = assistantHolders;
         copy.reportViewHolders = reportViewHolders;
         copy.runEntryHolders = runEntryHolders;
+        copy.poolHolders = poolHolders;
         copy.overlayHolder = overlayHolder;
         copy.catalogHolder = catalogHolder;
         copy.guide = guide;
@@ -203,6 +206,18 @@ public final class PluginDeclaration {
     public final PluginDeclaration runs(Class<? extends RunEntryHolder>... holders) {
         List<Class<? extends RunEntryHolder>> named = holders("runs", "MyRuns", holders);
         return with(copy -> copy.runEntryHolders = added(runEntryHolders, named));
+    }
+
+    /**
+     * The classes giving the pools several runs at once are dealt from, each for one of its own parameters —
+     * {@link StudioPlugin#pools()}.
+     *
+     * @throws IllegalArgumentException when no holder is given, or one is {@code null}, abstract or an inner class
+     */
+    @SafeVarargs
+    public final PluginDeclaration pools(Class<? extends PoolHolder>... holders) {
+        List<Class<? extends PoolHolder>> named = holders("pools", "MyPools", holders);
+        return with(copy -> copy.poolHolders = added(poolHolders, named));
     }
 
     /**
@@ -356,6 +371,21 @@ public final class PluginDeclaration {
             }
         }
         return entries;
+    }
+
+    /**
+     * The holders' pools, the same pool given twice counted once: a pool has no equality, which is why each is kept
+     * in a {@code static final} field. Two for one parameter would deal it two values.
+     */
+    List<PluginPool<?>> pools() {
+        List<PluginPool<?>> pools = given(poolHolders, PoolHolder::pools);
+        Set<String> filled = new HashSet<>();
+        for (PluginPool<?> pool : pools) {
+            if (!filled.add(pool.parameter().id())) {
+                throw new IllegalStateException("Two pools fill " + pool.parameter().id());
+            }
+        }
+        return pools;
     }
 
     Optional<OverlayPart> overlay() {

@@ -89,6 +89,13 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   entries with one title are refused when the host lists them. **The trial entry**: `.trial(Bot::trial)`, a `TrialEntry`. It is
   resolved and checked to be a public static `(Runnable, Class<?>...)` in the step itself, so a bad one fails
   the plugin's own construction.
+- **A pool for one of the plugin's parameters** (2026-11-15, umbrella spec `2026-11-15-run-claims-design.md` §2):
+  `PluginPool.fills(SdkValues.INSTANCE).from(SdkPools::instances)` → `.narrowedBy(…)`, `.offering(…)`. Listed by a
+  `PoolHolder`, through `.pools(MyPools.class)`, in the order a row is dealt them. Candidates are typed values of
+  the parameter's class from the plugin's data of this PC (`hostValues()`, handed in with the services); the
+  narrowing reads the row's earlier picks by `ManagedParam` (`Picks.of`), and an offer (`PoolOffer.of(title,
+  action)`) is run by the plugin on the user's click only. `Picks` and `Shortfall` are the host's to implement, so
+  they may grow. Two pools for one parameter are refused when the host lists them.
 
 `StudioPlugin` is sealed to `DeclaredPlugin` and every surface method of `DeclaredPlugin` is `final`
 (2026-10-27, 2026-10-28): there is no second way to be a plugin, so nobody has to know which methods to

@@ -3,6 +3,7 @@ package com.botmaker.plugin.api;
 import com.botmaker.plugin.api.assist.AssistantTool;
 import com.botmaker.plugin.api.catalog.PaletteCatalog;
 import com.botmaker.plugin.api.overlay.OverlayPart;
+import com.botmaker.plugin.api.run.PluginPool;
 import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.RunChannel;
 import com.botmaker.plugin.api.run.ReportView;
@@ -103,6 +104,11 @@ public non-sealed class DeclaredPlugin implements StudioPlugin {
     @Override
     public final List<RunEntry> runEntries() {
         return declaration.runEntries();
+    }
+
+    @Override
+    public final List<PluginPool<?>> pools() {
+        return declaration.pools();
     }
 
     @Override

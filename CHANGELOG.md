@@ -25,6 +25,11 @@ is allowed to make. Additions arrive as `default` methods.
   The parameter itself is unchanged; the host deals each run its elements. A lambda given to `fills` is refused.
 - **`params.Claims`** (2026-11-15, compatible): `claim(key)` holds a value only a running bot knows so no other live
   run takes it, `release(key)` frees it early. Served by the run's agent; without one every claim is granted.
+- **A plugin's pools** (2026-11-15, compatible; the step `pools(…)`, `PoolHolder`, `run.PluginPool`, `run.PoolOffer`,
+  `StudioPlugin.pools()`): `PluginPool.fills(MY_PARAM).from(MyPools::candidates)` gives the values this PC has for
+  one of your own parameters, which the host deals to several runs at once, one each. `.narrowedBy(…)` leaves the
+  candidates that go with the row's earlier picks (`Picks.of(parameter)`); `.offering(…)` answers ways to have more
+  (`PoolOffer.of(title, action)`), which only the user's click runs. Nothing changes for a plugin that declares none.
 
 - **`StudioServices.sideRuns()`** (2026-11-15, compatible; `run.SideRuns`, `run.SideRun`): run a bot that is not the
   open one, beside it, with or without a bot open. `start(folder, properties, environment)` compiles a project folder
