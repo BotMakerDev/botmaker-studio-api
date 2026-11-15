@@ -23,6 +23,10 @@ is allowed to make. Additions arrive as `default` methods.
   open one, beside it, with or without a bot open. `start(folder, properties, environment)` compiles a project folder
   or an unpacked `.bmk` when its sources changed and starts it in its own process; the properties are its `-D`s, and
   the environment reaches only the process, never its command line. The default is `SideRuns.NONE`, which refuses.
+- **`SideRuns.catalogCopy(repo)`** (2026-11-15, compatible, a `default` that refuses): the run copy of a catalog bot
+  (`owner/repo`) for a plugin that runs one of its own, such as the SDK's Google sign-in: its newest approved
+  release, the `.bmk` checked against the catalog's sha256, kept once, and the last copy offline. Only a bot the
+  catalog ranks official is got this way, as no trust sheet is shown.
 
 ## [0.17.1] — 2026-11-13
 

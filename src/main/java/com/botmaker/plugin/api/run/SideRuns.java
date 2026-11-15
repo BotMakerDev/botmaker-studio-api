@@ -29,6 +29,20 @@ public interface SideRuns {
      */
     SideRun start(Path bot, Map<String, String> properties, Map<String, String> environment) throws IOException;
 
+    /**
+     * The run copy of the catalog bot {@code repo} ({@code owner/repo}), a folder to {@link #start}: its newest approved
+     * release, the {@code .bmk} checked against the catalog's sha256 and its jars as {@code Get} checks them, kept once;
+     * offline, the copy kept the last time. For a plugin that runs a bot of its own, such as the SDK's Google sign-in,
+     * without the user getting it from the bot list. Only a bot the catalog ranks official is got this way: no trust
+     * sheet is shown.
+     *
+     * @throws IOException when there is none to run, the message saying why in the user's words: not listed, not
+     *                     official, not released yet, or offline with no copy kept
+     */
+    default Path catalogCopy(String repo) throws IOException {
+        throw new IOException("This BotMaker gets no bot from the catalog.");
+    }
+
     /** A host that runs no bot but the open one: every start refuses. */
     SideRuns NONE = (bot, properties, environment) -> {
         throw new IOException("This BotMaker runs no bot beside the open one.");
