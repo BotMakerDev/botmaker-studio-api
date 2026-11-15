@@ -1,5 +1,6 @@
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.run.LiveRuns;
 import com.botmaker.plugin.api.run.SideRuns;
 import com.botmaker.plugin.api.source.PluginValues;
 
@@ -102,6 +103,15 @@ public interface StudioServices {
      */
     default SideRuns sideRuns() {
         return SideRuns.NONE;
+    }
+
+    /**
+     * The live runs of this PC, for setup work that must hold what a run could be dealt — see {@link LiveRuns}.
+     *
+     * <p>{@code default}: a host with no registry answers {@link LiveRuns#NONE}, whose holds hold nothing.
+     */
+    default LiveRuns liveRuns() {
+        return LiveRuns.NONE;
     }
 
     /**

@@ -19,6 +19,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **Setup work holds what a run could be dealt** (2026-11-15, compatible; `StudioServices.liveRuns()`,
+  `run.LiveRuns`): `hold(parameter, value, by)` holds a value of a parameter your pool fills in the host's registry of
+  live runs until the returned `Held` is closed or the process ends, so a start of several runs is dealt another; it
+  throws `LiveRuns.Taken`, in the user's words, when a live run holds it. A host with no registry answers
+  `LiveRuns.NONE`, whose holds hold nothing.
 - **Pools: several runs of a bot at once** (2026-11-15, compatible; `params.Pools`, `params.Pool`): a `@Pools` class of
   the bot's `params` package holds pools, each filling one parameter by method reference
   (`Pool.of(a, b).fills(Farm::account)`, `Pool.all(Hero.class).take(3).fills(Farm::team)`, `.each(n)`, `.rotate()`).
