@@ -39,7 +39,8 @@ has this jar through any plugin whose own annotation (meta-annotated `@ManagedMa
 every plugin with a bot-side half need it, and does it name nothing but this module and the JDK*. The bot's own
 `params` package passes it too (2026-11-15, spec `2026-11-15-run-claims-design.md`): `params.Pool`, a value the host
 reads by its grammar and the run's agent fills, and `params.Claims`, served by the run's agent and granting every
-claim without one.
+claim without one. And `managed.RunHostValues` (2026-11-15, plan `2026-11-15-run-claims.md` phase 10): a plugin's
+run-time half reads and writes its own values of this PC, served by the run's agent, refused without one.
 
 Studio is the host; `botmaker-sdk` is the first plugin — a *privileged default* plugin, but a plugin, with
 no back door. If the SDK needs something this module does not expose, the contract is wrong, not the SDK.

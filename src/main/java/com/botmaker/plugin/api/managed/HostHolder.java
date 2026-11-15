@@ -29,8 +29,9 @@ package com.botmaker.plugin.api.managed;
  * configuration folder ({@code plugins/<group>/<artifact>/}, named as {@code StudioServices.resourcesDir()} is), in
  * the package {@code <group>.<artifact>}. The host writes it as it writes a bot's values, checks that it compiles
  * against your plugin, and keeps it out of every bot: it is never committed, published, put in a {@code .bmk}, moved
- * to another PC, or on a run's classpath. <b>No bot run reads it</b>; your plugin's windows and assistant tools do.
- * A run that needs a fact of this PC still gets it as a parameter of the bot.
+ * to another PC, or on a run's classpath. Your plugin's windows and assistant tools read and write it, and so does
+ * your plugin's run-time half, through {@link RunHostValues} (2026-11-15); the bot's own code reaches none. A fact of
+ * this PC a bot's code needs still comes to it as a parameter of the bot.
  *
  * <p><b>Not for a secret.</b> No password or token is a value, here or in a bot.
  *

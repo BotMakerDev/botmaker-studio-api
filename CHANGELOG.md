@@ -19,6 +19,12 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- **A run's own values of this PC** (2026-11-15, compatible; `managed.RunHostValues`): your plugin's runtime code
+  reads one of its `HostHolder` values with `RunHostValues.read(VALUE)` and changes it with `update(VALUE, kept -> …)`,
+  which reads and writes under the folder's lock so several runs keep each other's changes. Only your own jar's
+  values are answered; BotMaker commits what a run changed when it ends. Outside a run started by BotMaker both
+  answer empty or say why.
+
 - **Setup work holds what a run could be dealt** (2026-11-15, compatible; `StudioServices.liveRuns()`,
   `run.LiveRuns`): `hold(parameter, value, by)` holds a value of a parameter your pool fills in the host's registry of
   live runs until the returned `Held` is closed or the process ends, so a start of several runs is dealt another; it
