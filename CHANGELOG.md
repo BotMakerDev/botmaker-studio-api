@@ -15,6 +15,13 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Changed
+
+- Licensed under PolyForm Noncommercial 1.0.0, copyright LiQiyeDev: free for any noncommercial use, commercial use
+  needs a license from LiQiyeDev. Releases up to v0.18.0 stay CC0 1.0.
+
 ## [0.18.0] — 2026-11-16
 
 ### Added
