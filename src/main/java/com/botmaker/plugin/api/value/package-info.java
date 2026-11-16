@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 LiQiyeDev
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+
 /**
  * The types a project's values may be — and, since this lives here rather than in the SDK, a set any plugin
  * may extend.

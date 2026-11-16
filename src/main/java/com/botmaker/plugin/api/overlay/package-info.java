@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 LiQiyeDev
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+
 /**
  * A plugin's part of the host's overlay editor — the panel docked beside the window a bot watches, where a
  * user builds the bot while looking at what it sees.

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 LiQiyeDev
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+
 /**
  * Tools a plugin offers the AI assistant that drives Studio, and the entry Studio calls to try one statement.
  *

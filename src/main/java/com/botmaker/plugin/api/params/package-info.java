@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 LiQiyeDev
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+
 /**
  * What a <b>bot's own</b> {@code params} package is made of: its parameters, its pools, and the claims a run makes.
  *

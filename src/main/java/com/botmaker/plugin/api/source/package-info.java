@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 LiQiyeDev
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+
 /**
  * The Java in a bot that holds a plugin's values, and the one expression in it the host may rewrite.
  *

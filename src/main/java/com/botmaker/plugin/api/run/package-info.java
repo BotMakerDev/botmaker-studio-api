@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 LiQiyeDev
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+
 /**
  * A plugin's part of the host's run overlay — what is shown while the project's bot runs, or while it is
  * being edited in the overlay editor ({@link com.botmaker.plugin.api.run.RunOverlayContext#mode()}). The editor

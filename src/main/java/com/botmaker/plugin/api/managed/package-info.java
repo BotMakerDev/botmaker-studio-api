@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 LiQiyeDev
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+
 /**
  * The annotation a <b>bot's own</b> methods and types carry to say a plugin's window keeps them up to date.
  *

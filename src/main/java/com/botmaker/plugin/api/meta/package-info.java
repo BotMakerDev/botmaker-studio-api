@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 LiQiyeDev
+// SPDX-License-Identifier: PolyForm-Noncommercial-1.0.0
+
 /**
  * The marks that carry a bot's code between versions of the APIs it calls: written by the host and the bot's
  * author on the bot's own code, and, for {@link com.botmaker.plugin.api.meta.Migrate}, by a plugin on its own.

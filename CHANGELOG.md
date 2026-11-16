@@ -19,6 +19,8 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Changed
 
+- Every file states its license and copyright by REUSE (`REUSE.toml`, `LICENSES/`), every Java source starts with
+  its SPDX header, and the `reuse` workflow checks both on each push.
 - Licensed under PolyForm Noncommercial 1.0.0, copyright LiQiyeDev: free for any noncommercial use, commercial use
   needs a license from LiQiyeDev. Releases up to v0.18.0 stay CC0 1.0.
 
