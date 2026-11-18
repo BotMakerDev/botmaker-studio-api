@@ -3,7 +3,9 @@
 
 package com.botmaker.plugin.api.assist;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 /**
  * An {@link AssistantTool}'s whole input, as a tree the host writes into the schema the assistant sees: the
@@ -26,6 +28,29 @@ public final class ToolSchema {
     ToolSchema(List<Field> fields, List<Action> actions) {
         this.fields = List.copyOf(fields);
         this.actions = List.copyOf(actions);
+    }
+
+    /**
+     * The schema of a parameter record, read as {@link AssistantTool.Taking#takes} reads it: for a declaration that
+     * is typed as a tool's parameters without being a tool, such as a run's ({@code RunEntry.takes}).
+     *
+     * @throws IllegalArgumentException naming the component the schema cannot say
+     */
+    public static ToolSchema of(Class<? extends Record> params) {
+        if (params == null || !params.isRecord()) throw new IllegalArgumentException("parameters are a record class");
+        return new ToolSchema(ToolSchemas.fieldsOf(params, new HashSet<>()), List.of());
+    }
+
+    /**
+     * {@code params} built from {@code sent} — {@code String}, {@code Boolean}, {@code Number}, {@code List} and
+     * {@code Map} values, as a JSON object reads — as a tool's call builds its record: an optional field left out is
+     * {@code null}.
+     *
+     * @throws IllegalArgumentException naming the key that is missing, unknown or does not fit
+     */
+    public static <P extends Record> P build(Class<P> params, Map<String, ?> sent) {
+        List<Field> fields = of(params).fields();
+        return ToolArguments.record(params, fields, sent == null ? Map.of() : sent, "", "");
     }
 
     /** The top-level fields, in declared order; for an action tool, {@code action} first. */

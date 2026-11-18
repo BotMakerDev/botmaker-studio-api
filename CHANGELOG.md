@@ -17,6 +17,15 @@ is allowed to make. Additions arrive as `default` methods.
 
 ## [Unreleased]
 
+### Added
+
+- A plugin's run takes typed parameters: `RunEntry.takes(Params.class)` names a record whose components, read as an
+  assistant tool's are (`@Describe`, optional, enums, nested records), are what the run takes; `schema()` lists them
+  and `needsArguments()` says whether any is required (such an entry stays off Studio's bar). The host checks what
+  it is given against them before the start, a refusal naming the field, and the run's main reads them with
+  `run.RunArguments.read(Params.class)`, a field left out null. `ToolSchema.of(record)` and
+  `ToolSchema.build(record, values)` read a record's schema and build one from values. Compatible.
+
 ### Changed
 
 - Every file states its license and copyright by REUSE (`REUSE.toml`, `LICENSES/`), every Java source starts with

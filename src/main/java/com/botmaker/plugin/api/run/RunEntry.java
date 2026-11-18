@@ -3,11 +3,13 @@
 
 package com.botmaker.plugin.api.run;
 
+import com.botmaker.plugin.api.assist.ToolSchema;
 import com.botmaker.plugin.api.value.Ref;
 
 import java.lang.reflect.Executable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -16,12 +18,16 @@ import java.util.Objects;
  *
  * <p>The host runs it as it runs the bot — same JVM options, the project's classpath, the run's log and its
  * end-of-run dialog — with this entry's class as the JVM's main class instead of the bot's. Its {@code args} are
- * the binary names of the bot's value-holder classes, the same list ▶ Try hands the trial entry, so the entry can
+ * the binary names of the bot's value holders, the same list ▶ Try hands the trial entry, so the entry can
  * install the bot's values without naming them.
+ *
+ * <p>An entry may take parameters, typed as an assistant tool's are ({@link #takes}): the assistant and the shell
+ * start it with arguments, and its {@code main} reads them with {@link RunArguments#read}.
  *
  * <p>The host puts a button for it on the plugin's toolbar tab, unless the plugin declares it {@link #offBar()}:
  * then the plugin's own window starts it ({@link com.botmaker.plugin.api.Runs#start(RunEntry)}), and the assistant
- * lists and runs it as before.
+ * lists and runs it as before. A button starts an entry with no arguments, so an entry {@link #needsArguments()
+ * that needs some} gets none.
  */
 public final class RunEntry {
 
@@ -34,11 +40,20 @@ public final class RunEntry {
     private final String title;
     private final String mainClass;
     private final boolean onBar;
+    /** The parameter record; {@code null} for an entry that takes none. */
+    private final Class<? extends Record> params;
+    private final ToolSchema schema;
 
-    private RunEntry(String title, String mainClass, boolean onBar) {
+    private RunEntry(String title, String mainClass, boolean onBar, Class<? extends Record> params) {
         this.title = title;
         this.mainClass = mainClass;
         this.onBar = onBar;
+        this.params = params;
+        this.schema = ToolSchema.of(params == null ? None.class : params);
+    }
+
+    /** The parameters of an entry that takes none. */
+    private record None() {
     }
 
     /**
@@ -57,7 +72,23 @@ public final class RunEntry {
                 || method.getParameterCount() != 1 || method.getParameterTypes()[0] != String[].class) {
             throw new IllegalArgumentException(named + " is not a public static main(String[])");
         }
-        return new RunEntry(title.strip(), method.getDeclaringClass().getName(), true);
+        return new RunEntry(title.strip(), method.getDeclaringClass().getName(), true, null);
+    }
+
+    /**
+     * This entry taking {@code params}' components as its parameters, each described as an assistant tool's
+     * ({@link com.botmaker.plugin.api.assist.Describe}, optional or not): the host lists them ({@link #schema()}),
+     * checks what a caller sends against them, and the run reads them back with
+     * {@code RunArguments.read(params)}. No field is a secret: arguments cross on the run's command line.
+     *
+     * @throws IllegalArgumentException when {@code params} is not a record, or holds a component a tool's parameters
+     *                                  could not, naming it
+     */
+    public <P extends Record> RunEntry takes(Class<P> params) {
+        if (params == null || !params.isRecord()) {
+            throw new IllegalArgumentException(title + ": a run's parameters are a record class");
+        }
+        return new RunEntry(title, mainClass, onBar, params);
     }
 
     /** What the host shows on the entry's button and what the assistant names it by. */
@@ -75,12 +106,37 @@ public final class RunEntry {
      * the same entry: still declared, still listed and run by the assistant, equal to this one.
      */
     public RunEntry offBar() {
-        return new RunEntry(title, mainClass, false);
+        return new RunEntry(title, mainClass, false, params);
     }
 
     /** Whether the host puts a button for this entry on the plugin's toolbar tab; false after {@link #offBar()}. */
     public boolean onBar() {
         return onBar;
+    }
+
+    /** The entry's parameters, as {@link #takes} read them; no field for an entry that takes none. */
+    public ToolSchema schema() {
+        return schema;
+    }
+
+    /** Whether one of its parameters is required, so that it cannot start with none. */
+    public boolean needsArguments() {
+        return schema.fields().stream().anyMatch(field -> !field.optional());
+    }
+
+    /**
+     * What the host hands the run for {@code sent}, checked against {@link #schema()}: the text of the system
+     * property {@link RunArguments#PROPERTY}, which {@link RunArguments#read} reads back. {@code sent} is a JSON
+     * object read into {@code String}, {@code Boolean}, {@code Number}, {@code List} and {@code Map} values;
+     * {@code null} or empty is none, whose text is {@code ""}: the host then sets no property.
+     *
+     * @throws IllegalArgumentException naming the key that is missing, unknown or does not fit
+     */
+    public String arguments(Map<String, ?> sent) {
+        Map<String, ?> given = sent == null ? Map.of() : sent;
+        Class<? extends Record> type = params == null ? None.class : params;
+        ToolSchema.build(type, given);
+        return given.values().stream().allMatch(Objects::isNull) ? "" : RunArguments.encode(given);
     }
 
     /** Title and main class only: an entry taken {@link #offBar() off the bar} is the same entry. */
