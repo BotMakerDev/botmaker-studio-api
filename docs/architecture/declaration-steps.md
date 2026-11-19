@@ -52,7 +52,9 @@ maintainer's call, over a toolkit builder: a plugin needs no toolkit to declare 
   the first that `writes` it and `rebuilds` it (`build(components(v))` equals `v`), else the first that writes
   it — so a value holding a lambda, equal only to itself, still has a writer. `.when` is for what equality
   cannot decide: a value written as its constant (`PictureTag`), or one holding a lambda.
-- **A managed value**: `ManagedValue.method(id).in(holder).holds(T.class, initial).because(reason)`,
+- **A managed value**: `ManagedValue.method(id).in(holder).holds(T.class, initial).because(reason)`, or
+  `.startsAs(Owner::noTargets)` instead of `holds` for a generic type (`List<Launcher>`), which a class literal
+  cannot say and the host would write raw (2026-11-19, `ManagedMethod.form()`);
   `.openedOnly().holds(T.class)` instead of `in` for one the host may open and never create, and
   `ManagedValue.openSet(id).of(E.class).in(holder).because(reason)`, `E` being the class of each constant;
   `.ofEnum(E.class, Owner::byName)` instead of `of` makes the holder an enum implementing the interface `E`,

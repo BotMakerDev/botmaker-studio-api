@@ -25,6 +25,11 @@ is allowed to make. Additions arrive as `default` methods.
   it is given against them before the start, a refusal naming the field, and the run's main reads them with
   `run.RunArguments.read(Params.class)`, a field left out null. `ToolSchema.of(record)` and
   `ToolSchema.build(record, values)` read a record's schema and build one from values. Compatible.
+- A method value of a generic type keeps its arguments: `ManagedValue.method(…).in(…).startsAs(Owner::noTargets)`
+  takes the method's whole return type (`List<Launcher>`) and its first value from a static method of no argument,
+  and `ManagedMethod.form()` says that type (the class itself for one declared by `holds`). The host writes a created
+  method with it, and repairs on bind a method a host wrote raw (`List launchTargets()`), which no reader could edit.
+  Declare a `List` or any generic value by `startsAs`, not by `holds` and a cast. Compatible.
 
 ### Changed
 

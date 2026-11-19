@@ -3,6 +3,13 @@
 
 package com.botmaker.plugin.api.source;
 
+import com.botmaker.plugin.api.value.Ref;
+
+import java.lang.invoke.MethodType;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
+
 /**
  * One value a window of your plugin edits, kept as a method in the bot: {@code @SdkValue(SdkValue.Id.SETTINGS)
  * public static BotSettings settings() { return …; }}. The host rewrites only the expression the method returns, and never adds or
@@ -17,11 +24,22 @@ package com.botmaker.plugin.api.source;
  */
 public final class ManagedMethod<T> extends ManagedValue<T> {
 
+    private final Type form;
     private final T initial;
 
-    ManagedMethod(Key key, String holder, Class<T> type, T initial, String reason) {
+    ManagedMethod(Key key, String holder, Class<T> type, Type form, T initial, String reason) {
         super(key, holder, type, reason);
+        this.form = form;
         this.initial = initial;
+    }
+
+    /**
+     * The method's whole return type, which {@link #type()} cannot say: {@code List<Launcher>} where {@code type()} is
+     * {@code List}. The host writes a created method with it, and repairs a method whose return type lacks its
+     * arguments. {@link #type()} itself for a value declared by {@link TypeStep#holds}.
+     */
+    public Type form() {
+        return form;
     }
 
     /**
@@ -84,11 +102,34 @@ public final class ManagedMethod<T> extends ManagedValue<T> {
 
         /**
          * A method returning a {@code type}, first returning {@code initial} when the host creates it — or,
-         * with {@code null}, the type's own fresh value.
+         * with {@code null}, the type's own fresh value. A generic type is written without its arguments: declare
+         * one by {@link #startsAs} instead.
          */
         public <T> Reason<ManagedMethod<T>> holds(Class<T> type, T initial) {
             requireType(key, type, "type");
-            return new Reason<>(reason -> new ManagedMethod<>(key, holder, type, initial, reason));
+            return new Reason<>(reason -> new ManagedMethod<>(key, holder, type, type, initial, reason));
+        }
+
+        /**
+         * A method returning the type {@code initial}'s method returns — generic arguments included, which a class
+         * literal cannot say: {@code List<Launcher>} — first returning what it returns. The method is called once,
+         * here.
+         *
+         * @param initial a method reference to a {@code static} method of no argument — {@code SdkValues::noTargets},
+         *                returning {@code List<Launcher>}
+         * @throws IllegalArgumentException when {@code initial} is no reference to a static method, or it returns
+         *                                  nothing: a lambda's own method says no generic type
+         */
+        public <T> Reason<ManagedMethod<T>> startsAs(Ref.Of0<T> initial) {
+            if (!(Ref.resolve(initial) instanceof Method method) || method.getReturnType() == void.class
+                    || method.isSynthetic() || !Modifier.isStatic(method.getModifiers())) {
+                throw new IllegalArgumentException(key.id() + ": startsAs names a static method returning the value");
+            }
+            @SuppressWarnings("unchecked")
+            Class<T> type = (Class<T>) MethodType.methodType(method.getReturnType()).wrap().returnType();
+            T first = initial.call();
+            Type form = method.getGenericReturnType();
+            return new Reason<>(reason -> new ManagedMethod<>(key, holder, type, form, first, reason));
         }
     }
 
@@ -104,7 +145,7 @@ public final class ManagedMethod<T> extends ManagedValue<T> {
         /** A method returning a {@code type}, which the host opens and never writes. */
         public <T> Reason<ManagedMethod<T>> holds(Class<T> type) {
             requireType(key, type, "type");
-            return new Reason<>(reason -> new ManagedMethod<>(key, null, type, null, reason));
+            return new Reason<>(reason -> new ManagedMethod<>(key, null, type, type, null, reason));
         }
     }
 }

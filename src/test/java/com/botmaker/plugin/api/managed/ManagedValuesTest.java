@@ -540,6 +540,23 @@ class ManagedValuesTest {
         assertEquals("", doSetup.description(), "no line reads as none");
     }
 
+    public static List<Integer> noNumbers() {
+        return List.of();
+    }
+
+    @Test
+    void aMethodValueIsTypedByItsMethodWithItsArguments() {
+        ManagedMethod<List<Integer>> numbers = ManagedValue.method(TestValue.Id.FLOW)
+                .in(TestValue.Holder.SDK).startsAs(ManagedValuesTest::noNumbers).because("Mine.");
+        assertEquals(List.class, numbers.type());
+        assertEquals("java.util.List<java.lang.Integer>", numbers.form().getTypeName());
+        assertEquals(List.of(), numbers.initial());
+        assertThrows(IllegalArgumentException.class, () -> ManagedValue.method(TestValue.Id.FLOW)
+                .in(TestValue.Holder.SDK).startsAs(() -> List.<Integer>of()), "a lambda's method has no generic type");
+        assertEquals(String.class, ManagedValue.method(TestValue.Id.FLOW).in(TestValue.Holder.SDK)
+                .holds(String.class, "").because("Mine.").form(), "a class literal is its own form");
+    }
+
     /** A holder constant names its class by its parts, and one class is one file, so any other spelling is refused. */
     @Test
     void aHolderIsAnUpperSnakeConstantNamingOneClass() {
