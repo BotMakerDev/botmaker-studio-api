@@ -19,6 +19,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- A plugin under development restarts its own run on its rebuilt jar: `StudioServices.devReload(RunEntry)` stops the open
+  project's run, reloads every plugin over its jars as they are now and starts the reloaded plugin's same entry,
+  answering `run.DevReload.Started` once accepted (the caller's instance is closing) or `DevReload.Refused` with why:
+  not in dev mode, the plugin did not load, no such entry. A host that does not reload answers
+  `DevReload.REFUSED_HERE`. Compatible.
 - A plugin's run takes typed parameters: `RunEntry.takes(Params.class)` names a record whose components, read as an
   assistant tool's are (`@Describe`, optional, enums, nested records), are what the run takes; `schema()` lists them
   and `needsArguments()` says whether any is required (such an entry stays off Studio's bar). The host checks what

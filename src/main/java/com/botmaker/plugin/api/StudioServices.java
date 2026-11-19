@@ -3,7 +3,9 @@
 
 package com.botmaker.plugin.api;
 
+import com.botmaker.plugin.api.run.DevReload;
 import com.botmaker.plugin.api.run.LiveRuns;
+import com.botmaker.plugin.api.run.RunEntry;
 import com.botmaker.plugin.api.run.SideRuns;
 import com.botmaker.plugin.api.source.PluginValues;
 
@@ -205,5 +207,23 @@ public interface StudioServices {
      */
     default PluginLog log() {
         return PluginLog.STANDARD_ERROR;
+    }
+
+    /**
+     * Restarts this plugin's own run on a rebuilt plugin, for whoever is developing the plugin (2026-11-19): stops
+     * the open project's run, reloads every plugin over its jars as they are now (a local {@code -SNAPSHOT} just
+     * installed), then starts the reloaded plugin's run entry with {@code entry}'s title and main class, as the user's
+     * Start would.
+     *
+     * <p>Dev mode only, and asynchronous: it answers once the reload is accepted. It is refused, with nothing
+     * stopped, outside dev mode, when the rebuilt plugin does not load, or when it declares no such entry. The
+     * caller's own instance is closed by it, so a {@link DevReload.Started} answer is the caller's last act: start
+     * nothing after it.
+     *
+     * <p>Host-only because the loader is: a plugin cannot unload its own classes. {@code default} for the reason
+     * {@link #runs()} is: a host that does not reload plugins answers {@link DevReload#REFUSED_HERE}.
+     */
+    default DevReload devReload(RunEntry entry) {
+        return DevReload.REFUSED_HERE;
     }
 }
