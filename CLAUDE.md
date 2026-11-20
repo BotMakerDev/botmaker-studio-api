@@ -92,7 +92,7 @@ mvn install     # com.github.BotMakerDev:botmaker-studio-api at the pom's main -
 
 Published through JitPack, which serves each git tag under `com.github.BotMakerDev`; a tag's pom carries its
 release version and `main` a `-SNAPSHOT` (umbrella doc 43). **The maintainer owns the publish** — releases are cut
-from the umbrella with `../release.sh --studio-api <version>`.
+from the umbrella with `sluice --studio-api <version>`.
 
 Unlike `botmaker-session` and `botmaker-sdk` this module runs **no `flatten-maven-plugin`**: flatten exists to
 bake a `${botmaker.*.version}` into the published pom, and this module pins no BotMaker upstream. Its
