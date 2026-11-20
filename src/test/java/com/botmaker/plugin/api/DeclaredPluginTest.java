@@ -11,6 +11,8 @@ import com.botmaker.plugin.api.run.AskKind;
 import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.ReportView;
 import com.botmaker.plugin.api.run.RunChannel;
+import com.botmaker.plugin.api.run.RunCompanion;
+import com.botmaker.plugin.api.run.RunContext;
 import com.botmaker.plugin.api.run.RunEntry;
 import com.botmaker.plugin.api.run.RunOverlayPart;
 import com.botmaker.plugin.api.source.ManagedValue;
@@ -150,6 +152,36 @@ class DeclaredPluginTest {
         assertTrue(refused.getMessage().contains("'check'"), refused.getMessage());
         StudioPlugin twice = new DeclaredPlugin(StudioPlugin.declare().runs(Runs.class).runs(Runs.class)) {};
         assertEquals(List.of(Runs.EXPLORE, Runs.CHECK), twice.runEntries(), "an equal entry counts once");
+    }
+
+    static final class Companion implements CompanionHolder {
+        @Override
+        public RunCompanion companion() {
+            return new RunCompanion() {
+                @Override
+                public List<RunEntry> serves() {
+                    return List.of(Runs.EXPLORE);
+                }
+
+                @Override
+                public void start(RunContext run) {
+                }
+
+                @Override
+                public void stop() {
+                }
+            };
+        }
+    }
+
+    @Test
+    void companionsGivesANewCompanionEachTimeItIsAsked() {
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare().companions(Companion.class)) {};
+        List<RunCompanion> first = plugin.runCompanions();
+        assertEquals(1, first.size());
+        assertEquals(List.of(Runs.EXPLORE), first.getFirst().serves());
+        assertFalse(first.getFirst() == plugin.runCompanions().getFirst(), "one instance per run");
+        assertTrue(EMPTY.runCompanions().isEmpty());
     }
 
     static final class Overlay implements OverlayHolder {

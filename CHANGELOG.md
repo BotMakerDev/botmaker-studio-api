@@ -19,6 +19,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- A plugin's run can have a companion: the step `companions(Holder.class)` names holders implementing
+  `CompanionHolder`, whose `companion()` gives a fresh `run.RunCompanion` each run. It says which of the plugin's
+  `RunEntry`s it `serves()`, and the core calls `start(RunContext)` when such a run starts and `stop()` when it ends,
+  whether or not Studio is open; Studio never runs one. `RunContext` gives the entry and the project's
+  `StudioServices`. `StudioPlugin.runCompanions()` is a default, so compatible.
 - A plugin under development restarts its own run on its rebuilt jar: `StudioServices.devReload(RunEntry)` stops the open
   project's run, reloads every plugin over its jars as they are now and starts the reloaded plugin's same entry,
   answering `run.DevReload.Started` once accepted (the caller's instance is closing) or `DevReload.Refused` with why:

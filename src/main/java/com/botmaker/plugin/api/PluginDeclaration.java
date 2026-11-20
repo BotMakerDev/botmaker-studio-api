@@ -10,6 +10,7 @@ import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.run.PluginPool;
 import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.RunChannel;
+import com.botmaker.plugin.api.run.RunCompanion;
 import com.botmaker.plugin.api.run.ReportView;
 import com.botmaker.plugin.api.run.RunEntry;
 import com.botmaker.plugin.api.run.RunOverlayPart;
@@ -89,6 +90,7 @@ public final class PluginDeclaration {
     private List<Class<? extends ReportViewHolder>> reportViewHolders = List.of();
     private List<Class<? extends RunEntryHolder>> runEntryHolders = List.of();
     private List<Class<? extends PoolHolder>> poolHolders = List.of();
+    private List<Class<? extends CompanionHolder>> companionHolders = List.of();
     private Class<? extends OverlayHolder> overlayHolder;
     private Class<? extends CatalogHolder> catalogHolder;
     private String guide = "";
@@ -118,6 +120,7 @@ public final class PluginDeclaration {
         copy.reportViewHolders = reportViewHolders;
         copy.runEntryHolders = runEntryHolders;
         copy.poolHolders = poolHolders;
+        copy.companionHolders = companionHolders;
         copy.overlayHolder = overlayHolder;
         copy.catalogHolder = catalogHolder;
         copy.guide = guide;
@@ -209,6 +212,18 @@ public final class PluginDeclaration {
     public final PluginDeclaration runs(Class<? extends RunEntryHolder>... holders) {
         List<Class<? extends RunEntryHolder>> named = holders("runs", "MyRuns", holders);
         return with(copy -> copy.runEntryHolders = added(runEntryHolders, named));
+    }
+
+    /**
+     * The classes giving the companions of its runs, each code the host runs beside a live run of the entries it
+     * serves — {@link StudioPlugin#runCompanions()}.
+     *
+     * @throws IllegalArgumentException when no holder is given, or one is {@code null}, abstract or an inner class
+     */
+    @SafeVarargs
+    public final PluginDeclaration companions(Class<? extends CompanionHolder>... holders) {
+        List<Class<? extends CompanionHolder>> named = holders("companions", "MyCompanion", holders);
+        return with(copy -> copy.companionHolders = added(companionHolders, named));
     }
 
     /**
@@ -374,6 +389,16 @@ public final class PluginDeclaration {
             }
         }
         return entries;
+    }
+
+    /** One new companion from each holder, a holder that gives none left out. */
+    List<RunCompanion> companions() {
+        List<RunCompanion> made = new ArrayList<>();
+        for (Class<? extends CompanionHolder> holder : companionHolders) {
+            RunCompanion companion = built(holder).companion();
+            if (companion != null) made.add(companion);
+        }
+        return List.copyOf(made);
     }
 
     /**

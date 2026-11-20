@@ -9,6 +9,7 @@ import com.botmaker.plugin.api.overlay.OverlayPart;
 import com.botmaker.plugin.api.run.PluginPool;
 import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.RunChannel;
+import com.botmaker.plugin.api.run.RunCompanion;
 import com.botmaker.plugin.api.run.ReportView;
 import com.botmaker.plugin.api.run.RunEntry;
 import com.botmaker.plugin.api.run.RunOverlayPart;
@@ -217,6 +218,15 @@ public sealed interface StudioPlugin permits DeclaredPlugin {
      * JavaFX is needed.
      */
     default List<RunEntry> runEntries() {
+        return List.of();
+    }
+
+    /**
+     * New companions of this plugin's runs ({@link RunCompanion}), one from each holder, asked each time one of its
+     * {@link #runEntries() entries} starts in the process that owns the project; the host starts those that serve it
+     * and stops them when the run ends. A host that shows windows only never asks. No JavaFX is needed.
+     */
+    default List<RunCompanion> runCompanions() {
         return List.of();
     }
 
