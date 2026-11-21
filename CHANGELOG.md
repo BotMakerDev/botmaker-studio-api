@@ -15,6 +15,15 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Added
+
+- `History.together(label, writes)`: a plugin's writes that need not see each other made together, as one step, or
+  none of them; the first refusal is the answer. Each write answers at once and is made when `writes` ends, so a
+  host sends them in one go: the Screens map's Tidy, sixty setup writes. A read inside sees the bot as before. A
+  default method: a host that does not send writes together runs it as `batch`.
+
 ## [0.19.0] — 2026-11-21
 
 ### Added

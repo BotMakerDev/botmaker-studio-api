@@ -3,6 +3,8 @@
 
 package com.botmaker.plugin.api;
 
+import java.util.Optional;
+
 /**
  * The open project's undo history — the steps the host's own ↶ and ↷ take back and do again.
  *
@@ -13,7 +15,8 @@ package com.botmaker.plugin.api;
  * order. Nothing here names a plugin's concept: a step is a label and the files it wrote.
  *
  * <p>Each {@code PluginValues} write is one step. {@link #batch} makes several one — a drag that moved ten
- * cards is one ↶, under the plugin's own name for it.
+ * cards is one ↶, under the plugin's own name for it. {@link #together} makes several one and sends them in one
+ * go, all made or none, for writes that need not see each other.
  *
  * <p>{@link #NONE} is what a host with no editor answers: nothing to undo, nothing ever fires, and a batch
  * just runs its writes.
@@ -59,6 +62,25 @@ public interface History {
      * too — so a plugin reads what its writes answered right after. Only writes made on that thread join the step.
      */
     void batch(String label, Runnable writes);
+
+    /**
+     * Runs {@code writes} and makes every {@code PluginValues} write they make together, as one step named
+     * {@code label}, or none of them: <em>Tidy the map</em>, sixty writes that need not see each other
+     * (2026-11-21). Each write answers at once that it is taken and is made only when {@code writes} ends, all
+     * sent to the editor in one go. When one is refused, the bot is left as it was before the first and the
+     * first refusal is the answer; empty when every write was made.
+     *
+     * <p>A read inside {@code writes} sees the bot as it was before them, its own writes not yet made: for writes
+     * that read what the one before wrote, use {@link #batch}. A together or a batch inside a together is part of
+     * it. {@code writes} runs exactly once, on the calling thread, before this returns, and only writes made on that
+     * thread join; one that throws makes none of them, and the exception is the caller's.
+     *
+     * <p>A host that sends no writes together runs them as {@link #batch} does and answers empty.
+     */
+    default Optional<String> together(String label, Runnable writes) {
+        batch(label, writes);
+        return Optional.empty();
+    }
 
     /** A host with no editor: nothing to undo, nothing fires, and a batch runs its writes. */
     History NONE = new History() {
