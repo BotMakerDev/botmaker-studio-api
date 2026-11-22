@@ -121,7 +121,7 @@ public abstract sealed class ManagedValue<T> permits ManagedMethod, ManagedParam
      * public static final ManagedParam<Boolean> DO_SETUP = ManagedValue.param(SdkValue.Id.DO_SETUP)
      *         .in(SdkValue.Holder.RUNNING)            // its group, the class Running: the window's heading
      *         .startsAs(SdkParams::doSetup)           // its type, and the value a written parameter starts as
-     *         .shown("Set the game up first", Param.Visibility.PUBLIC)
+     *         .shown("Set the game up first")
      *         .because("The SDK reads this parameter. Change its value in the Runner or Project ▸ Parameters.");
      * }</pre>
      *

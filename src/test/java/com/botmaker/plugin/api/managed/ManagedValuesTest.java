@@ -3,7 +3,6 @@
 
 package com.botmaker.plugin.api.managed;
 
-import com.botmaker.plugin.api.params.Param;
 import com.botmaker.plugin.api.source.ManagedClasses;
 import com.botmaker.plugin.api.source.ManagedMethod;
 import com.botmaker.plugin.api.source.ManagedOpenSet;
@@ -250,7 +249,7 @@ class ManagedValuesTest {
     void eachShapeIsItsOwnType() {
         ManagedMethod<String> method = text(TestValue.Id.GREETING);
         ManagedParam<Boolean> param = ManagedValue.param(Fields.Id.DO_SETUP).in(TestValue.Holder.SDK)
-                .startsAs(ManagedValuesTest::doSetup).shown("",Param.Visibility.EDITOR).because("Mine.");
+                .startsAs(ManagedValuesTest::doSetup).shown("").because("Mine.");
         ManagedOpenSet.OfConstants<String> constants = ManagedValue.openSet(TestValue.Id.SET).of(String.class)
                 .in(TestValue.Holder.SET).because("Mine.");
         ManagedOpenSet.OneEnum<Label> anEnum = ManagedValue.openSet(TestValue.Id.ENUM_SET)
@@ -523,20 +522,18 @@ class ManagedValuesTest {
     @Test
     void aParameterIsTypedByItsMethodAndStartsAsWhatItReturns() {
         ManagedParam<java.util.Set<Class<? extends Number>>> skip = ManagedValue.param(Fields.Id.SKIP).in(TestValue.Holder.SDK)
-                .startsAs(ManagedValuesTest::skip).shown("What to skip",(Param.Visibility) null)
+                .startsAs(ManagedValuesTest::skip).shown("What to skip")
                 .because("Mine.");
         assertEquals(java.util.Set.class, skip.type());
         assertEquals("java.util.Set<java.lang.Class<? extends java.lang.Number>>", skip.form().getTypeName());
         assertEquals(java.util.Set.of(Integer.class), skip.initial());
         assertEquals("What to skip", skip.description());
-        assertEquals(Param.Visibility.EDITOR, skip.visibility());
 
         ManagedParam<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in(TestValue.Holder.SDK)
-                .startsAs(ManagedValuesTest::doSetup).shown(null, Param.Visibility.PUBLIC)
+                .startsAs(ManagedValuesTest::doSetup).shown(null)
                 .because("Mine.");
         assertEquals(Boolean.class, doSetup.type());
         assertEquals(boolean.class, doSetup.form());
-        assertEquals(Param.Visibility.PUBLIC, doSetup.visibility());
         assertEquals("", doSetup.description(), "no line reads as none");
     }
 
@@ -597,9 +594,9 @@ class ManagedValuesTest {
     @Test
     void aConditionalParameterAppliesOnlyWhileItsConditionHolds() {
         ManagedParam<Boolean> doSetup = ManagedValue.param(Fields.Id.DO_SETUP).in(TestValue.Holder.SDK)
-                .startsAs(ManagedValuesTest::doSetup).shown("",Param.Visibility.EDITOR).because("Mine.");
+                .startsAs(ManagedValuesTest::doSetup).shown("").because("Mine.");
         ManagedParam<java.util.Set<Class<? extends Number>>> skip = ManagedValue.param(Fields.Id.SKIP).in(TestValue.Holder.SDK)
-                .startsAs(ManagedValuesTest::skip).shown("What to skip",Param.Visibility.EDITOR)
+                .startsAs(ManagedValuesTest::skip).shown("What to skip")
                 .when(scope -> scope.value(doSetup).orElse(false))
                 .because("Mine.");
         ParamScope settingUp = new ParamScope() {
@@ -616,19 +613,10 @@ class ManagedValuesTest {
         assertTrue(doSetup.appliesIn(ParamScope.NONE), "an unconditional parameter always applies");
 
         ManagedParam<Boolean> throwing = ManagedValue.param(Fields.Id.DO_SETUP).in(TestValue.Holder.SDK)
-                .startsAs(ManagedValuesTest::doSetup).shown("",Param.Visibility.EDITOR)
+                .startsAs(ManagedValuesTest::doSetup).shown("")
                 .when(scope -> { throw new IllegalStateException("broken"); }).because("Mine.");
         assertTrue(throwing.appliesIn(ParamScope.NONE), "a condition that throws holds");
         // Only a parameter has a condition: a method value's steps offer no when.
-    }
-
-    @Test
-    void aVisibilityIsTheAnnotationsSpellingAndAnythingElseIsTheEditorOnly() {
-        assertEquals(Param.PUBLIC, Param.Visibility.PUBLIC.id());
-        assertEquals(Param.EDITOR, Param.Visibility.EDITOR.id());
-        assertEquals(Param.Visibility.PUBLIC, Param.Visibility.fromId("public"));
-        assertEquals(Param.Visibility.EDITOR, Param.Visibility.fromId("nobody"));
-        assertEquals(Param.Visibility.EDITOR, Param.Visibility.fromId(null));
     }
 
     @ManagedMarker

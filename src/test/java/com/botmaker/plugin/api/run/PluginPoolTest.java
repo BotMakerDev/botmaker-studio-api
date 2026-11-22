@@ -9,7 +9,6 @@ import com.botmaker.plugin.api.StudioPlugin;
 import com.botmaker.plugin.api.StudioServices;
 import com.botmaker.plugin.api.managed.ManagedId;
 import com.botmaker.plugin.api.managed.ManagedMarker;
-import com.botmaker.plugin.api.params.Param;
 import com.botmaker.plugin.api.source.ManagedParam;
 import com.botmaker.plugin.api.source.ManagedValue;
 import org.junit.jupiter.api.Test;
@@ -46,9 +45,9 @@ class PluginPoolTest {
     }
 
     static final ManagedParam<String> DEVICE = ManagedValue.param(PcValue.Id.DEVICE).in(PcValue.Holder.RUNNING)
-            .startsAs(PluginPoolTest::first).shown("", Param.Visibility.EDITOR).because("Mine.");
+            .startsAs(PluginPoolTest::first).shown("").because("Mine.");
     static final ManagedParam<String> ACCOUNT = ManagedValue.param(PcValue.Id.ACCOUNT).in(PcValue.Holder.RUNNING)
-            .startsAs(PluginPoolTest::first).shown("", Param.Visibility.EDITOR).because("Mine.");
+            .startsAs(PluginPoolTest::first).shown("").because("Mine.");
 
     static List<String> devices(StudioServices services) {
         return Arrays.asList("pc-1", "pc-2", null, "pc-1", "pc-3");

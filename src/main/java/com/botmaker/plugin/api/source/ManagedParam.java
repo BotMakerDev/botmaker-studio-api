@@ -25,16 +25,14 @@ public final class ManagedParam<T> extends ManagedValue<T> {
     private final Type form;
     private final T initial;
     private final String description;
-    private final Param.Visibility visibility;
     private final Predicate<? super ParamScope> applies;
 
     private ManagedParam(Key key, String holder, Class<T> type, Type form, T initial, String description,
-                         Param.Visibility visibility, Predicate<? super ParamScope> applies, String reason) {
+                         Predicate<? super ParamScope> applies, String reason) {
         super(key, holder, type, reason);
         this.form = form;
         this.initial = initial;
         this.description = description;
-        this.visibility = visibility;
         this.applies = applies;
     }
 
@@ -54,11 +52,6 @@ public final class ManagedParam<T> extends ManagedValue<T> {
     /** Its {@code @Param(description)}: the line beside it. */
     public String description() {
         return description;
-    }
-
-    /** Who sees it, its {@code @Param(visibility)}: {@link Param.Visibility#EDITOR} unless the plugin said otherwise. */
-    public Param.Visibility visibility() {
-        return visibility;
     }
 
     /**
@@ -146,16 +139,15 @@ public final class ManagedParam<T> extends ManagedValue<T> {
         }
 
         /**
-         * The line beside it, and who sees it — {@link Param.Visibility#PUBLIC} for the Runner too,
-         * {@link Param.Visibility#EDITOR} for the Parameters window only; {@code null} reads as the latter.
+         * The line beside it; {@code null} says nothing. Every parameter is the user's, in the Parameters window
+         * and the Runner alike: a visibility went on 2026-11-22.
          *
          * <p>No heading (2026-11-05): the Parameters window lists the parameter under its group, the class
          * {@link Steps#in} names, so a plugin that wants two headings declares two holders.
          */
-        public ConditionStep<T> shown(String description, Param.Visibility visibility) {
+        public ConditionStep<T> shown(String description) {
             return new ConditionStep<>(new ManagedParam<>(key, holder, type, form, initial,
-                    description == null ? "" : description,
-                    visibility == null ? Param.Visibility.EDITOR : visibility, null, null));
+                    description == null ? "" : description, null, null));
         }
     }
 
@@ -196,6 +188,6 @@ public final class ManagedParam<T> extends ManagedValue<T> {
     }
 
     private ManagedParam<T> with(Predicate<? super ParamScope> applies, String reason) {
-        return new ManagedParam<>(key(), holder(), type(), form, initial, description, visibility, applies, reason);
+        return new ManagedParam<>(key(), holder(), type(), form, initial, description, applies, reason);
     }
 }

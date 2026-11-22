@@ -119,15 +119,6 @@ public @interface Param {
          * {@link Changes#DURING_RUN} (the bot writes it; the window shows it read-only).
          */
         Changes changes() default Changes.OUTSIDE_RUN;
-
-        /**
-         * As {@link Param#visibility()}; {@code ""} takes the group's.
-         *
-         * @deprecated every parameter is the user's: a value only the author sets is the bot's data, not a
-         *     parameter. Use {@link #changes()}.
-         */
-        @Deprecated(forRemoval = true)
-        String visibility() default "";
     }
 
     /**
@@ -160,8 +151,7 @@ public @interface Param {
      * When a parameter changes (2026-11-04): it is never "set by the user or by the code", but edited outside a run
      * or written during one.
      *
-     * <p>An enum, unlike {@link Visibility}'s string: every host reads it off the bot's source, and a bot is
-     * recompiled from its source on every run. The constant is still written into a compiled bot's class file, so a
+     * <p>An enum: every host reads it off the bot's source, and a bot is recompiled from its source on every run. The constant is still written into a compiled bot's class file, so a
      * reader of an old class file would fail on a renamed constant: rename one only with a {@code @Migrate} rule,
      * never in place.
      */
@@ -203,70 +193,6 @@ public @interface Param {
         }
     }
 
-    /**
-     * The Parameters window only. The default, and what anything unrecognised is read as.
-     *
-     * @deprecated a value only the author sets is the bot's data, not a parameter (2026-11-04).
-     */
-    @Deprecated(forRemoval = true)
-    String EDITOR = "editor";
-
-    /**
-     * The Runner too: the person starting a run changes it without opening the project.
-     *
-     * @deprecated every parameter is the user's now (2026-11-04).
-     */
-    @Deprecated(forRemoval = true)
-    String PUBLIC = "public";
-
-    /**
-     * Who sees a parameter, typed: what a plugin's own parameter is declared with
-     * ({@code ManagedValue.param(…).shown(…, Param.Visibility.PUBLIC)}).
-     *
-     * @deprecated a value only the author sets is the bot's data, not a parameter, so there is no one to hide a
-     *     parameter from (2026-11-04). When a parameter changes is {@link Changes}.
-     */
-    @Deprecated(forRemoval = true)
-    enum Visibility {
-
-        /** {@link Param#EDITOR}: the Parameters window only. */
-        EDITOR(Param.EDITOR, "Editor only"),
-
-        /** {@link Param#PUBLIC}: the Runner too. */
-        PUBLIC(Param.PUBLIC, "Editor and Runner");
-
-        private final String id;
-        private final String displayName;
-
-        Visibility(String id, String displayName) {
-            this.id = id;
-            this.displayName = displayName;
-        }
-
-        /** The annotation's spelling: {@code "editor"} or {@code "public"}. */
-        public String id() {
-            return id;
-        }
-
-        /** How a window names it. */
-        public String displayName() {
-            return displayName;
-        }
-
-        /** The visibility {@code id} spells; anything else is {@link #EDITOR}, which shows a parameter to fewer people. */
-        public static Visibility fromId(String id) {
-            return PUBLIC.id.equals(id) ? PUBLIC : EDITOR;
-        }
-    }
-
     /** One line under the parameter's name in the window. Its javadoc is not read; say it here. */
     String description() default "";
-
-    /**
-     * Who may see and change it: {@link #EDITOR} or {@link #PUBLIC}.
-     *
-     * @deprecated every parameter is the user's (2026-11-04); a value only the author sets is the bot's data.
-     */
-    @Deprecated(forRemoval = true)
-    String visibility() default EDITOR;
 }

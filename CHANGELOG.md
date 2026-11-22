@@ -15,6 +15,16 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Removed
+
+- `Param.visibility()`, `Param.EDITOR`, `Param.PUBLIC`, `Param.Visibility` and `Param.Shown.visibility()`, deprecated
+  since 2026-11-04: every parameter is the user's, shown in the Parameters window and the Runner alike. A plugin
+  declares its parameter with `shown(description)`; `shown(description, visibility)` and `ManagedParam.visibility()`
+  went. A bot's `@Param(visibility = …)` is dropped by Studio's upgrade, which still reads it to move an old field.
+  Binary-incompatible: the baseline is pinned ahead to `v0.20.0`.
+
 ## [0.19.1] — 2026-11-22
 
 ### Added
