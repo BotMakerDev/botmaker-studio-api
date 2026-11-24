@@ -6,6 +6,7 @@ package com.botmaker.plugin.api;
 import com.botmaker.plugin.api.run.RunEntry;
 import com.botmaker.plugin.api.run.RunProperty;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.Consumer;
@@ -56,6 +57,20 @@ public interface Runs {
      * {@code entry}. A host that runs no bots ignores it, which is what this default does.
      */
     default void start(RunEntry entry) {
+    }
+
+    /**
+     * Requests a run of {@code entry} with {@code arguments}, as the assistant's start with arguments does: a JSON-like
+     * object keyed by the names of the entry's {@link RunEntry#takes parameters}, read by its {@code main} with
+     * {@link com.botmaker.plugin.api.run.RunArguments#read}. What a plugin's own window calls when it asked its user for
+     * them (a goal typed beside the button). No field is a secret: arguments cross on the run's command line.
+     *
+     * <p>Asynchronous and advisory like {@link #start(RunEntry)}, and refused, said on the status line, when an argument
+     * does not fit the entry's parameters. {@code null} or empty is {@link #start(RunEntry)}. A host that runs no bots
+     * ignores it; this default starts the entry only when no argument is given, since it cannot hand any on.
+     */
+    default void start(RunEntry entry, Map<String, ?> arguments) {
+        if (arguments == null || arguments.isEmpty()) start(entry);
     }
 
     /** Requests that a running bot stop. Advisory and asynchronous, exactly like {@link #start()}. */

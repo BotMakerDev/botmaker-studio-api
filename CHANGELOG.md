@@ -15,6 +15,15 @@ be read against it:** a plugin's compiled `.class` files cannot be rewritten by 
 that an already-built plugin cannot survive is a **major** change, and one that only a Studio major release
 is allowed to make. Additions arrive as `default` methods.
 
+## [Unreleased]
+
+### Added
+
+- `Runs.start(RunEntry, Map<String, ?>)`: a plugin's own window starts an entry it declared with arguments it asked
+  its user for (a goal typed beside the button), checked against the entry's `takes` record and refused on the
+  status line when one does not fit. A default: a host that cannot hand arguments on starts the entry only when none
+  is given. Compatible.
+
 ## [0.20.0] — 2026-11-24
 
 ### Removed
