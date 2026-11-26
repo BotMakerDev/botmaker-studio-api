@@ -19,10 +19,16 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- `PluginPool.sharing(Sharing<T>)` and `PluginPool.sharedBy(T)` (2026-11-27): a plugin's pool says how many live
+  runs may hold one candidate at once (`Sharing.ANY` for no limit), so a desktop many games play on is dealt to
+  several runs while an emulator instance goes to one. Without it each candidate still goes to one run. Compatible.
 - `views(Holder.class)` (`RunViewHolder`, `run.RunView`, `run.ViewTarget`, `StudioPlugin.runViews()`): a plugin names
   what the host's Remote Pilot shows of one live run, a window, emulator, monitor or the desktop, with the reason
   when there is nothing to show; the host does the capture, encoding and input. A default step: a plugin that
   declares none shows the run's place. Compatible.
+- `RunView.overlay(byte[])` (2026-11-27): the plugin turns one telemetry frame of its run into the message the phone
+  draws over the picture, since the host knows no plugin's frame format. A default member; empty draws nothing.
+  Compatible.
 
 - `Runs.start(RunEntry, Map<String, ?>)`: a plugin's own window starts an entry it declared with arguments it asked
   its user for (a goal typed beside the button), checked against the entry's `takes` record and refused on the

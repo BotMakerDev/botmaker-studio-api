@@ -166,6 +166,26 @@ class PluginPoolTest {
     }
 
     @Test
+    void aCandidateGoesToOneRunUnlessThePoolSharesIt() {
+        PluginPool<String> once = PluginPool.fills(DEVICE).from(PluginPoolTest::devices);
+        PluginPool<String> shared = once.sharing(device -> switch (device) {
+            case "pc-1" -> PluginPool.Sharing.ANY;
+            case "pc-2" -> 0;
+            case "pc-3" -> throw new IllegalStateException("unread");
+            default -> 3;
+        });
+
+        assertEquals(1, once.sharedBy("pc-1"));
+        assertEquals(PluginPool.Sharing.ANY, shared.sharedBy("pc-1"));
+        assertEquals(1, shared.sharedBy("pc-2"), "under one reads as one");
+        assertEquals(1, shared.sharedBy("pc-3"), "a sharing that throws shares nothing");
+        assertEquals(3, shared.sharedBy("pc-4"));
+        assertEquals(3, shared.narrowedBy(PluginPoolTest::linked).offering((s, services) -> List.of())
+                .sharedBy("pc-4"), "the later steps keep it");
+        assertThrows(NullPointerException.class, () -> once.sharing(null));
+    }
+
+    @Test
     void poolsAreDeclaredByHolderInTheOrderARowIsDealt() {
         StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare().pools(Pools.class).pools(Pools.class)) {};
         assertEquals(List.of(Pools.ACCOUNTS, Pools.DEVICES), plugin.pools());

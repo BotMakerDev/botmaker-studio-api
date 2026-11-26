@@ -16,7 +16,8 @@ import java.util.Set;
 
 /**
  * What several runs at once are dealt for one of your plugin's own parameters (2026-11-15): the values this PC has
- * for it, so no two live runs get the same one. Named by a {@link com.botmaker.plugin.api.PoolHolder}.
+ * for it, so no two live runs get the same one, but where {@link #sharing} lets several hold it. Named by a
+ * {@link com.botmaker.plugin.api.PoolHolder}.
  *
  * <pre>{@code
  * public static final PluginPool<Instance> INSTANCES = PluginPool.fills(SdkValues.INSTANCE)
@@ -106,6 +107,17 @@ public final class PluginPool<T> {
         <V> Optional<V> of(ManagedParam<V> parameter);
     }
 
+    /** Says how many live runs may hold one candidate at once (2026-11-27). */
+    @FunctionalInterface
+    public interface Sharing<T> {
+
+        /** As many runs as ask: a candidate with no limit, such as a desktop several games play on. */
+        int ANY = Integer.MAX_VALUE;
+
+        /** How many runs may hold {@code candidate}; under {@code 1} reads as {@code 1}, {@link #ANY} as no limit. */
+        int runs(T candidate);
+    }
+
     /** How far a pool falls short of the runs asked for. Implemented by the host. */
     public interface Shortfall {
 
@@ -120,8 +132,15 @@ public final class PluginPool<T> {
     private final Candidates<T> candidates;
     private final Narrowing<T> narrowing;
     private final Offers offers;
+    private final Sharing<T> sharing;
 
     private PluginPool(ManagedParam<T> parameter, Candidates<T> candidates, Narrowing<T> narrowing, Offers offers) {
+        this(parameter, candidates, narrowing, offers, null);
+    }
+
+    private PluginPool(ManagedParam<T> parameter, Candidates<T> candidates, Narrowing<T> narrowing, Offers offers,
+                       Sharing<T> sharing) {
+        this.sharing = sharing;
         this.parameter = parameter;
         this.candidates = candidates;
         this.narrowing = narrowing;
@@ -163,7 +182,7 @@ public final class PluginPool<T> {
      * @throws NullPointerException for none
      */
     public PluginPool<T> narrowedBy(Narrowing<T> narrowing) {
-        return new PluginPool<>(parameter, candidates, Objects.requireNonNull(narrowing, "narrowing"), offers);
+        return new PluginPool<>(parameter, candidates, Objects.requireNonNull(narrowing, "narrowing"), offers, sharing);
     }
 
     /**
@@ -173,7 +192,30 @@ public final class PluginPool<T> {
      * @throws NullPointerException for none
      */
     public PluginPool<T> offering(Offers offers) {
-        return new PluginPool<>(parameter, candidates, narrowing, Objects.requireNonNull(offers, "offers"));
+        return new PluginPool<>(parameter, candidates, narrowing, Objects.requireNonNull(offers, "offers"), sharing);
+    }
+
+    /**
+     * This pool, some of its candidates held by several live runs at once: {@code .sharing(place -> place.isDesktop()
+     * ? Sharing.ANY : 1)} for a desktop many runs play on. Without it each candidate goes to one run.
+     *
+     * @throws NullPointerException for none
+     */
+    public PluginPool<T> sharing(Sharing<T> sharing) {
+        return new PluginPool<>(parameter, candidates, narrowing, offers, Objects.requireNonNull(sharing, "sharing"));
+    }
+
+    /**
+     * How many live runs may hold {@code candidate} at once, as the host reads it: {@code 1} without a
+     * {@link #sharing}; else what it answers, {@code 1} for an answer under one or for a sharing that throws.
+     */
+    public int sharedBy(T candidate) {
+        if (sharing == null) return 1;
+        try {
+            return Math.max(1, sharing.runs(candidate));
+        } catch (RuntimeException e) {
+            return 1;
+        }
     }
 
     /** The parameter the pool fills. */

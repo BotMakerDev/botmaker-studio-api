@@ -26,6 +26,16 @@ public interface RunView {
     }
 
     /**
+     * One telemetry frame of this run, as the bytes the run's own agent wrote (the same bytes
+     * {@link com.botmaker.plugin.api.Runs#onTelemetry} gives), as the message the Remote Pilot's phone draws over the
+     * picture (a match box, a click): the host knows no plugin's frame format, so the plugin turns it. Empty when the
+     * frame draws nothing or cannot be read. Called on the thread that delivers frames; answer fast.
+     */
+    default Optional<String> overlay(byte[] frame) {
+        return Optional.empty();
+    }
+
+    /**
      * The project this view belongs to and what to call when {@link #target()} may have changed (the window opened
      * or closed). Called once, before the first {@link #target()}, from a host thread; a view that needs neither may
      * ignore it.
