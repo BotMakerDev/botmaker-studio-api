@@ -232,9 +232,9 @@ public sealed interface StudioPlugin permits DeclaredPlugin {
     }
 
     /**
-     * New views of this plugin's runs ({@link RunView}), one from each holder, asked each time a run of the project
-     * starts in the process that owns it; the host's Remote Pilot shows what each names. A host that shows windows
-     * only never asks. No JavaFX is needed.
+     * New views of this plugin's runs ({@link RunView}), one from each holder, asked in the process that owns the
+     * project each time a run of it starts, and when the host needs to show it while no run goes; the host's Remote
+     * Pilot shows what each names. A host that shows windows only never asks. No JavaFX is needed.
      */
     default List<RunView> runViews() {
         return List.of();

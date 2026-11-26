@@ -29,6 +29,8 @@ is allowed to make. Additions arrive as `default` methods.
 - `RunView.overlay(byte[])` (2026-11-27): the plugin turns one telemetry frame of its run into the message the phone
   draws over the picture, since the host knows no plugin's frame format. A default member; empty draws nothing.
   Compatible.
+- A host also asks for a view while no run goes (2026-11-27), so the pilot shows what a run would; a view may be built
+  and dropped without a run.
 
 - `Runs.start(RunEntry, Map<String, ?>)`: a plugin's own window starts an entry it declared with arguments it asked
   its user for (a goal typed beside the button), checked against the entry's `takes` record and refused on the

@@ -11,6 +11,6 @@ import com.botmaker.plugin.api.run.RunView;
  */
 public interface RunViewHolder {
 
-    /** A new view, asked once for each live run — {@link StudioPlugin#runViews()}. */
+    /** A new view, asked once for each live run and once while none goes — {@link StudioPlugin#runViews()}. */
     RunView view();
 }

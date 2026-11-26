@@ -10,7 +10,9 @@ import java.util.Optional;
 /**
  * What the host's Remote Pilot shows of one live run (2026-11-26): the plugin only names the thing, the host does the
  * capture, the encoding and the input. Given by a {@link com.botmaker.plugin.api.RunViewHolder}, one new instance for
- * each run, built only in the process that owns the project.
+ * each run and one while no run goes (2026-11-27: the pilot then shows what a run would), built only in the process
+ * that owns the project. An instance is dropped without a call when its run starts or ends, so it holds nothing that
+ * needs closing.
  *
  * <p>A run whose plugin gives no view shows the run's own place instead. The host asks {@link #target()} again each
  * time the callback {@link #start} gave was called, and may ask at any time, from any thread; answer fast and never block.
