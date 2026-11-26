@@ -213,7 +213,7 @@ public final class PluginPool<T> {
         if (sharing == null) return 1;
         try {
             return Math.max(1, sharing.runs(candidate));
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | LinkageError e) {
             return 1;
         }
     }
