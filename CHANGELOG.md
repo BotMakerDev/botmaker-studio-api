@@ -19,6 +19,11 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- `views(Holder.class)` (`RunViewHolder`, `run.RunView`, `run.ViewTarget`, `StudioPlugin.runViews()`): a plugin names
+  what the host's Remote Pilot shows of one live run, a window, emulator, monitor or the desktop, with the reason
+  when there is nothing to show; the host does the capture, encoding and input. A default step: a plugin that
+  declares none shows the run's place. Compatible.
+
 - `Runs.start(RunEntry, Map<String, ?>)`: a plugin's own window starts an entry it declared with arguments it asked
   its user for (a goal typed beside the button), checked against the entry's `takes` record and refused on the
   status line when one does not fit. A default: a host that cannot hand arguments on starts the entry only when none

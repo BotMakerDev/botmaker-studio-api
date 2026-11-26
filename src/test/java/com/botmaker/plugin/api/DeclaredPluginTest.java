@@ -15,6 +15,8 @@ import com.botmaker.plugin.api.run.RunCompanion;
 import com.botmaker.plugin.api.run.RunContext;
 import com.botmaker.plugin.api.run.RunEntry;
 import com.botmaker.plugin.api.run.RunOverlayPart;
+import com.botmaker.plugin.api.run.RunView;
+import com.botmaker.plugin.api.run.ViewTarget;
 import com.botmaker.plugin.api.source.ManagedValue;
 import com.botmaker.plugin.api.value.ComponentType;
 import com.botmaker.plugin.api.value.DeclaredCall;
@@ -182,6 +184,29 @@ class DeclaredPluginTest {
         assertEquals(List.of(Runs.EXPLORE), first.getFirst().serves());
         assertFalse(first.getFirst() == plugin.runCompanions().getFirst(), "one instance per run");
         assertTrue(EMPTY.runCompanions().isEmpty());
+    }
+
+    static final class View implements RunViewHolder {
+        @Override
+        public RunView view() {
+            return new RunView() {
+                @Override
+                public Optional<ViewTarget> target() {
+                    return Optional.of(ViewTarget.emulator("emulator-5554"));
+                }
+            };
+        }
+    }
+
+    @Test
+    void viewsGivesANewViewEachTimeItIsAsked() {
+        StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare().views(View.class)) {};
+        List<RunView> first = plugin.runViews();
+        assertEquals(1, first.size());
+        assertEquals(Optional.of(ViewTarget.emulator("emulator-5554")), first.getFirst().target());
+        assertEquals(Optional.empty(), first.getFirst().reason(), "no reason by default");
+        assertFalse(first.getFirst() == plugin.runViews().getFirst(), "one instance per run");
+        assertTrue(EMPTY.runViews().isEmpty());
     }
 
     static final class Overlay implements OverlayHolder {

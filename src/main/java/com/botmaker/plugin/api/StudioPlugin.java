@@ -10,6 +10,7 @@ import com.botmaker.plugin.api.run.PluginPool;
 import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.RunChannel;
 import com.botmaker.plugin.api.run.RunCompanion;
+import com.botmaker.plugin.api.run.RunView;
 import com.botmaker.plugin.api.run.ReportView;
 import com.botmaker.plugin.api.run.RunEntry;
 import com.botmaker.plugin.api.run.RunOverlayPart;
@@ -227,6 +228,15 @@ public sealed interface StudioPlugin permits DeclaredPlugin {
      * and stops them when the run ends. A host that shows windows only never asks. No JavaFX is needed.
      */
     default List<RunCompanion> runCompanions() {
+        return List.of();
+    }
+
+    /**
+     * New views of this plugin's runs ({@link RunView}), one from each holder, asked each time a run of the project
+     * starts in the process that owns it; the host's Remote Pilot shows what each names. A host that shows windows
+     * only never asks. No JavaFX is needed.
+     */
+    default List<RunView> runViews() {
         return List.of();
     }
 

@@ -10,6 +10,7 @@ import com.botmaker.plugin.api.run.PluginPool;
 import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.RunChannel;
 import com.botmaker.plugin.api.run.RunCompanion;
+import com.botmaker.plugin.api.run.RunView;
 import com.botmaker.plugin.api.run.ReportView;
 import com.botmaker.plugin.api.run.RunEntry;
 import com.botmaker.plugin.api.run.RunOverlayPart;
@@ -113,6 +114,11 @@ public non-sealed class DeclaredPlugin implements StudioPlugin {
     @Override
     public final List<RunCompanion> runCompanions() {
         return declaration.companions();
+    }
+
+    @Override
+    public final List<RunView> runViews() {
+        return declaration.views();
     }
 
     @Override

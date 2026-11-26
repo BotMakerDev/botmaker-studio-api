@@ -11,6 +11,7 @@ import com.botmaker.plugin.api.run.PluginPool;
 import com.botmaker.plugin.api.run.Readiness;
 import com.botmaker.plugin.api.run.RunChannel;
 import com.botmaker.plugin.api.run.RunCompanion;
+import com.botmaker.plugin.api.run.RunView;
 import com.botmaker.plugin.api.run.ReportView;
 import com.botmaker.plugin.api.run.RunEntry;
 import com.botmaker.plugin.api.run.RunOverlayPart;
@@ -91,6 +92,7 @@ public final class PluginDeclaration {
     private List<Class<? extends RunEntryHolder>> runEntryHolders = List.of();
     private List<Class<? extends PoolHolder>> poolHolders = List.of();
     private List<Class<? extends CompanionHolder>> companionHolders = List.of();
+    private List<Class<? extends RunViewHolder>> runViewHolders = List.of();
     private Class<? extends OverlayHolder> overlayHolder;
     private Class<? extends CatalogHolder> catalogHolder;
     private String guide = "";
@@ -121,6 +123,7 @@ public final class PluginDeclaration {
         copy.runEntryHolders = runEntryHolders;
         copy.poolHolders = poolHolders;
         copy.companionHolders = companionHolders;
+        copy.runViewHolders = runViewHolders;
         copy.overlayHolder = overlayHolder;
         copy.catalogHolder = catalogHolder;
         copy.guide = guide;
@@ -224,6 +227,18 @@ public final class PluginDeclaration {
     public final PluginDeclaration companions(Class<? extends CompanionHolder>... holders) {
         List<Class<? extends CompanionHolder>> named = holders("companions", "MyCompanion", holders);
         return with(copy -> copy.companionHolders = added(companionHolders, named));
+    }
+
+    /**
+     * The classes giving what the host's Remote Pilot shows of the plugin's runs, each a {@link RunView} naming a
+     * window, emulator, monitor or the desktop — {@link StudioPlugin#runViews()}.
+     *
+     * @throws IllegalArgumentException when no holder is given, or one is {@code null}, abstract or an inner class
+     */
+    @SafeVarargs
+    public final PluginDeclaration views(Class<? extends RunViewHolder>... holders) {
+        List<Class<? extends RunViewHolder>> named = holders("views", "MyRunView", holders);
+        return with(copy -> copy.runViewHolders = added(runViewHolders, named));
     }
 
     /**
@@ -397,6 +412,16 @@ public final class PluginDeclaration {
         for (Class<? extends CompanionHolder> holder : companionHolders) {
             RunCompanion companion = built(holder).companion();
             if (companion != null) made.add(companion);
+        }
+        return List.copyOf(made);
+    }
+
+    /** One new view from each holder, a holder that gives none left out. */
+    List<RunView> views() {
+        List<RunView> made = new ArrayList<>();
+        for (Class<? extends RunViewHolder> holder : runViewHolders) {
+            RunView view = built(holder).view();
+            if (view != null) made.add(view);
         }
         return List.copyOf(made);
     }
