@@ -44,4 +44,13 @@ public interface RunView {
      */
     default void start(StudioServices services, Runnable changed) {
     }
+
+    /**
+     * {@link #start(StudioServices, Runnable)} told which run this view is for (2026-11-27): a host that knows the run
+     * calls this one, whose default calls the other, so a view that does not care overrides neither. The run's view
+     * that is built while none goes gets no run; the host calls the two-argument form for it.
+     */
+    default void start(StudioServices services, ViewedRun run, Runnable changed) {
+        start(services, changed);
+    }
 }

@@ -19,6 +19,10 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- `RunView.start(StudioServices, ViewedRun, Runnable)` and `ViewedRun(id, bot)` (2026-11-27): a view is told which
+  live run it was built for, so a plugin that runs several at once can show each run's own window or emulator. The
+  default calls the old `start`, so no view changes. Compatible.
+
 - `PluginPool.claiming(Claiming<T>)` and `PluginPool.claimedWith(T, StudioServices)` (2026-11-27): a plugin's pool
   names keys a run dealt one candidate holds alone, as `Claims.claim` names them, so a shared desktop goes to any
   number of runs but its mouse to the one that takes it over. The host deals the candidate only while every key is
