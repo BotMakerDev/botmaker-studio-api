@@ -19,6 +19,10 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- `RunView.background()` and `BackgroundLaunch(spec, backend)` (2026-11-27, compatible): a view says what its bot would
+  have started in a private display, so the host's Remote Pilot can offer Background mode for it. The plugin names the
+  launch target and the display backend; the host brings the display up, launches the game and routes the phone
+  through it. A plugin that does not override it offers none.
 - `RunView.start(StudioServices, ViewedRun, Runnable)` and `ViewedRun(id, bot, properties)` (2026-11-27): a view is
   told which live run it was built for and, for a run started beside the open bot (`SideRuns.start`), the run
   properties it was started with, so a plugin that runs several at once can show each run's own window or emulator.

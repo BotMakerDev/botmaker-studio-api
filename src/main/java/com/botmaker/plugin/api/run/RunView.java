@@ -28,6 +28,16 @@ public interface RunView {
     }
 
     /**
+     * What the bot would have started in a private display, when its settings keep the game off the real desktop and
+     * its target can run there: the host's Remote Pilot offers Background mode for it. Empty by default, and when
+     * the settings keep the game on the desktop, there is no launch target, or the target runs off the desktop
+     * already (an emulator app). Asked from the view built while no run goes; any thread, answer fast.
+     */
+    default Optional<BackgroundLaunch> background() {
+        return Optional.empty();
+    }
+
+    /**
      * One telemetry frame of this run, as the bytes the run's own agent wrote (the same bytes
      * {@link com.botmaker.plugin.api.Runs#onTelemetry} gives), as the message the Remote Pilot's phone draws over the
      * picture (a match box, a click): the host knows no plugin's frame format, so the plugin turns it. Empty when the
