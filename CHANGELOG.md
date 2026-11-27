@@ -24,6 +24,11 @@ is allowed to make. Additions arrive as `default` methods.
   properties it was started with, so a plugin that runs several at once can show each run's own window or emulator.
   The default calls the old `start`, so no view changes. Compatible.
 
+- `PluginPool.noting(Noting<T>)` and `PluginPool.noteOn(T, Picks, StudioServices)` (2026-11-27): a plugin's pool
+  gives words about a row dealt one candidate, given the row's earlier picks, which the Runs window shows on that row
+  with ⚠ (an account dealt where it disagrees with what the place last read). A note never changes what is dealt; a
+  noting that throws fails the dealing with the plugin named. Compatible.
+
 - `PluginPool.claiming(Claiming<T>)` and `PluginPool.claimedWith(T, StudioServices)` (2026-11-27): a plugin's pool
   names keys a run dealt one candidate holds alone, as `Claims.claim` names them, so a shared desktop goes to any
   number of runs but its mouse to the one that takes it over. The host deals the candidate only while every key is

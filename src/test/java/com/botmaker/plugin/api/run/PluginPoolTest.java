@@ -203,6 +203,33 @@ class PluginPoolTest {
     }
 
     @Test
+    void aRowIsNotedOnlyWhenThePoolNotesIt() {
+        PluginPool<String> once = PluginPool.fills(DEVICE).from(PluginPoolTest::devices);
+        PluginPool<String> noting = once.noting((device, picks, services) -> switch (device) {
+            case "pc-1" -> "  pc-1 last read other@example.com ";
+            case "pc-2" -> " ";
+            case "pc-5" -> "last read a@x.com\n  main signs in with b@x.com";
+            case "pc-3" -> throw new IllegalStateException("unread");
+            default -> picks.of(ACCOUNT).map(account -> "plays " + account).orElse(null);
+        });
+
+        assertEquals(Optional.empty(), once.noteOn("pc-1", null, null), "no noting, no note");
+        assertEquals(Optional.of("pc-1 last read other@example.com"), noting.noteOn("pc-1", null, null));
+        assertEquals(Optional.empty(), noting.noteOn("pc-2", null, null), "blank reads as none");
+        assertEquals(Optional.of("last read a@x.com main signs in with b@x.com"), noting.noteOn("pc-5", null, null),
+                "one line");
+        assertEquals(Optional.empty(), noting.noteOn("pc-4", null, null), "null picks read as none, null as no note");
+        assertThrows(IllegalStateException.class, () -> noting.noteOn("pc-3", null, null),
+                "not caught: the host fails the dealing with the plugin named");
+        assertEquals(Optional.of("pc-1 last read other@example.com"), noting.narrowedBy(PluginPoolTest::linked)
+                .offering((s, services) -> List.of()).sharing(device -> 1).claiming((d, s) -> List.of())
+                .noteOn("pc-1", null, null), "the later steps keep it");
+        assertEquals(PluginPool.Sharing.ANY, once.sharing(device -> PluginPool.Sharing.ANY)
+                .noting((d, p, s) -> null).sharedBy("pc-1"), "it keeps the sharing");
+        assertThrows(NullPointerException.class, () -> once.noting(null));
+    }
+
+    @Test
     void poolsAreDeclaredByHolderInTheOrderARowIsDealt() {
         StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare().pools(Pools.class).pools(Pools.class)) {};
         assertEquals(List.of(Pools.ACCOUNTS, Pools.DEVICES), plugin.pools());

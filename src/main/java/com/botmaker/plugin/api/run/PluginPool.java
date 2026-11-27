@@ -138,6 +138,26 @@ public final class PluginPool<T> {
         List<String> keys(T candidate, StudioServices services);
     }
 
+    /**
+     * Says what the user should know about a row that was dealt a candidate (2026-11-27): words the Runs window shows on
+     * that row with ⚠, such as {@code "MEmu_1 last read other@gmail.com; main signs in with main@gmail.com"}. A note
+     * never changes what is dealt; leave a candidate out by {@link Narrowing} instead.
+     *
+     * <p>Asked for every element of every row dealt, while the host holds this PC's runs still: read only your data of
+     * this PC, never a device, and answer fast. One line; line breaks read as spaces.
+     */
+    @FunctionalInterface
+    public interface Noting<T> {
+
+        /**
+         * The words for a row dealt {@code candidate}; {@code null} or blank for none, as for most.
+         *
+         * @param picks    what the row was dealt before this pool
+         * @param services the host's services
+         */
+        String note(T candidate, Picks picks, StudioServices services);
+    }
+
     /** How far a pool falls short of the runs asked for. Implemented by the host. */
     public interface Shortfall {
 
@@ -154,15 +174,17 @@ public final class PluginPool<T> {
     private final Offers offers;
     private final Sharing<T> sharing;
     private final Claiming<T> claiming;
+    private final Noting<T> noting;
 
     private PluginPool(ManagedParam<T> parameter, Candidates<T> candidates, Narrowing<T> narrowing, Offers offers) {
-        this(parameter, candidates, narrowing, offers, null, null);
+        this(parameter, candidates, narrowing, offers, null, null, null);
     }
 
     private PluginPool(ManagedParam<T> parameter, Candidates<T> candidates, Narrowing<T> narrowing, Offers offers,
-                       Sharing<T> sharing, Claiming<T> claiming) {
+                       Sharing<T> sharing, Claiming<T> claiming, Noting<T> noting) {
         this.sharing = sharing;
         this.claiming = claiming;
+        this.noting = noting;
         this.parameter = parameter;
         this.candidates = candidates;
         this.narrowing = narrowing;
@@ -205,7 +227,7 @@ public final class PluginPool<T> {
      */
     public PluginPool<T> narrowedBy(Narrowing<T> narrowing) {
         return new PluginPool<>(parameter, candidates, Objects.requireNonNull(narrowing, "narrowing"), offers, sharing,
-                claiming);
+                claiming, noting);
     }
 
     /**
@@ -216,7 +238,7 @@ public final class PluginPool<T> {
      */
     public PluginPool<T> offering(Offers offers) {
         return new PluginPool<>(parameter, candidates, narrowing, Objects.requireNonNull(offers, "offers"), sharing,
-                claiming);
+                claiming, noting);
     }
 
     /**
@@ -227,7 +249,7 @@ public final class PluginPool<T> {
      */
     public PluginPool<T> sharing(Sharing<T> sharing) {
         return new PluginPool<>(parameter, candidates, narrowing, offers, Objects.requireNonNull(sharing, "sharing"),
-                claiming);
+                claiming, noting);
     }
 
     /**
@@ -238,7 +260,30 @@ public final class PluginPool<T> {
      */
     public PluginPool<T> claiming(Claiming<T> claiming) {
         return new PluginPool<>(parameter, candidates, narrowing, offers, sharing,
-                Objects.requireNonNull(claiming, "claiming"));
+                Objects.requireNonNull(claiming, "claiming"), noting);
+    }
+
+    /**
+     * This pool, a row dealt a candidate shown with the words {@link Noting} gives: {@code .noting(SdkPools::why)}.
+     * Without it no row carries a note.
+     *
+     * @throws NullPointerException for none
+     */
+    public PluginPool<T> noting(Noting<T> noting) {
+        return new PluginPool<>(parameter, candidates, narrowing, offers, sharing, claiming,
+                Objects.requireNonNull(noting, "noting"));
+    }
+
+    /**
+     * The note on a row dealt {@code candidate} after {@code picks}, as the host reads it: empty without a
+     * {@link #noting}, and for a {@code null} or blank answer; else the words on one line, each run of white space one
+     * space. A noting that throws is not caught: the host fails the dealing with your plugin named.
+     */
+    public Optional<String> noteOn(T candidate, Picks picks, StudioServices services) {
+        if (noting == null) return Optional.empty();
+        String words = noting.note(candidate, picks == null ? Picks.NONE : picks, services);
+        return words == null || words.isBlank() ? Optional.empty()
+                : Optional.of(words.strip().replaceAll("\\s+", " "));
     }
 
     /**
