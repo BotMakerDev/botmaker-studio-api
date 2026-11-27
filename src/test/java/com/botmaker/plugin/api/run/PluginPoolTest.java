@@ -186,6 +186,23 @@ class PluginPoolTest {
     }
 
     @Test
+    void aCandidateHoldsTheKeysItsPoolClaimsWithIt() {
+        PluginPool<String> once = PluginPool.fills(DEVICE).from(PluginPoolTest::devices);
+        PluginPool<String> claiming = once.sharing(device -> PluginPool.Sharing.ANY)
+                .claiming((device, services) -> device.equals("pc-1")
+                        ? Arrays.asList("pointer:pc-1", null, " ", "pointer:pc-1") : null);
+
+        assertEquals(List.of(), once.claimedWith("pc-1", null));
+        assertEquals(List.of("pointer:pc-1"), claiming.claimedWith("pc-1", null), "each once, none blank");
+        assertEquals(List.of(), claiming.claimedWith("pc-2", null), "null reads as none");
+        assertEquals(List.of("pointer:pc-1"), claiming.narrowedBy(PluginPoolTest::linked)
+                .offering((s, services) -> List.of()).sharing(device -> 1).claimedWith("pc-1", null),
+                "the later steps keep it");
+        assertEquals(PluginPool.Sharing.ANY, claiming.sharedBy("pc-1"), "it keeps the sharing");
+        assertThrows(NullPointerException.class, () -> once.claiming(null));
+    }
+
+    @Test
     void poolsAreDeclaredByHolderInTheOrderARowIsDealt() {
         StudioPlugin plugin = new DeclaredPlugin(StudioPlugin.declare().pools(Pools.class).pools(Pools.class)) {};
         assertEquals(List.of(Pools.ACCOUNTS, Pools.DEVICES), plugin.pools());

@@ -118,6 +118,26 @@ public final class PluginPool<T> {
         int runs(T candidate);
     }
 
+    /**
+     * Says what else a run dealt one candidate holds alone (2026-11-27): keys as {@link
+     * com.botmaker.plugin.api.params.Claims#claim} names them, which no two live runs on this PC hold at once, a
+     * candidate shared or not. A desktop several games play on is shared, but its mouse goes to one run that takes it
+     * over: {@code .claiming((place, services) -> takesOver(services) ? List.of("pointer:this-pc/desktop") :
+     * List.of())}.
+     */
+    @FunctionalInterface
+    public interface Claiming<T> {
+
+        /**
+         * The keys a run dealt {@code candidate} holds alone, none for most. The host deals the candidate only while
+         * every key is free: no live run holds or claims it, and no other row of the same dealing was dealt it. The
+         * run then holds them from its start, so its own {@code Claims.claim} of one is granted.
+         *
+         * @param services the host's services, of the bot being started
+         */
+        List<String> keys(T candidate, StudioServices services);
+    }
+
     /** How far a pool falls short of the runs asked for. Implemented by the host. */
     public interface Shortfall {
 
@@ -133,14 +153,16 @@ public final class PluginPool<T> {
     private final Narrowing<T> narrowing;
     private final Offers offers;
     private final Sharing<T> sharing;
+    private final Claiming<T> claiming;
 
     private PluginPool(ManagedParam<T> parameter, Candidates<T> candidates, Narrowing<T> narrowing, Offers offers) {
-        this(parameter, candidates, narrowing, offers, null);
+        this(parameter, candidates, narrowing, offers, null, null);
     }
 
     private PluginPool(ManagedParam<T> parameter, Candidates<T> candidates, Narrowing<T> narrowing, Offers offers,
-                       Sharing<T> sharing) {
+                       Sharing<T> sharing, Claiming<T> claiming) {
         this.sharing = sharing;
+        this.claiming = claiming;
         this.parameter = parameter;
         this.candidates = candidates;
         this.narrowing = narrowing;
@@ -182,7 +204,8 @@ public final class PluginPool<T> {
      * @throws NullPointerException for none
      */
     public PluginPool<T> narrowedBy(Narrowing<T> narrowing) {
-        return new PluginPool<>(parameter, candidates, Objects.requireNonNull(narrowing, "narrowing"), offers, sharing);
+        return new PluginPool<>(parameter, candidates, Objects.requireNonNull(narrowing, "narrowing"), offers, sharing,
+                claiming);
     }
 
     /**
@@ -192,7 +215,8 @@ public final class PluginPool<T> {
      * @throws NullPointerException for none
      */
     public PluginPool<T> offering(Offers offers) {
-        return new PluginPool<>(parameter, candidates, narrowing, Objects.requireNonNull(offers, "offers"), sharing);
+        return new PluginPool<>(parameter, candidates, narrowing, Objects.requireNonNull(offers, "offers"), sharing,
+                claiming);
     }
 
     /**
@@ -202,7 +226,31 @@ public final class PluginPool<T> {
      * @throws NullPointerException for none
      */
     public PluginPool<T> sharing(Sharing<T> sharing) {
-        return new PluginPool<>(parameter, candidates, narrowing, offers, Objects.requireNonNull(sharing, "sharing"));
+        return new PluginPool<>(parameter, candidates, narrowing, offers, Objects.requireNonNull(sharing, "sharing"),
+                claiming);
+    }
+
+    /**
+     * This pool, a run dealt some candidates holding keys alone beside them ({@link Claiming}). Without it a
+     * candidate holds nothing else.
+     *
+     * @throws NullPointerException for none
+     */
+    public PluginPool<T> claiming(Claiming<T> claiming) {
+        return new PluginPool<>(parameter, candidates, narrowing, offers, sharing,
+                Objects.requireNonNull(claiming, "claiming"));
+    }
+
+    /**
+     * The keys a run dealt {@code candidate} holds alone, as the host reads them: none without a {@link #claiming};
+     * else what it answers, each once, blank and {@code null} keys dropped. A claiming that throws is not caught: the
+     * host fails the dealing with your plugin named, as it does for the candidates.
+     */
+    public List<String> claimedWith(T candidate, StudioServices services) {
+        if (claiming == null) return List.of();
+        List<String> keys = claiming.keys(candidate, services);
+        if (keys == null) return List.of();
+        return keys.stream().filter(key -> key != null && !key.isBlank()).distinct().toList();
     }
 
     /**

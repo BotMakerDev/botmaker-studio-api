@@ -19,6 +19,10 @@ is allowed to make. Additions arrive as `default` methods.
 
 ### Added
 
+- `PluginPool.claiming(Claiming<T>)` and `PluginPool.claimedWith(T, StudioServices)` (2026-11-27): a plugin's pool
+  names keys a run dealt one candidate holds alone, as `Claims.claim` names them, so a shared desktop goes to any
+  number of runs but its mouse to the one that takes it over. The host deals the candidate only while every key is
+  free, and the run holds them from its start, so its own claim of one is granted. Compatible.
 - `PluginPool.sharing(Sharing<T>)` and `PluginPool.sharedBy(T)` (2026-11-27): a plugin's pool says how many live
   runs may hold one candidate at once (`Sharing.ANY` for no limit), so a desktop many games play on is dealt to
   several runs while an emulator instance goes to one. Without it each candidate still goes to one run. Compatible.
